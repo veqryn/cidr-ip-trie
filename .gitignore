@@ -1,3 +1,23 @@
+### Project Specific Files
+logs/
+
+
+### Java
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+
+### Maven
 target/
 pom.xml.tag
 pom.xml.releaseBackup
@@ -6,3 +26,51 @@ pom.xml.next
 release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
+
+
+### Gradle
+.gradle
+build/
+
+# Ignore Gradle GUI config
+gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
+
+# Cache of project
+.gradletasknamecache
+
+
+### IDE
+
+# IntelliJ
+*.iml
+.idea/
+/out/
+*.ipr
+*.iws
+
+# Eclipse
+.project
+.settings/
+.metadata
+.classpath
+*.launch
+.gradle
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.loadpath
+temp_eclipse/
+classes.jar
+.externalToolBuilders/
+.cproject
+.factorypath
+.buildpath
+.target
+.texlipse
