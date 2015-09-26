@@ -55,7 +55,8 @@ public final class Cidrs {
    * @param netmask binary netmask
    * @return the binary integer after the netmask is applied
    */
-  protected static final int getLowestBinaryWithNetmask(final int binaryIntegerAddress, final int netmask) {
+  protected static final int getLowestBinaryWithNetmask(final int binaryIntegerAddress,
+      final int netmask) {
     return binaryIntegerAddress & netmask;
   }
 
@@ -66,7 +67,8 @@ public final class Cidrs {
    * @param netmask binary netmask
    * @return the largest binary integer allowed by this netmask
    */
-  protected static final int getHighestBinaryWithNetmask(final int binaryIntegerAddress, final int netmask) {
+  protected static final int getHighestBinaryWithNetmask(final int binaryIntegerAddress,
+      final int netmask) {
     return binaryIntegerAddress | ~(netmask);
   }
 

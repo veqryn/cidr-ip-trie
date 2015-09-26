@@ -528,7 +528,8 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
   @Override
   public final String toString() {
     final StringBuilder buf = new StringBuilder();
-    buf.append('[').append(getLowAddress(true)).append("--").append(getHighAddress(true)).append(']');
+    buf.append('[').append(getLowAddress(true)).append("--")
+        .append(getHighAddress(true)).append(']');
     return buf.toString();
   }
 

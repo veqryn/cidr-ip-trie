@@ -295,7 +295,8 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
 
   protected final V put(final int key, final V value, final int stopDepth) {
     if (value == null) {
-      throw new IllegalArgumentException(this.getClass().getName() + " does not accept null values");
+      throw new IllegalArgumentException(
+          this.getClass().getName() + " does not accept null values");
     }
     final int max = Math.min(depth, stopDepth);
     final byte[] bits = Ips.getBits(key, 0, max);
@@ -529,7 +530,8 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
 
   @Override
   public final AbstractBinaryTrie<V> clone() throws CloneNotSupportedException {
-    throw new CloneNotSupportedException("Clone is not supported for: " + this.getClass().getName());
+    throw new CloneNotSupportedException(
+        "Clone is not supported for: " + this.getClass().getName());
   }
 
 }

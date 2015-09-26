@@ -134,7 +134,8 @@ public final class Ips {
   protected static final int[] toArray(final int address, final boolean binary) {
     final int ipValues[] = new int[4];
     for (int j = 3; j >= 0; --j) {
-      ipValues[j] |= (((j != 0 || binary ? address : address ^ Integer.MIN_VALUE) >>> 8 * (3 - j)) & (0xff));
+      ipValues[j] |=
+          (((j != 0 || binary ? address : address ^ Integer.MIN_VALUE) >>> 8 * (3 - j)) & (0xff));
     }
     return ipValues;
   }
@@ -153,7 +154,8 @@ public final class Ips {
         end < 0 ||
         end > 64 ||
         start > end) {
-      throw new IllegalArgumentException("Illegal position arguments: start: " + start + ", end: " + end);
+      throw new IllegalArgumentException(
+          "Illegal position arguments: start: " + start + ", end: " + end);
     }
     final int min = 64 - end;
     final byte[] bits = new byte[end - start];
@@ -177,7 +179,8 @@ public final class Ips {
         end < 0 ||
         end > 32 ||
         start > end) {
-      throw new IllegalArgumentException("Illegal position arguments: start: " + start + ", end: " + end);
+      throw new IllegalArgumentException(
+          "Illegal position arguments: start: " + start + ", end: " + end);
     }
     final int min = 32 - end;
     final byte[] bits = new byte[end - start];
@@ -201,7 +204,8 @@ public final class Ips {
         end < 0 ||
         end > 16 ||
         start > end) {
-      throw new IllegalArgumentException("Illegal position arguments: start: " + start + ", end: " + end);
+      throw new IllegalArgumentException(
+          "Illegal position arguments: start: " + start + ", end: " + end);
     }
     final int min = 16 - end;
     final byte[] bits = new byte[end - start];
@@ -225,7 +229,8 @@ public final class Ips {
         end < 0 ||
         end > 8 ||
         start > end) {
-      throw new IllegalArgumentException("Illegal position arguments: start: " + start + ", end: " + end);
+      throw new IllegalArgumentException(
+          "Illegal position arguments: start: " + start + ", end: " + end);
     }
     final int min = 8 - end;
     final byte[] bits = new byte[end - start];
