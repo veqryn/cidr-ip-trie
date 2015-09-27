@@ -107,6 +107,13 @@ public class TestUtil {
 
   };
 
+  /**
+   * Turn any serializable object into a byte array
+   * 
+   * @param obj
+   * @return byte[]
+   * @throws IOException
+   */
   protected static final <T extends Serializable> byte[] pickle(final T obj) throws IOException {
     try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final ObjectOutputStream oos = new ObjectOutputStream(baos);) {
@@ -115,6 +122,15 @@ public class TestUtil {
     }
   }
 
+  /**
+   * Turn a byte array into a serializable object
+   * 
+   * @param b
+   * @param cl
+   * @return T
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   protected static final <T extends Serializable> T unpickle(final byte[] b, final Class<T> cl)
       throws IOException, ClassNotFoundException {
     try (final ByteArrayInputStream bais = new ByteArrayInputStream(b);

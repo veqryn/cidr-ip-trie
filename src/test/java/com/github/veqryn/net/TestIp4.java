@@ -45,81 +45,83 @@ public class TestIp4 {
   @Test
   public void testGetSortableInteger() {
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(fromString.get(i).getSortableInteger(), ips[i][3]);
+      assertEquals(ips[i][3], fromString.get(i).getSortableInteger());
     }
   }
 
   @Test
   public void testGetBinaryInteger() {
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(fromString.get(i).getBinaryInteger(), ips[i][2]);
+      assertEquals(ips[i][2], fromString.get(i).getBinaryInteger());
     }
   }
 
   @Test
   public void testGetAddress() {
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(fromString.get(i).getAddress(), ips[i][0]);
+      assertEquals(ips[i][0], fromString.get(i).getAddress());
     }
   }
 
   @Test
   public void testGetCidr() {
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(fromString.get(i).getCidr().getCidrSignature(), ips[i][0] + "/32");
+      assertEquals(ips[i][0] + "/32", fromString.get(i).getCidr().getCidrSignature());
     }
   }
 
   @Test
   public void testGetLowestContainingCidr() {
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(fromString.get(i).getLowestContainingCidr(32).getCidrSignature(),
-          ips[i][0] + "/32");
+      assertEquals(ips[i][0] + "/32",
+          fromString.get(i).getLowestContainingCidr(32).getCidrSignature());
 
-      assertEquals(fromString.get(i).getLowestContainingCidr(24).getCidrSignature(),
-          ((String) ips[i][0]).substring(0, ((String) ips[i][0]).lastIndexOf('.')) + ".0/24");
+      assertEquals(
+          ((String) ips[i][0]).substring(0, ((String) ips[i][0]).lastIndexOf('.')) + ".0/24",
+          fromString.get(i).getLowestContainingCidr(24).getCidrSignature());
 
-      assertEquals(fromString.get(i).getLowestContainingCidr(16).getCidrSignature(),
-          ((String) ips[i][0]).substring(0,
-              ((String) ips[i][0]).indexOf('.', 1 + ((String) ips[i][0]).indexOf('.')))
-              + ".0.0/16");
+      assertEquals(((String) ips[i][0]).substring(0,
+          ((String) ips[i][0]).indexOf('.', 1 + ((String) ips[i][0]).indexOf('.')))
+          + ".0.0/16",
+          fromString.get(i).getLowestContainingCidr(16).getCidrSignature());
 
-      assertEquals(fromString.get(i).getLowestContainingCidr(8).getCidrSignature(),
-          ((String) ips[i][0]).substring(0, ((String) ips[i][0]).indexOf('.')) + ".0.0.0/8");
+      assertEquals(
+          ((String) ips[i][0]).substring(0, ((String) ips[i][0]).indexOf('.')) + ".0.0.0/8",
+          fromString.get(i).getLowestContainingCidr(8).getCidrSignature());
     }
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(31).getCidrSignature(),
-        "192.168.211.250/31");
+    assertEquals("192.168.211.250/31",
+        new Ip4("192.168.211.251").getLowestContainingCidr(31).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(30).getCidrSignature(),
-        "192.168.211.248/30");
+    assertEquals("192.168.211.248/30",
+        new Ip4("192.168.211.251").getLowestContainingCidr(30).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(29).getCidrSignature(),
-        "192.168.211.248/29");
+    assertEquals("192.168.211.248/29",
+        new Ip4("192.168.211.251").getLowestContainingCidr(29).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(28).getCidrSignature(),
-        "192.168.211.240/28");
+    assertEquals("192.168.211.240/28",
+        new Ip4("192.168.211.251").getLowestContainingCidr(28).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(25).getCidrSignature(),
-        "192.168.211.128/25");
+    assertEquals("192.168.211.128/25",
+        new Ip4("192.168.211.251").getLowestContainingCidr(25).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(17).getCidrSignature(),
-        "192.168.128.0/17");
+    assertEquals("192.168.128.0/17",
+        new Ip4("192.168.211.251").getLowestContainingCidr(17).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(9).getCidrSignature(),
-        "192.128.0.0/9");
+    assertEquals("192.128.0.0/9",
+        new Ip4("192.168.211.251").getLowestContainingCidr(9).getCidrSignature());
 
-    assertEquals(new Ip4("192.168.211.251").getLowestContainingCidr(1).getCidrSignature(),
-        "128.0.0.0/1");
+    assertEquals("128.0.0.0/1",
+        new Ip4("192.168.211.251").getLowestContainingCidr(1).getCidrSignature());
 
-    assertEquals(new Ip4("127.255.255.255").getLowestContainingCidr(1).getCidrSignature(),
-        "0.0.0.0/1");
+    assertEquals("0.0.0.0/1",
+        new Ip4("127.255.255.255").getLowestContainingCidr(1).getCidrSignature());
   }
 
   @Test
   public void testGetInetAddress() throws UnknownHostException {
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(fromString.get(i).getInetAddress().getHostAddress(), ips[i][0]);
+      assertEquals(ips[i][0], fromString.get(i).getInetAddress().getHostAddress());
     }
   }
 
@@ -140,14 +142,14 @@ public class TestIp4 {
     final List<Ip4> ordered1 = new ArrayList<>(unordered);
     Collections.sort(ordered1);
     for (int i = 0; i < ips.length; ++i) {
-      assertEquals(ordered1.get(i).toString(), ipsInOrder[i]);
+      assertEquals(ipsInOrder[i], ordered1.get(i).toString());
     }
 
     Collections.shuffle(unordered);
     final Set<Ip4> ordered2 = new TreeSet<>(unordered);
     int i = 0;
     for (final Ip4 ip : ordered2) {
-      assertEquals(ip.toString(), ipsInOrder[i++]);
+      assertEquals(ipsInOrder[i++], ip.toString());
     }
   }
 
