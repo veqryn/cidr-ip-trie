@@ -10,6 +10,7 @@ import static com.github.veqryn.net.TestUtil.ipsInOrder;
 import static com.github.veqryn.net.TestUtil.pickle;
 import static com.github.veqryn.net.TestUtil.unpickle;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -163,6 +164,21 @@ public class TestIp4 {
       assertEquals(fromInt.get(i), fromSortable.get(i));
       assertEquals(fromInt.get(i), fromCopy.get(i));
       assertEquals(fromSortable.get(i), fromCopy.get(i));
+    }
+  }
+
+  @Test
+  public void testNotEqual() {
+    for (int i = 0; i < ips.length; ++i) {
+      for (int j = 0; j < ips.length; ++j) {
+        if (i == j) {
+          continue;
+        }
+        // equals
+        assertNotEquals(fromString.get(i), fromString.get(j));
+        // compareTo
+        assertNotEquals(0, fromString.get(i).compareTo(fromString.get(j)));
+      }
     }
   }
 
