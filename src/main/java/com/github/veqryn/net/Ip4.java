@@ -15,13 +15,13 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
- * Light weight immutable IPv4 type, which implements hashCode, equals, Comparable, and
- * Serializable.
+ * Light weight immutable IPv4 type,
+ * which implements hashCode, equals, Comparable, and Serializable.
  * Some methods and method signatures influenced by org.apache.commons.net.util.SubnetUtils
  */
 public final class Ip4 implements Comparable<Ip4>, Serializable {
 
-  private static final long serialVersionUID = 7316526780680680661L;
+  private static final long serialVersionUID = 1929530070657767617L;
 
   private final int address;
 
