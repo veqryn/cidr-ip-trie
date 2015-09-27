@@ -6,6 +6,7 @@
 package com.github.veqryn.net;
 
 import static com.github.veqryn.net.TestUtil.ips;
+import static com.github.veqryn.net.TestUtil.netmasks;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
@@ -102,7 +103,7 @@ public class TestCidrs {
   public void testGetLowestContainingCidrForRangeCidr() {
 
     // This one actually caught a bug, because 3232289781L to 3232289783L
-    // is 192.168.211.245--192.168.211.247, and the widest possible netmask
+    // is 192.168.211.245--192.168.211.247, and the narrowest possible netmask
     // which contains both is 30, which if re-applied to the IP range
     // makes it become 192.168.211.244--192.168.211.247
 
@@ -163,6 +164,48 @@ public class TestCidrs {
     assertEquals(Integer.MIN_VALUE, Cidrs.getDifferenceNetmask(1000, Integer.MAX_VALUE));
     assertEquals(-8192, Cidrs.getDifferenceNetmask(19999900, 20001000));
     assertEquals(-4, Cidrs.getDifferenceNetmask((int) 3232289781L, (int) 3232289783L));
+  }
+
+  @Test
+  public void testGetLowestBinaryWithNetmask() {
+    assertEquals(0x80000000, Cidrs.getLowestBinaryWithNetmask(0xffffffff, Integer.MIN_VALUE));
+    assertEquals(0, Cidrs.getLowestBinaryWithNetmask(0, -1));
+    assertEquals(147483648, Cidrs.getLowestBinaryWithNetmask(147483648, -1));
+    assertEquals(0, Cidrs.getLowestBinaryWithNetmask(Integer.MAX_VALUE, Integer.MIN_VALUE));
+    assertEquals(19996672, Cidrs.getLowestBinaryWithNetmask(20001000, -8192));
+    assertEquals((int) 3232289780L, Cidrs.getLowestBinaryWithNetmask((int) 3232289783L, -4));
+  }
+
+  @Test
+  public void testGetHighestBinaryWithNetmask() {
+    assertEquals(0xffffffff, Cidrs.getHighestBinaryWithNetmask(0x80000000, Integer.MIN_VALUE));
+    assertEquals(0, Cidrs.getHighestBinaryWithNetmask(0, -1));
+    assertEquals(147483648, Cidrs.getHighestBinaryWithNetmask(147483648, -1));
+    assertEquals(Integer.MAX_VALUE, Cidrs.getHighestBinaryWithNetmask(1000, Integer.MIN_VALUE));
+    assertEquals(20004863, Cidrs.getHighestBinaryWithNetmask(19999900, -8192));
+    assertEquals((int) 3232289783L, Cidrs.getHighestBinaryWithNetmask((int) 3232289781L, -4));
+  }
+
+  @Test
+  public void testGetNetMask() {
+    for (final Object[] netmask : netmasks) {
+      assertEquals(netmask[1], Cidrs.getNetMask((int) netmask[0]));
+    }
+  }
+
+  @Test
+  public void testGetMaskBitCount() {
+    for (final Object[] netmask : netmasks) {
+      assertEquals(netmask[0], Cidrs.getMaskBitCount((int) netmask[1]));
+    }
+  }
+
+  @Test
+  public void testToCidrNotation() {
+    for (final Object[] netmask : netmasks) {
+      assertEquals("192.168.0.1/" + netmask[0],
+          Cidrs.toCidrNotation("192.168.0.1", (String) netmask[2]));
+    }
   }
 
 }
