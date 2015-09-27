@@ -125,10 +125,11 @@ public final class Ips {
   }
 
   /**
-   * Convert a packed integer address into a 4-element array
+   * Convert a integer address into a 4-element array
    *
-   * @param address packed integer representing an IPv4 address
-   * @param binary true if the address is in binary form
+   * @param address integer representing an IPv4 address
+   * @param binary true if the address is in binary form,
+   *        false if a sortable packed integer
    * @return 4-element array representing this address
    */
   protected static final int[] toArray(final int address, final boolean binary) {
@@ -258,16 +259,25 @@ public final class Ips {
   }
 
   /**
-   * @param address packed integer equal to the address,
+   * @param address integer equal to the address
+   * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255
+   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        true if using a binary integer,
+   *        where Integer.MIN_VALUE = 128.0.0.0
+   *        and 0 = 0.0.0.0
+   *        and Integer.MAX_VALUE = 127.255.255.255
+   *        and -1 = 255.255.255.255
    * @return unsigned long integer value,
    *         where 0L = 0.0.0.0
    *         and 2147483648L = 128.0.0.0
    *         and 4294967296L = 255.255.255.255
    */
-  protected static final long packedIntegerToUnsignedLong(final int address) {
+  protected static final long integerToUnsignedLong(final int address, final boolean binary) {
+    if (binary) {
+      return address < 0 ? 0xffffffff00000000L ^ address : address;
+    }
     return address < 0 ? 0xffffffff80000000L ^ address : 2147483648L ^ address;
   }
 
@@ -277,13 +287,16 @@ public final class Ips {
    *        where 0L = 0.0.0.0
    *        and 2147483648L = 128.0.0.0
    *        and 4294967296L = 255.255.255.255
-   * @return packed integer equal to the address,
-   *         where Integer.MIN_VALUE = 0.0.0.0
-   *         and 0 = 128.0.0.0
-   *         and Integer.MAX_VALUE = 255.255.255.255
+   * @param binary true if you want an integer that can be used as a netmask</br>
+   *        255.255.255.255 => 11111111.11111111.11111111.11111111 binary</br>
+   *        0.0.0.0 => 00000000.00000000.00000000.00000000 binary</br>
+   *        false if you want a sortable packed integer representing an ip</br>
+   *        255.255.255.255 => 10000000.00000000.00000000.00000000 binary, 2147483647 int</br>
+   *        0.0.0.0 => 01111111.11111111.11111111.11111111 binary, -2147483648 int
+   * @return integer equal to the address, with value depending on binary parameter
    */
-  protected static final int unsignedLongToPackedInteger(final long longAddress) {
-    return Integer.MIN_VALUE ^ (int) longAddress;
+  protected static final int unsignedLongToInteger(final long longAddress, final boolean binary) {
+    return binary ? ((int) longAddress) : (Integer.MIN_VALUE ^ (int) longAddress);
   }
 
 }
