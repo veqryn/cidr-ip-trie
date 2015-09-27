@@ -35,8 +35,11 @@ public final class Cidrs {
    *        and Integer.MAX_VALUE = 127.255.255.255
    *        and -1 = 255.255.255.255
    * @return A new Cidr representing the lowest cidr that has
-   *         no more than this many maskBits and contains our cidr range
-   *         e.g. 192.168.10.10/31 => mask 24 => 192.168.0.0/24
+   *         no more than this many maskBits and contains our cidr range, e.g.:</br>
+   *         192.168.10.10/31 => mask 24 => 192.168.10.0/24</br>
+   *         192.168.10.10/31 => mask 24 => 192.168.0.0/16</br>
+   *         192.168.10.10/31 => mask 24 => 192.0.0.0/8</br>
+   *         192.168.10.10/31 => mask 32 => 192.168.10.10/31
    */
   protected static final Cidr4 getLowestContainingCidrForRange(final int low, final int high,
       final int maskBits, final boolean binary) {
@@ -46,6 +49,25 @@ public final class Cidrs {
     final int newHigh = Math.max(binary ? high ^ Integer.MIN_VALUE : high,
         getHighestBinaryWithNetmask(network, netmask) ^ Integer.MIN_VALUE);
     return new Cidr4(newLow, newHigh, false);
+  }
+
+  /**
+   * @param low IPv4 address in binary form as an integer</br>
+   *        255.255.255.255 => 11111111.11111111.11111111.11111111 binary</br>
+   *        0.0.0.0 => 00000000.00000000.00000000.00000000 binary
+   * @param high IPv4 address in binary form as an integer</br>
+   *        255.255.255.255 => 11111111.11111111.11111111.11111111 binary</br>
+   *        0.0.0.0 => 00000000.00000000.00000000.00000000 binary
+   * @return binary integer netmask
+   */
+  protected static final int getDifferenceNetmask(final int low, final int high) {
+    int diff = low ^ high;
+    diff |= diff >> 1;
+    diff |= diff >> 2;
+    diff |= diff >> 4;
+    diff |= diff >> 8;
+    diff |= diff >> 16;
+    return ~diff;
   }
 
   /**

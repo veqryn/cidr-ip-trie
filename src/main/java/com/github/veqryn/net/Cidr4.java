@@ -7,6 +7,7 @@ package com.github.veqryn.net;
 
 import static com.github.veqryn.net.Cidrs.NBITS;
 import static com.github.veqryn.net.Cidrs.cidrPattern;
+import static com.github.veqryn.net.Cidrs.getDifferenceNetmask;
 import static com.github.veqryn.net.Cidrs.getHighestBinaryWithNetmask;
 import static com.github.veqryn.net.Cidrs.getLowestBinaryWithNetmask;
 import static com.github.veqryn.net.Cidrs.getLowestContainingCidrForRange;
@@ -142,7 +143,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    */
   public Cidr4(final Ip4 address) {
     this.low = address.getSortableInteger();
-    this.high = address.getSortableInteger();
+    this.high = this.low;
   }
 
   /**
@@ -174,13 +175,18 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    *        and -1 = 255.255.255.255
    */
   protected Cidr4(final int low, final int high, final boolean binary) {
-    final int newlow = binary ? low ^ Integer.MIN_VALUE : low;
-    final int newHigh = binary ? high ^ Integer.MIN_VALUE : high;
-    if (newlow > newHigh) {
-      throw new IllegalArgumentException("Low IP integer value must be <= High value");
+    int network = binary ? low : low ^ Integer.MIN_VALUE;
+    final int broadcast = binary ? high : high ^ Integer.MIN_VALUE;
+    // if low and high do not actually match with the netmask that would contains them
+    // we must manually figure out and re-apply the netmask
+    // example: 192.168.211.245--192.168.211.247 should become 192.168.211.244--192.168.211.247
+    final int netmask = getDifferenceNetmask(network, broadcast);
+    network = getLowestBinaryWithNetmask(network, netmask);
+    this.low = network ^ Integer.MIN_VALUE;
+    this.high = getHighestBinaryWithNetmask(network, netmask) ^ Integer.MIN_VALUE;
+    if (low > high) {
+      throw new IllegalArgumentException("Low IP value must be <= High IP value");
     }
-    this.low = newlow;
-    this.high = newHigh;
   }
 
   /**
@@ -345,7 +351,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @return binary integer netmask
    */
   public final int getBinaryNetmask() {
-    return ~(low ^ high);
+    return getDifferenceNetmask(low, high);
   }
 
   /**
