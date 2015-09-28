@@ -8,14 +8,21 @@ package com.github.veqryn.net;
 import static com.github.veqryn.net.Ips.format;
 import static com.github.veqryn.net.Ips.toArray;
 import static com.github.veqryn.net.TestUtil.cidrs;
+import static com.github.veqryn.net.TestUtil.cidrsInOrder;
 import static com.github.veqryn.net.TestUtil.pickle;
 import static com.github.veqryn.net.TestUtil.unpickle;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -179,7 +186,51 @@ public class TestCidr4 {
 
   @Test
   public void testGetLowestContainingCidr() {
-    // TODO: do this
+    assertEquals("192.168.211.244/30",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(32).getCidrSignature());
+
+    assertEquals("192.168.211.244/30",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(31).getCidrSignature());
+
+    assertEquals("192.168.211.244/30",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(30).getCidrSignature());
+
+    assertEquals("192.168.211.240/29",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(29).getCidrSignature());
+
+    assertEquals("192.168.211.240/28",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(28).getCidrSignature());
+
+    assertEquals("192.168.211.128/25",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(25).getCidrSignature());
+
+    assertEquals("192.168.128.0/17",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(17).getCidrSignature());
+
+    assertEquals("192.128.0.0/9",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(9).getCidrSignature());
+
+    assertEquals("128.0.0.0/1",
+        new Cidr4((int) 3232289781L, (int) 3232289783L, true)
+            .getLowestContainingCidr(1).getCidrSignature());
+
+    assertEquals("0.0.0.0/0", new Cidr4(1, Integer.MIN_VALUE, true)
+        .getLowestContainingCidr(32).getCidrSignature());
+
+    assertEquals("1.49.32.0/19", new Cidr4(19999900, 20001000, true)
+        .getLowestContainingCidr(32).getCidrSignature());
+
+    assertEquals("1.49.0.0/18", new Cidr4(19999900, 20001000, true)
+        .getLowestContainingCidr(18).getCidrSignature());
+
   }
 
   @Test
@@ -213,32 +264,142 @@ public class TestCidr4 {
 
   @Test
   public void testGetAllAddresses() {
-    // TODO
+    assertArrayEquals(new String[] {}, new Cidr4("128.0.0.4/31").getAllAddresses(false));
+    assertArrayEquals(new String[] {"128.0.0.4", "128.0.0.5"},
+        new Cidr4("128.0.0.4/31").getAllAddresses(true));
+
+    assertArrayEquals(new String[] {"128.0.0.5", "128.0.0.6"},
+        new Cidr4("128.0.0.4/30").getAllAddresses(false));
+    assertArrayEquals(new String[] {"128.0.0.4", "128.0.0.5", "128.0.0.6", "128.0.0.7"},
+        new Cidr4("128.0.0.4/30").getAllAddresses(true));
   }
 
   @Test
   public void testGetAllIps() {
-    // TODO
+    assertArrayEquals(new Ip4[] {}, new Cidr4("128.0.0.4/31").getAllIps(false));
+    assertArrayEquals(new Ip4[] {new Ip4("128.0.0.4"), new Ip4("128.0.0.5")},
+        new Cidr4("128.0.0.4/31").getAllIps(true));
+
+    assertArrayEquals(new Ip4[] {new Ip4("128.0.0.5"), new Ip4("128.0.0.6")},
+        new Cidr4("128.0.0.4/30").getAllIps(false));
+    assertArrayEquals(new Ip4[] {
+        new Ip4("128.0.0.4"),
+        new Ip4("128.0.0.5"),
+        new Ip4("128.0.0.6"),
+        new Ip4("128.0.0.7")},
+        new Cidr4("128.0.0.4/30").getAllIps(true));
   }
 
   @Test
   public void testIsInRangeString() {
-    // TODO
+    final Cidr4 cidr_4_31 = new Cidr4("128.0.0.4/31");
+
+    assertFalse(cidr_4_31.isInRange("128.0.0.3", false));
+    assertFalse(cidr_4_31.isInRange("128.0.0.4", false));
+    assertFalse(cidr_4_31.isInRange("128.0.0.5", false));
+    assertFalse(cidr_4_31.isInRange("128.0.0.6", false));
+
+    assertFalse(cidr_4_31.isInRange("128.0.0.3", true));
+    assertTrue(cidr_4_31.isInRange("128.0.0.4", true));
+    assertTrue(cidr_4_31.isInRange("128.0.0.5", true));
+    assertFalse(cidr_4_31.isInRange("128.0.0.6", true));
+
+    final Cidr4 cidr_4_30 = new Cidr4("128.0.0.4/30");
+
+    assertFalse(cidr_4_30.isInRange("128.0.0.3", false));
+    assertFalse(cidr_4_30.isInRange("128.0.0.4", false));
+    assertTrue(cidr_4_30.isInRange("128.0.0.5", false));
+    assertTrue(cidr_4_30.isInRange("128.0.0.6", false));
+    assertFalse(cidr_4_30.isInRange("128.0.0.7", false));
+    assertFalse(cidr_4_30.isInRange("128.0.0.8", false));
+
+    assertFalse(cidr_4_30.isInRange("128.0.0.3", true));
+    assertTrue(cidr_4_30.isInRange("128.0.0.4", true));
+    assertTrue(cidr_4_30.isInRange("128.0.0.5", true));
+    assertTrue(cidr_4_30.isInRange("128.0.0.6", true));
+    assertTrue(cidr_4_30.isInRange("128.0.0.7", true));
+    assertFalse(cidr_4_30.isInRange("128.0.0.8", true));
   }
 
   @Test
   public void testIsInRangeIp() {
-    // TODO
-  }
+    final Cidr4 cidr_4_31 = new Cidr4("128.0.0.4/31");
 
-  @Test
-  public void testIsInRangeInt() {
-    // TODO
+    assertFalse(cidr_4_31.isInRange(new Ip4("128.0.0.3"), false));
+    assertFalse(cidr_4_31.isInRange(new Ip4("128.0.0.4"), false));
+    assertFalse(cidr_4_31.isInRange(new Ip4("128.0.0.5"), false));
+    assertFalse(cidr_4_31.isInRange(new Ip4("128.0.0.6"), false));
+
+    assertFalse(cidr_4_31.isInRange(new Ip4("128.0.0.3"), true));
+    assertTrue(cidr_4_31.isInRange(new Ip4("128.0.0.4"), true));
+    assertTrue(cidr_4_31.isInRange(new Ip4("128.0.0.5"), true));
+    assertFalse(cidr_4_31.isInRange(new Ip4("128.0.0.6"), true));
+
+    final Cidr4 cidr_4_30 = new Cidr4("128.0.0.4/30");
+
+    assertFalse(cidr_4_30.isInRange(new Ip4("128.0.0.3"), false));
+    assertFalse(cidr_4_30.isInRange(new Ip4("128.0.0.4"), false));
+    assertTrue(cidr_4_30.isInRange(new Ip4("128.0.0.5"), false));
+    assertTrue(cidr_4_30.isInRange(new Ip4("128.0.0.6"), false));
+    assertFalse(cidr_4_30.isInRange(new Ip4("128.0.0.7"), false));
+    assertFalse(cidr_4_30.isInRange(new Ip4("128.0.0.8"), false));
+
+    assertFalse(cidr_4_30.isInRange(new Ip4("128.0.0.3"), true));
+    assertTrue(cidr_4_30.isInRange(new Ip4("128.0.0.4"), true));
+    assertTrue(cidr_4_30.isInRange(new Ip4("128.0.0.5"), true));
+    assertTrue(cidr_4_30.isInRange(new Ip4("128.0.0.6"), true));
+    assertTrue(cidr_4_30.isInRange(new Ip4("128.0.0.7"), true));
+    assertFalse(cidr_4_30.isInRange(new Ip4("128.0.0.8"), true));
   }
 
   @Test
   public void testIsInRangeCidr() {
-    // TODO
+    final Cidr4 cidr_4_31 = new Cidr4("128.0.0.4/31");
+
+    assertFalse(cidr_4_31.isInRange(new Cidr4("128.0.0.3", true), false));
+    assertFalse(cidr_4_31.isInRange(new Cidr4("128.0.0.4", true), false));
+    assertFalse(cidr_4_31.isInRange(new Cidr4("128.0.0.5", true), false));
+    assertFalse(cidr_4_31.isInRange(new Cidr4("128.0.0.6", true), false));
+
+    assertFalse(cidr_4_31.isInRange(new Cidr4("128.0.0.3", true), true));
+    assertTrue(cidr_4_31.isInRange(new Cidr4("128.0.0.4", true), true));
+    assertTrue(cidr_4_31.isInRange(new Cidr4("128.0.0.5", true), true));
+    assertFalse(cidr_4_31.isInRange(new Cidr4("128.0.0.6", true), true));
+
+    assertFalse(cidr_4_31.isInRange(cidr_4_31, false));
+    assertTrue(cidr_4_31.isInRange(cidr_4_31, true));
+
+    final Cidr4 cidr_4_30 = new Cidr4("128.0.0.4/30");
+
+    assertFalse(cidr_4_31.isInRange(cidr_4_30, true));
+
+    assertFalse(cidr_4_30.isInRange(new Cidr4("128.0.0.3", true), false));
+    assertFalse(cidr_4_30.isInRange(new Cidr4("128.0.0.4", true), false));
+    assertTrue(cidr_4_30.isInRange(new Cidr4("128.0.0.5", true), false));
+    assertTrue(cidr_4_30.isInRange(new Cidr4("128.0.0.6", true), false));
+    assertFalse(cidr_4_30.isInRange(new Cidr4("128.0.0.7", true), false));
+    assertFalse(cidr_4_30.isInRange(new Cidr4("128.0.0.8", true), false));
+
+    assertFalse(cidr_4_30.isInRange(new Cidr4("128.0.0.3", true), true));
+    assertTrue(cidr_4_30.isInRange(new Cidr4("128.0.0.4", true), true));
+    assertTrue(cidr_4_30.isInRange(new Cidr4("128.0.0.5", true), true));
+    assertTrue(cidr_4_30.isInRange(new Cidr4("128.0.0.6", true), true));
+    assertTrue(cidr_4_30.isInRange(new Cidr4("128.0.0.7", true), true));
+    assertFalse(cidr_4_30.isInRange(new Cidr4("128.0.0.8", true), true));
+
+    assertFalse(cidr_4_30.isInRange(cidr_4_30, false));
+    assertTrue(cidr_4_30.isInRange(cidr_4_30, true));
+
+    assertFalse(cidr_4_30.isInRange(cidr_4_31, false));
+    assertTrue(cidr_4_30.isInRange(cidr_4_31, true));
+
+    final Cidr4 cidr_4_29 = new Cidr4("128.0.0.4/29");
+
+    assertFalse(cidr_4_30.isInRange(cidr_4_29, false));
+    assertFalse(cidr_4_30.isInRange(cidr_4_29, true));
+
+    assertTrue(cidr_4_29.isInRange(cidr_4_31, false));
+    assertTrue(cidr_4_29.isInRange(cidr_4_30, true));
   }
 
   @Test
@@ -253,13 +414,29 @@ public class TestCidr4 {
 
   @Test
   public void testComparability() {
-    // TODO
+    final List<Cidr4> unordered = new ArrayList<>(fromString);
+    unordered.removeAll(Collections.singletonList(new Cidr4(0, -1, true)));
+    unordered.removeAll(Collections.singletonList(new Cidr4("0.0.0.0/1")));
+
+    final List<Cidr4> ordered1 = new ArrayList<>(unordered);
+    Collections.sort(ordered1);
+    for (int i = 0; i < cidrsInOrder.length; ++i) {
+      assertEquals(cidrsInOrder[i], ordered1.get(i).toString());
+    }
+
+    Collections.shuffle(unordered);
+    final Set<Cidr4> ordered2 = new TreeSet<>(unordered);
+    int i = 0;
+    for (final Cidr4 ip : ordered2) {
+      assertEquals(cidrsInOrder[i++], ip.toString());
+    }
   }
 
   @Test
   public void testNotEqual() {
     for (int i = 0; i < cidrs.length; ++i) {
       for (int j = 0; j < cidrs.length; ++j) {
+        // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1
         if (i == j
             || cidrs[i][9].equals("0.0.0.0/0")
             || cidrs[i][9].equals("0.0.0.0/1")) {

@@ -163,4 +163,19 @@ public class TestIps {
     }
   }
 
+  @Test
+  public void testBinaryAndSortable() {
+    // binary = sortable ^ Integer.MIN_VALUE
+    assertEquals(0, Integer.MIN_VALUE ^ Integer.MIN_VALUE);
+    assertEquals(Integer.MAX_VALUE, -1 ^ Integer.MIN_VALUE);
+    assertEquals(Integer.MIN_VALUE, 0 ^ Integer.MIN_VALUE);
+    assertEquals(-1, Integer.MAX_VALUE ^ Integer.MIN_VALUE);
+
+    // binary ^ Integer.MIN_VALUE = sortable
+    assertEquals(0 ^ Integer.MIN_VALUE, Integer.MIN_VALUE);
+    assertEquals(Integer.MAX_VALUE ^ Integer.MIN_VALUE, -1);
+    assertEquals(Integer.MIN_VALUE ^ Integer.MIN_VALUE, 0);
+    assertEquals(-1 ^ Integer.MIN_VALUE, Integer.MAX_VALUE);
+  }
+
 }

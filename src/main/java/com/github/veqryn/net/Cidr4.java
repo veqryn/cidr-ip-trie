@@ -149,11 +149,11 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
   /**
    * Constructor that takes the low and high Ip values of the CIDR range.
    *
-   * @param low Low Ip of CIDR range
-   * @param high High Ip of CIDR range
+   * @param lowIp Low Ip of CIDR range
+   * @param highIp High Ip of CIDR range
    */
-  public Cidr4(final Ip4 low, final Ip4 high) {
-    this(low.getSortableInteger(), high.getSortableInteger(), false);
+  public Cidr4(final Ip4 lowIp, final Ip4 highIp) {
+    this(lowIp.getSortableInteger(), highIp.getSortableInteger(), false);
   }
 
   /**
@@ -162,8 +162,8 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * and 0 = 128.0.0.0
    * and Integer.MAX_VALUE = 255.255.255.255
    *
-   * @param low Low value of CIDR range
-   * @param high High value of CIDR range
+   * @param lowIp Low value of CIDR range
+   * @param highIp High value of CIDR range
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
@@ -174,9 +174,9 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    *        and Integer.MAX_VALUE = 127.255.255.255
    *        and -1 = 255.255.255.255
    */
-  protected Cidr4(final int low, final int high, final boolean binary) {
-    int network = binary ? low : low ^ Integer.MIN_VALUE;
-    final int broadcast = binary ? high : high ^ Integer.MIN_VALUE;
+  protected Cidr4(final int lowIp, final int highIp, final boolean binary) {
+    int network = binary ? lowIp : lowIp ^ Integer.MIN_VALUE;
+    final int broadcast = binary ? highIp : highIp ^ Integer.MIN_VALUE;
     // if low and high do not actually match with the netmask that would contains them
     // we must manually figure out and re-apply the netmask
     // example: 192.168.211.245--192.168.211.247 should become 192.168.211.244--192.168.211.247
@@ -184,7 +184,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
     network = getLowestBinaryWithNetmask(network, netmask);
     this.low = network ^ Integer.MIN_VALUE;
     this.high = getHighestBinaryWithNetmask(network, netmask) ^ Integer.MIN_VALUE;
-    if (low > high) {
+    if (this.low > this.high) {
       throw new IllegalArgumentException("Low IP value must be <= High IP value");
     }
   }
@@ -473,7 +473,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * Check if the parameter <code>address</code> is within
    * the range of our CIDR, inclusive
    *
-   * @param address integer IPv4 value,
+   * @param address sortable integer IPv4 value,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
    *        and Integer.MAX_VALUE = 255.255.255.255

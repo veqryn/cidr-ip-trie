@@ -153,6 +153,23 @@ public class TestUtil {
   };
 
   /**
+   * The cidrs held in the 'cidrs' object array, but in order
+   * (not including 0.0.0.0/0 or 0.0.0.0/1 to avoid duplicates)
+   */
+  protected static final String[] cidrsInOrder = new String[] {
+      "0.0.0.0/8",
+      "0.0.0.0/16",
+      "0.0.0.0/24",
+      "0.0.0.0/30",
+      "0.0.0.0/31",
+      "0.0.0.2/32",
+      "127.0.0.0/8",
+      "127.255.0.0/16",
+      "127.255.255.0/24",
+      "127.255.255.255/32",
+  };
+
+  /**
    * Data set of verified cidr values:
    *
    * <pre>
