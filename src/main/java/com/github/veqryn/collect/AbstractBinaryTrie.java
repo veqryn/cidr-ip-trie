@@ -32,7 +32,6 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
 
   private static final long serialVersionUID = 4494549156276631388L;
 
-  private final int depth = 32;
   private final Node<V> root = new Node<>(null);
 
   protected volatile transient long size = 0;
@@ -45,10 +44,6 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
 
   protected final Node<V> getRoot() {
     return this.root;
-  }
-
-  public final int getDepth() {
-    return this.depth;
   }
 
   protected static final class Node<V> implements Map.Entry<Cidr4, V>, Serializable {
@@ -198,7 +193,7 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
 
   @Override
   public final boolean containsKey(final Object key) {
-    return get((Cidr4) key, 0, depth) != null;
+    return get((Cidr4) key, 0, Integer.MAX_VALUE) != null;
   }
 
   protected final boolean containsKey(final Object key, final int startDepth, final int stopDepth) {
@@ -207,7 +202,7 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
 
   @Override
   public final V get(final Object key) {
-    return get((Cidr4) key, 0, depth);
+    return get((Cidr4) key, 0, Integer.MAX_VALUE);
   }
 
   protected final V get(final Cidr4 key, final int startDepth, final int stopDepth) {
@@ -228,12 +223,18 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
   }
 
   protected final Node<V> getNode(final int key, final int startDepth, final int stopDepth) {
+
+    if (startDepth < 0
+        || stopDepth < 1
+        || startDepth > stopDepth) {
+      throw new IllegalArgumentException("startDepth (" + startDepth + ") must be >= zero, "
+          + "and <= to stopDepth (" + stopDepth + "), which must be >= 1");
+    }
     // Do not branch, even if startDepth < stopDepth, because we are looking up a single IP
     // and getting every CIDR range that contains that IP
     // We are not looking up every value contained by a CIDR (for that iterate through a subMap)
-    final int min = Math.min(1, startDepth);
-    final int max = Math.min(depth, stopDepth);
-    final byte[] bits = Ips.getBits(key, 0, max);
+    final byte[] bits = Ips.getBits(key, 0, Math.min(32, stopDepth));
+    // TODO: remove hardcoded max 32, and use some other way to determine this appropriately
     Node<V> subTree = root;
     int i = 0;
     while (true) {
@@ -243,10 +244,10 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
         return null;
       }
       ++i;
-      if (current.value != null && (i >= min && i <= max)) {
+      if (current.value != null && (i >= startDepth && i <= stopDepth)) {
         return current;
       }
-      if (i >= max) {
+      if (i >= stopDepth) {
         return null;
       }
       subTree = current;
@@ -254,7 +255,7 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
   }
 
   public final Set<V> suffixValues(final Cidr4 key) {
-    return suffixValues(key, 0, depth);
+    return suffixValues(key, 0, Integer.MAX_VALUE);
   }
 
   protected final Set<V> suffixValues(final Cidr4 key, final int startDepth, final int stopDepth) {
@@ -269,9 +270,8 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
     // and getting every CIDR range that contains that IP
     // We are not looking up every value contained by a CIDR (for that iterate through a subMap)
     final Set<V> values = new LinkedHashSet<>();
-    final int min = Math.min(1, startDepth);
-    final int max = Math.min(depth, stopDepth);
-    final byte[] bits = Ips.getBits(key, 0, max);
+    final byte[] bits = Ips.getBits(key, 0, Math.min(32, stopDepth));
+    // TODO: remove hardcoded max 32, and use some other way to determine this appropriately
     Node<V> subTree = root;
     int i = 0;
     while (true) {
@@ -281,10 +281,10 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
         return values;
       }
       ++i;
-      if (current.value != null && (i >= min && i <= max)) {
+      if (current.value != null && (i >= startDepth && i <= stopDepth)) {
         values.add(current.value);
       }
-      if (i == max) {
+      if (i == stopDepth) {
         return values;
       }
       subTree = current;
@@ -304,14 +304,14 @@ public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
       throw new IllegalArgumentException(
           this.getClass().getName() + " does not accept null values");
     }
-    final int max = Math.min(depth, stopDepth);
-    final byte[] bits = Ips.getBits(key, 0, max);
+    final byte[] bits = Ips.getBits(key, 0, Math.min(32, stopDepth));
+    // TODO: remove hardcoded max 32, and use some other way to determine this appropriately
     Node<V> subTree = root;
     int i = 0;
     while (true) {
       final byte bit = bits[i];
       final Node<V> current = subTree.getOrCreateChild(bit);
-      if (++i == max) {
+      if (++i == stopDepth) {
         this.dirty = true;
         ++this.modCount;
         return current.setValue(value);
