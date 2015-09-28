@@ -25,6 +25,8 @@ import org.junit.Test;
 
 /**
  * Tests for the Ip4 class
+ *
+ * @author Mark Christopher Duncan
  */
 public class TestIp4 {
   private static List<Ip4> fromString;

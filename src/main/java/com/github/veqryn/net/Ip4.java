@@ -18,6 +18,8 @@ import java.net.UnknownHostException;
  * Light weight immutable IPv4 type,
  * which implements hashCode, equals, Comparable, and Serializable.
  * Some methods and method signatures influenced by org.apache.commons.net.util.SubnetUtils
+ *
+ * @author Mark Christopher Duncan
  */
 public final class Ip4 implements Comparable<Ip4>, Serializable {
 

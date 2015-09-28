@@ -14,6 +14,8 @@ import java.io.Serializable;
 
 /**
  * Data and utility methods for tests.
+ *
+ * @author Mark Christopher Duncan
  */
 public class TestUtil {
 

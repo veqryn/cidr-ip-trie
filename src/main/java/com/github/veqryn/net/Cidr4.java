@@ -26,6 +26,8 @@ import java.util.regex.Matcher;
 /**
  * Light weight immutable CIDR IPv4 type, which implements hashCode, equals, and Comparable.
  * Some methods and method signatures influenced by org.apache.commons.net.util.SubnetUtils
+ *
+ * @author Mark Christopher Duncan
  */
 public final class Cidr4 implements Comparable<Cidr4>, Serializable {
 

@@ -13,6 +13,8 @@ import org.junit.Test;
 
 /**
  * Tests for the Cidrs utility class
+ *
+ * @author Mark Christopher Duncan
  */
 public class TestCidrs {
 

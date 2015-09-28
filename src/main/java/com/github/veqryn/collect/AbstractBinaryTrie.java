@@ -18,7 +18,13 @@ import java.util.Set;
 import com.github.veqryn.net.Cidr4;
 import com.github.veqryn.net.Ips;
 
-
+/**
+ * AbstractBinaryTrie class
+ *
+ * @author Mark Christopher Duncan
+ *
+ * @param <V>
+ */
 public class AbstractBinaryTrie<V> extends AbstractMap<Cidr4, V>
     implements Map<Cidr4, V>, Serializable {
   // TODO: maybe implement NavigableMap
