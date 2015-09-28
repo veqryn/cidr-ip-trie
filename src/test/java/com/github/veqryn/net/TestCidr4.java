@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -417,8 +418,10 @@ public class TestCidr4 {
   @Test
   public void testComparability() {
     final List<Cidr4> unordered = new ArrayList<>(fromString);
+    // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
     unordered.removeAll(Collections.singletonList(new Cidr4(0, -1, true)));
     unordered.removeAll(Collections.singletonList(new Cidr4("0.0.0.0/1")));
+    unordered.removeAll(Collections.singletonList(new Cidr4("128.0.0.0/1")));
 
     final List<Cidr4> ordered1 = new ArrayList<>(unordered);
     Collections.sort(ordered1);
@@ -435,13 +438,46 @@ public class TestCidr4 {
   }
 
   @Test
+  public void testNavigableSet() {
+
+    final NavigableSet<Cidr4> nav = new TreeSet<>();
+    for (int i = cidrs.length - 1; i >= 0; --i) {
+      nav.add(new Cidr4((String) cidrs[i][0]));
+    }
+
+    final Cidr4 end = new Cidr4("128.0.0.4/32");
+
+    assertArrayEquals(new Cidr4[] {new Cidr4("128.0.0.4/32")},
+        nav.subSet(end.getLowestContainingCidr(32), true, end, true).toArray());
+
+    assertArrayEquals(new Cidr4[] {new Cidr4("128.0.0.4/31"), new Cidr4("128.0.0.4/32")},
+        nav.subSet(end.getLowestContainingCidr(31), true, end, true).toArray());
+
+    assertArrayEquals(new Cidr4[] {
+        new Cidr4("128.0.0.4/30"), new Cidr4("128.0.0.4/31"), new Cidr4("128.0.0.4/32")},
+        nav.subSet(end.getLowestContainingCidr(30), true, end, true).toArray());
+
+    assertArrayEquals(new Cidr4[] {
+        new Cidr4("128.0.0.0/29"), new Cidr4("128.0.0.0/32"), new Cidr4("128.0.0.3/32"),
+        new Cidr4("128.0.0.4/30"), new Cidr4("128.0.0.4/31"), new Cidr4("128.0.0.4/32")},
+        nav.subSet(end.getLowestContainingCidr(29), true, end, true).toArray());
+
+    assertArrayEquals(new Cidr4[] {
+        new Cidr4("128.0.0.0/16"), new Cidr4("128.0.0.0/24"), new Cidr4("128.0.0.0/28"),
+        new Cidr4("128.0.0.0/29"), new Cidr4("128.0.0.0/32"), new Cidr4("128.0.0.3/32"),
+        new Cidr4("128.0.0.4/30"), new Cidr4("128.0.0.4/31"), new Cidr4("128.0.0.4/32")},
+        nav.subSet(end.getLowestContainingCidr(16), true, end, true).toArray());
+  }
+
+  @Test
   public void testNotEqual() {
     for (int i = 0; i < cidrs.length; ++i) {
       for (int j = 0; j < cidrs.length; ++j) {
-        // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1
+        // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
         if (i == j
             || cidrs[i][9].equals("0.0.0.0/0")
-            || cidrs[i][9].equals("0.0.0.0/1")) {
+            || cidrs[i][9].equals("0.0.0.0/1")
+            || cidrs[i][9].equals("128.0.0.0/1")) {
           continue;
         }
         // equals

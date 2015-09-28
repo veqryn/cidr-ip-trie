@@ -156,7 +156,7 @@ public class TestUtil {
 
   /**
    * The cidrs held in the 'cidrs' object array, but in order
-   * (not including 0.0.0.0/0 or 0.0.0.0/1 to avoid duplicates)
+   * (not including 0.0.0.0/0 or 0.0.0.0/1 or 128.0.0.0/1 to avoid duplicates)
    */
   protected static final String[] cidrsInOrder = new String[] {
       "0.0.0.0/8",
@@ -169,6 +169,21 @@ public class TestUtil {
       "127.255.0.0/16",
       "127.255.255.0/24",
       "127.255.255.255/32",
+      "128.0.0.0/8",
+      "128.0.0.0/16",
+      "128.0.0.0/24",
+      "128.0.0.0/28",
+      "128.0.0.0/29",
+      "128.0.0.0/32",
+      "128.0.0.3/32",
+      "128.0.0.4/30",
+      "128.0.0.4/31",
+      "128.0.0.4/32",
+      "128.0.0.5/32",
+      "255.0.0.0/8",
+      "255.255.0.0/16",
+      "255.255.255.0/24",
+      "255.255.255.255/32",
   };
 
   /**
@@ -306,17 +321,145 @@ public class TestUtil {
       },
 
 
-      // {"128.0.0.0", new int[] {128, 0, 0, 0}, Integer.MIN_VALUE, ,0, ,
-      // },
-      //
-      // {"255.255.255.255", new int[] {255, 255, 255, 255}, -1, , Integer.MAX_VALUE, ,
-      // },
-      //
-      // {"192.168.0.1", new int[] {192, 168, 0, 1}, -1062731775, ,1084751873, ,
-      // },
-      //
-      // {"211.113.251.89", new int[] {211, 113, 251, 89}, -747504807, ,1399978841, ,
-      // },
+      {"128.0.0.0/32", "128.0.0.0", "128.0.0.0", 32,
+          new int[] {128, 0, 0, 0, 32},
+          Integer.MIN_VALUE, Integer.MIN_VALUE, 0, 0,
+          // output
+          "128.0.0.0/32", "128.0.0.0", "128.0.0.0", 32,
+          Integer.MIN_VALUE, Integer.MIN_VALUE, 0, 0, 1L,
+      },
+
+      {"128.0.0.0/24", "128.0.0.0", "128.0.0.255", 24,
+          new int[] {128, 0, 0, 0, 24},
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 255, 0, 255,
+          // output
+          "128.0.0.0/24", "128.0.0.0", "128.0.0.255", 24,
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 255, 0, 255, 256L,
+      },
+
+      {"128.0.0.0/16", "128.0.0.0", "128.0.255.255", 16,
+          new int[] {128, 0, 0, 0, 16},
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 65535, 0, 65535,
+          // output
+          "128.0.0.0/16", "128.0.0.0", "128.0.255.255", 16,
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 65535, 0, 65535, 65536L,
+      },
+
+      {"128.0.0.0/8", "128.0.0.0", "128.255.255.255", 8,
+          new int[] {128, 0, 0, 0, 8},
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 16777215, 0, 16777215,
+          // output
+          "128.0.0.0/8", "128.0.0.0", "128.255.255.255", 8,
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 16777215, 0, 16777215, 16777216L,
+      },
+
+      {"128.0.0.0/1", "128.0.0.0", "255.255.255.255", 1,
+          new int[] {128, 0, 0, 0, 1},
+          Integer.MIN_VALUE, -1, 0, Integer.MAX_VALUE,
+          // output
+          "128.0.0.0/1", "128.0.0.0", "255.255.255.255", 1,
+          Integer.MIN_VALUE, -1, 0, Integer.MAX_VALUE, 2147483648L,
+      },
+
+
+      {"255.255.255.255/32", "255.255.255.255", "255.255.255.255", 32,
+          new int[] {255, 255, 255, 255, 32},
+          -1, -1, Integer.MAX_VALUE, Integer.MAX_VALUE,
+          // output
+          "255.255.255.255/32", "255.255.255.255", "255.255.255.255", 32,
+          -1, -1, Integer.MAX_VALUE, Integer.MAX_VALUE, 1L,
+      },
+
+      {"255.255.255.255/24", "255.255.255.255", "255.255.255.255", 24,
+          new int[] {255, 255, 255, 255, 24},
+          -1 - 255, -1, Integer.MAX_VALUE - 255, Integer.MAX_VALUE,
+          // output
+          "255.255.255.0/24", "255.255.255.0", "255.255.255.255", 24,
+          -1 - 255, -1, Integer.MAX_VALUE - 255, Integer.MAX_VALUE, 256L,
+      },
+
+      {"255.255.255.255/16", "255.255.255.255", "255.255.255.255", 16,
+          new int[] {255, 255, 255, 255, 16},
+          -1 - 65535, -1, Integer.MAX_VALUE - 65535, Integer.MAX_VALUE,
+          // output
+          "255.255.0.0/16", "255.255.0.0", "255.255.255.255", 16,
+          -1 - 65535, -1, Integer.MAX_VALUE - 65535, Integer.MAX_VALUE, 65536L,
+      },
+
+      {"255.255.255.255/8", "255.255.255.255", "255.255.255.255", 8,
+          new int[] {255, 255, 255, 255, 8},
+          -1 - 16777215, -1, Integer.MAX_VALUE - 16777215, Integer.MAX_VALUE,
+          // output
+          "255.0.0.0/8", "255.0.0.0", "255.255.255.255", 8,
+          -1 - 16777215, -1, Integer.MAX_VALUE - 16777215, Integer.MAX_VALUE, 16777216L,
+      },
+
+      {"255.255.255.255/1", "255.255.255.255", "255.255.255.255", 1,
+          new int[] {255, 255, 255, 255, 1},
+          Integer.MIN_VALUE, -1, 0, Integer.MAX_VALUE,
+          // output
+          "128.0.0.0/1", "128.0.0.0", "255.255.255.255", 1,
+          Integer.MIN_VALUE, -1, 0, Integer.MAX_VALUE, 2147483648L,
+      },
+
+
+      {"128.0.0.4/32", "128.0.0.4", "128.0.0.4", 32,
+          new int[] {128, 0, 0, 4, 32},
+          Integer.MIN_VALUE + 4, Integer.MIN_VALUE + 4, 4, 4,
+          // output
+          "128.0.0.4/32", "128.0.0.4", "128.0.0.4", 32,
+          Integer.MIN_VALUE + 4, Integer.MIN_VALUE + 4, 4, 4, 1L,
+      },
+
+      {"128.0.0.5/31", "128.0.0.5", "128.0.0.4", 31,
+          new int[] {128, 0, 0, 5, 31},
+          Integer.MIN_VALUE + 4, Integer.MIN_VALUE + 5, 4, 5,
+          // output
+          "128.0.0.4/31", "128.0.0.4", "128.0.0.5", 31,
+          Integer.MIN_VALUE + 4, Integer.MIN_VALUE + 5, 4, 5, 2L,
+      },
+
+      {"128.0.0.5/30", "128.0.0.5", "128.0.0.6", 30,
+          new int[] {128, 0, 0, 7, 30},
+          Integer.MIN_VALUE + 5, Integer.MIN_VALUE + 6, 5, 6,
+          // output
+          "128.0.0.4/30", "128.0.0.4", "128.0.0.7", 30,
+          Integer.MIN_VALUE + 4, Integer.MIN_VALUE + 7, 4, 7, 4L,
+      },
+
+      {"128.0.0.4/29", "128.0.0.4", "128.0.0.5", 29,
+          new int[] {128, 0, 0, 4, 29},
+          Integer.MIN_VALUE + 3, Integer.MIN_VALUE + 4, 3, 4,
+          // output
+          "128.0.0.0/29", "128.0.0.0", "128.0.0.7", 29,
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 7, 0, 7, 8L,
+      },
+
+      {"128.0.0.4/28", "128.0.0.4", "128.0.0.4", 28,
+          new int[] {128, 0, 0, 4, 28},
+          Integer.MIN_VALUE + 7, Integer.MIN_VALUE + 8, 7, 8,
+          // output
+          "128.0.0.0/28", "128.0.0.0", "128.0.0.15", 28,
+          Integer.MIN_VALUE, Integer.MIN_VALUE + 15, 0, 15, 16L,
+      },
+
+
+      {"128.0.0.3/32", "128.0.0.3", "128.0.0.3", 32,
+          new int[] {128, 0, 0, 3, 32},
+          Integer.MIN_VALUE + 3, Integer.MIN_VALUE + 3, 3, 3,
+          // output
+          "128.0.0.3/32", "128.0.0.3", "128.0.0.3", 32,
+          Integer.MIN_VALUE + 3, Integer.MIN_VALUE + 3, 3, 3, 1L,
+      },
+
+
+      {"128.0.0.5/32", "128.0.0.5", "128.0.0.5", 32,
+          new int[] {128, 0, 0, 5, 32},
+          Integer.MIN_VALUE + 5, Integer.MIN_VALUE + 5, 5, 5,
+          // output
+          "128.0.0.5/32", "128.0.0.5", "128.0.0.5", 32,
+          Integer.MIN_VALUE + 5, Integer.MIN_VALUE + 5, 5, 5, 1L,
+      },
 
   };
 
