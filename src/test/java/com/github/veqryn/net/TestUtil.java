@@ -153,6 +153,155 @@ public class TestUtil {
   };
 
   /**
+   * Data set of verified cidr values:
+   *
+   * <pre>
+   * Input values (for creating a new cidr)
+   * index -- value
+   * 0 -- String Cidr
+   * 1 -- String low ip
+   * 2 -- String high ip
+   * 3 -- netmask bit count int
+   * 4 -- octets, maskbits int array
+   * 5 -- low binary int
+   * 6 -- high binary int
+   * 7 -- low sortable int
+   * 8 -- high sortable int
+   * Output values (what the cidr should look like)
+   * 9 -- String Cidr
+   * 10 -- String low ip
+   * 11 -- String high ip
+   * 12 -- netmask bit count int
+   * 13 -- low binary int
+   * 14 -- high binary int
+   * 15 -- low sortable int
+   * 16 -- high sortable int
+   * 17 -- address count long
+   * </pre>
+   */
+  protected static final Object[][] cidrs = new Object[][] {
+
+      {"0.0.0.0/1", "0.0.0.0", "127.255.255.255", 1,
+          new int[] {0, 0, 0, 0, 1},
+          0, Integer.MAX_VALUE, Integer.MIN_VALUE, -1,
+          // output
+          "0.0.0.0/1", "0.0.0.0", "127.255.255.255", 1,
+          0, Integer.MAX_VALUE, Integer.MIN_VALUE, -1, 2147483648L,
+      },
+
+      {"0.0.0.1/1", "0.0.0.1", "127.0.0.0", 1,
+          new int[] {0, 0, 0, 1, 1},
+          1, Integer.MAX_VALUE, Integer.MIN_VALUE + 1, -1,
+          // output
+          "0.0.0.0/1", "0.0.0.0", "127.255.255.255", 1,
+          0, Integer.MAX_VALUE, Integer.MIN_VALUE, -1, 2147483648L,
+      },
+
+      {"0.0.0.1/31", "0.0.0.1", "0.0.0.1", 31,
+          new int[] {0, 0, 0, 1, 31},
+          0, 1, Integer.MIN_VALUE, Integer.MIN_VALUE + 1,
+          // output
+          "0.0.0.0/31", "0.0.0.0", "0.0.0.1", 31,
+          0, 1, Integer.MIN_VALUE, Integer.MIN_VALUE + 1, 2L,
+      },
+
+      {"0.0.0.2/30", "0.0.0.2", "0.0.0.2", 30,
+          new int[] {0, 0, 0, 2, 30},
+          1, 2, Integer.MIN_VALUE + 1, Integer.MIN_VALUE + 2,
+          // output
+          "0.0.0.0/30", "0.0.0.0", "0.0.0.3", 30,
+          0, 3, Integer.MIN_VALUE, Integer.MIN_VALUE + 3, 4L,
+      },
+
+      {"0.0.0.2/32", "0.0.0.2", "0.0.0.2", 32,
+          new int[] {0, 0, 0, 2, 32},
+          2, 2, Integer.MIN_VALUE + 2, Integer.MIN_VALUE + 2,
+          // output
+          "0.0.0.2/32", "0.0.0.2", "0.0.0.2", 32,
+          2, 2, Integer.MIN_VALUE + 2, Integer.MIN_VALUE + 2, 1L,
+      },
+
+      {"0.0.0.128/24", "0.0.0.128", "0.0.0.250", 24,
+          new int[] {0, 0, 0, 128, 24},
+          127, 128, Integer.MIN_VALUE + 127, Integer.MIN_VALUE + 128,
+          // output
+          "0.0.0.0/24", "0.0.0.0", "0.0.0.255", 24,
+          0, 255, Integer.MIN_VALUE, Integer.MIN_VALUE + 255, 256L,
+      },
+
+      {"0.0.127.1/16", "0.0.127.1", "0.0.250.250", 16,
+          new int[] {0, 0, 127, 1, 16},
+          256, 35535, Integer.MIN_VALUE + 256, Integer.MIN_VALUE + 35535,
+          // output
+          "0.0.0.0/16", "0.0.0.0", "0.0.255.255", 16,
+          0, 65535, Integer.MIN_VALUE, Integer.MIN_VALUE + 65535, 65536L,
+      },
+
+      {"0.250.250.250/8", "0.250.250.250", "0.254.254.254", 8,
+          new int[] {0, 250, 250, 250, 8},
+          65535, 10777215, Integer.MIN_VALUE + 65535, Integer.MIN_VALUE + 10777215,
+          // output
+          "0.0.0.0/8", "0.0.0.0", "0.255.255.255", 8,
+          0, 16777215, Integer.MIN_VALUE, Integer.MIN_VALUE + 16777215, 16777216L,
+      },
+
+
+      {"127.255.255.255/32", "127.255.255.255", "127.255.255.255", 32,
+          new int[] {127, 255, 255, 255, 32},
+          Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1,
+          // output
+          "127.255.255.255/32", "127.255.255.255", "127.255.255.255", 32,
+          Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1, 1L,
+      },
+
+      {"127.255.255.255/24", "127.255.255.0", "127.255.255.255", 24,
+          new int[] {127, 255, 255, 255, 24},
+          Integer.MAX_VALUE - 128, Integer.MAX_VALUE - 127, -129, -128,
+          // output
+          "127.255.255.0/24", "127.255.255.0", "127.255.255.255", 24,
+          Integer.MAX_VALUE - 255, Integer.MAX_VALUE, -256, -1, 256L,
+      },
+
+      {"127.255.255.255/16", "127.255.0.0", "127.255.255.255", 16,
+          new int[] {127, 255, 255, 255, 16},
+          Integer.MAX_VALUE - 35535, Integer.MAX_VALUE - 300, -35536, -300,
+          // output
+          "127.255.0.0/16", "127.255.0.0", "127.255.255.255", 16,
+          Integer.MAX_VALUE - 65535, Integer.MAX_VALUE, -65536, -1, 65536L,
+      },
+
+      {"127.255.255.255/8", "127.0.0.0", "127.255.255.255", 8,
+          new int[] {127, 255, 255, 255, 8},
+          Integer.MAX_VALUE - 10777215, Integer.MAX_VALUE - 65539, -10777215, -65539,
+          // output
+          "127.0.0.0/8", "127.0.0.0", "127.255.255.255", 8,
+          Integer.MAX_VALUE - 16777215, Integer.MAX_VALUE, -16777216, -1, 16777216L,
+      },
+
+      {"127.255.255.255/1", "0.0.0.0", "127.255.255.255", 1,
+          new int[] {127, 255, 255, 255, 1},
+          0, Integer.MAX_VALUE, Integer.MIN_VALUE, -1,
+          // output
+          "0.0.0.0/1", "0.0.0.0", "127.255.255.255", 1,
+          0, Integer.MAX_VALUE, Integer.MIN_VALUE, -1, 2147483648L,
+      },
+
+
+      // {"128.0.0.0", new int[] {128, 0, 0, 0}, Integer.MIN_VALUE, ,0, ,
+      // },
+      //
+      // {"255.255.255.255", new int[] {255, 255, 255, 255}, -1, , Integer.MAX_VALUE, ,
+      // },
+      //
+      // {"192.168.0.1", new int[] {192, 168, 0, 1}, -1062731775, ,1084751873, ,
+      // },
+      //
+      // {"211.113.251.89", new int[] {211, 113, 251, 89}, -747504807, ,1399978841, ,
+      // },
+
+  };
+
+  /**
    * Turn any serializable object into a byte array
    *
    * @param obj

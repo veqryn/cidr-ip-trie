@@ -212,6 +212,16 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
 
 
   /**
+   * @return String with the high to low addresses, e.g. [192.168.0.0--192.168.0.255]
+   */
+  public final String getAddressRange() {
+    final StringBuilder buf = new StringBuilder();
+    buf.append('[').append(getLowAddress(true)).append("--")
+        .append(getHighAddress(true)).append(']');
+    return buf.toString();
+  }
+
+  /**
    * @param hostCountInclusive whether to include the network and broadcast addresses
    * @return the Lowest IP address in dotted format, may be "0.0.0.0" if there is no valid address
    */
@@ -266,7 +276,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
   /**
    * @param hostCountInclusive whether to include the network and broadcast addresses
    * @return a Cidr equal to the lowest IP value in the CIDR range,
-   *         may be "0.0.0.0" if there is no valid address
+   *         may be "0.0.0.0/32" if there is no valid address
    */
   public final Cidr4 getLowCidr(final boolean hostCountInclusive) {
     final int lowest = getLowSortableInteger(hostCountInclusive);
@@ -338,7 +348,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
   /**
    * @param hostCountInclusive whether to include the network and broadcast addresses
    * @return a Cidr equal to the highest IP value in the CIDR range,
-   *         may be "0.0.0.0" if there is no valid address
+   *         may be "0.0.0.0/32" if there is no valid address
    */
   public final Cidr4 getHighCidr(final boolean hostCountInclusive) {
     final int highest = getHighSortableInteger(hostCountInclusive);
@@ -351,7 +361,9 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @return binary integer netmask
    */
   public final int getBinaryNetmask() {
-    return getDifferenceNetmask(low, high);
+    // Low and High are already the lowest and highest allowed by our netmask
+    // So the quick version of the function is OK to use, instead of Cidrs.getDifferenceNetmask()
+    return ~(low ^ high);
   }
 
   /**
@@ -385,8 +397,10 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param hostCountInclusive whether to include the network and broadcast addresses
    * @return the number of addresses in this range. could be zero if hostCountInclusive is false
    */
-  public final int getAddressCount(final boolean hostCountInclusive) {
-    return Math.max(0, high - low + (hostCountInclusive ? 1 : -1));
+  public final long getAddressCount(final boolean hostCountInclusive) {
+    return Math.max(0,
+        Ips.integerToUnsignedLong(high, false) - Ips.integerToUnsignedLong(low, false)
+            + (hostCountInclusive ? 1 : -1));
   }
 
   /**
@@ -394,10 +408,11 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    *
    * @param hostCountInclusive whether to include the network and broadcast addresses
    * @return an array of all IP addresses in this Cidr range in dot-delimited IPv4 format,
-   *         could be empty if hostCountInclusive is false
+   *         could be empty if hostCountInclusive is false,
+   *         or if the number of addresses exceeds Integer.MAX_VALUE
    */
   public final String[] getAllAddresses(final boolean hostCountInclusive) {
-    final int count = getAddressCount(hostCountInclusive);
+    final int count = Math.max(0, (int) getAddressCount(hostCountInclusive));
     final String[] addresses = new String[count];
     if (count == 0) {
       return addresses;
@@ -414,10 +429,11 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    *
    * @param hostCountInclusive whether to include the network and broadcast addresses
    * @return a Ip array of all IP addresses in this Cidr range,
-   *         could be empty if hostCountInclusive is false
+   *         could be empty if hostCountInclusive is false,
+   *         or if the number of addresses exceeds Integer.MAX_VALUE
    */
   public final Ip4[] getAllIps(final boolean hostCountInclusive) {
-    final int count = getAddressCount(hostCountInclusive);
+    final int count = Math.max(0, (int) getAddressCount(hostCountInclusive));
     final Ip4[] addresses = new Ip4[count];
     if (count == 0) {
       return addresses;
@@ -533,10 +549,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
 
   @Override
   public final String toString() {
-    final StringBuilder buf = new StringBuilder();
-    buf.append('[').append(getLowAddress(true)).append("--")
-        .append(getHighAddress(true)).append(']');
-    return buf.toString();
+    return this.getCidrSignature();
   }
 
 }
