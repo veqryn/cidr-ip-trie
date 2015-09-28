@@ -22,7 +22,7 @@ public class TestUtil {
   /**
    * The ips held in the 'ips' object array, but in order
    */
-  protected static final String[] ipsInOrder = new String[] {
+  public static final String[] ipsInOrder = new String[] {
       "0.0.0.0",
       "0.0.0.1",
       "127.255.255.255",
@@ -49,7 +49,7 @@ public class TestUtil {
    * 9 -- binary bit byte array
    * </pre>
    */
-  protected static final Object[][] ips = new Object[][] {
+  public static final Object[][] ips = new Object[][] {
 
       {"0.0.0.0", new int[] {0, 0, 0, 0}, 0, Integer.MIN_VALUE, 0L,
           0, 0, 0, 0,
@@ -119,7 +119,7 @@ public class TestUtil {
    * 2 -- dotted decimal String
    * </pre>
    */
-  protected static final Object[][] netmasks = new Object[][] {
+  public static final Object[][] netmasks = new Object[][] {
       {1, -2147483648, "128.0.0.0"},
       {2, -1073741824, "192.0.0.0"},
       {3, -536870912, "224.0.0.0"},
@@ -158,7 +158,7 @@ public class TestUtil {
    * The cidrs held in the 'cidrs' object array, but in order
    * (not including 0.0.0.0/0 or 0.0.0.0/1 or 128.0.0.0/1 to avoid duplicates)
    */
-  protected static final String[] cidrsInOrder = new String[] {
+  public static final String[] cidrsInOrder = new String[] {
       "0.0.0.0/8",
       "0.0.0.0/16",
       "0.0.0.0/24",
@@ -213,7 +213,7 @@ public class TestUtil {
    * 17 -- address count long
    * </pre>
    */
-  protected static final Object[][] cidrs = new Object[][] {
+  public static final Object[][] cidrs = new Object[][] {
 
       {"0.0.0.0/1", "0.0.0.0", "127.255.255.255", 1,
           new int[] {0, 0, 0, 0, 1},
@@ -470,7 +470,7 @@ public class TestUtil {
    * @return byte[]
    * @throws IOException
    */
-  protected static final <T extends Serializable> byte[] pickle(final T obj) throws IOException {
+  public static final <T extends Serializable> byte[] pickle(final T obj) throws IOException {
     try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final ObjectOutputStream oos = new ObjectOutputStream(baos);) {
       oos.writeObject(obj);
@@ -481,18 +481,18 @@ public class TestUtil {
   /**
    * Turn a byte array into a serializable object
    *
-   * @param b
-   * @param cl
+   * @param bytes
+   * @param clazz
    * @return T
    * @throws IOException
    * @throws ClassNotFoundException
    */
-  protected static final <T extends Serializable> T unpickle(final byte[] b, final Class<T> cl)
+  public static final <T extends Serializable> T unpickle(final byte[] bytes, final Class<T> clazz)
       throws IOException, ClassNotFoundException {
-    try (final ByteArrayInputStream bais = new ByteArrayInputStream(b);
+    try (final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
         final ObjectInputStream ois = new ObjectInputStream(bais);) {
       final Object o = ois.readObject();
-      return cl.cast(o);
+      return clazz.cast(o);
     }
   }
 
