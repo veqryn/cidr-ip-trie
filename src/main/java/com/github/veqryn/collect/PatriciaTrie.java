@@ -8,20 +8,19 @@ package com.github.veqryn.collect;
 import java.io.Serializable;
 import java.util.Map;
 
-import com.github.veqryn.net.Cidr4;
-
 /**
- * CidrTrie
+ * PatriciaTrie
+ * (Practical Algorithm To Retrieve Information Coded In Alphanumeric)
  *
  * @author Mark Christopher Duncan
  */
-public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V>
-    implements Map<Cidr4, V>, Serializable {
+public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V>
+    implements Map<String, V>, Serializable {
 
-  private static final long serialVersionUID = -8113898642923790939L;
+  private static final long serialVersionUID = -6067883352977753038L;
 
-  public Cidr4Trie() {
-    super(new Cidr4Codec());
+  public PatriciaTrie() {
+    super(new PatriciaCodec());
   }
 
 }
