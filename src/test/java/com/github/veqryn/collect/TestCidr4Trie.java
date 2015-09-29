@@ -23,7 +23,7 @@ import com.github.veqryn.net.TestUtil;
  *
  * @author Mark Christopher Duncan
  */
-public class TestCidrTrie {
+public class TestCidr4Trie {
 
   // TODO: all of these tests will be refactored and simplified,
   // after the AbstractBinaryTree class has itself been refactored.
