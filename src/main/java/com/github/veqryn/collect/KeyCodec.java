@@ -15,28 +15,10 @@ import java.io.Serializable;
 public interface KeyCodec<K> extends Serializable {
 
   /**
-   * @return number of bits in an element
-   *         (Must be >= 1)
-   */
-  public int bitsPerElement();
-
-  /**
-   * @return maximum number of elements
-   *         (maxLength() * bitsPerElement() must be <= Integer.MAX_VALUE)
-   */
-  public int maxLength();
-
-  /**
    * @param key
    * @return number of elements in this key object
    */
   public int length(K key);
-
-  /**
-   * @param key
-   * @return number of bits in this key object
-   */
-  public int bitLength(K key);
 
   /**
    * @param key

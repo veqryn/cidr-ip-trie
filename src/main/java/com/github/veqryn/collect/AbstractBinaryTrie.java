@@ -334,6 +334,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
    */
   protected static <K, V> Node<K, V> successor(final Node<K, V> node,
       final boolean canBeEmpty) {
+    // TODO: convert to loop instead of recursive
 
     if (node == null) {
       return null;
@@ -375,6 +376,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
    */
   protected static <K, V> Node<K, V> predecessor(final Node<K, V> node,
       final boolean canBeEmpty) {
+    // TODO: convert to loop instead of recursive
 
     if (node == null || node.parent == null) {
       return null;

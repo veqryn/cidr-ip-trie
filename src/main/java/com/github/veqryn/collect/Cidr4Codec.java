@@ -17,22 +17,7 @@ public class Cidr4Codec implements KeyCodec<Cidr4> {
   private static final long serialVersionUID = 5349501966718289752L;
 
   @Override
-  public int bitsPerElement() {
-    return 1;
-  }
-
-  @Override
-  public int maxLength() {
-    return 32;
-  }
-
-  @Override
   public int length(final Cidr4 cidr) {
-    return cidr.getMaskBits();
-  }
-
-  @Override
-  public int bitLength(final Cidr4 cidr) {
     return cidr.getMaskBits();
   }
 
