@@ -8,10 +8,12 @@ package com.github.veqryn.collect;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -107,33 +109,6 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
       }
       key = codec.recreateKey(bits, levelsDeep);
       return key;
-    }
-
-    public BitSet shiftRight(final BitSet bits, final int n) {
-      if (n < 0) {
-        throw new IllegalArgumentException("'n' must be >= 0");
-      }
-      if (n >= 64) {
-        throw new IllegalArgumentException("'n' must be < 64");
-      }
-
-      long[] words = bits.toLongArray();
-
-      // Expand array if there will be carry bits
-      if (words[words.length - 1] >>> n > 0) {
-        final long[] tmp = new long[words.length + 1];
-        System.arraycopy(words, 0, tmp, 0, words.length);
-        words = tmp;
-      }
-
-      // Do the shift
-      for (int i = words.length - 1; i > 0; i--) {
-        words[i] <<= n; // Shift current word
-        words[i] |= words[i - 1] >>> (64 - n); // Do the carry
-      }
-      words[0] <<= n; // shift [0] separately, since no carry
-
-      return BitSet.valueOf(words);
     }
 
     /**
@@ -270,6 +245,44 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
       }
       if (i >= stopDepth) {
         return null;
+      }
+    }
+  }
+
+  protected List<V> getAll(final K key) {
+    final List<Node> nodes = getAll(key, true);
+    final List<V> values = new ArrayList<>(nodes.size());
+    for (final Node node : nodes) {
+      values.add(node.value);
+    }
+    return values;
+  }
+
+  protected List<Node> getAll(final K key, final boolean dummy) {
+
+    final List<Node> nodes = new ArrayList<>();
+
+    if (key == null) {
+      return nodes;
+    }
+    // TODO: this assumes our key goes to a leaf...
+
+    // Do not branch, because we are looking up a single record,
+    // not examining every branch that could contain it, or every value contained in a branch
+    Node subNode = root;
+    int i = 0;
+    while (true) {
+      if (codec.isLeft(key, i++)) {
+        subNode = subNode.left;
+      } else {
+        subNode = subNode.right;
+      }
+
+      if (subNode == null) {
+        return nodes;
+      }
+      if (subNode.value != null) {
+        nodes.add(subNode);
       }
     }
   }
