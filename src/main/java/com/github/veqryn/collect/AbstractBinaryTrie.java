@@ -8,6 +8,7 @@ package com.github.veqryn.collect;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -31,7 +32,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
 
   protected final KeyCodec<K> codec;
 
-  protected final Node<K, V> root = new Node<>(null);
+  protected final Node root = new Node(null);
 
   protected transient volatile long size = 0;
   protected transient volatile boolean dirty = false;
@@ -46,29 +47,29 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   }
 
 
-  protected static final class Node<K, V> implements Map.Entry<K, V>, Serializable {
+  protected final class Node implements Map.Entry<K, V>, Serializable {
 
     private static final long serialVersionUID = -534919147906916778L;
 
-    protected K key;
+    protected transient volatile K key = null;
     protected V value = null;
-    protected Node<K, V> left = null;
-    protected Node<K, V> right = null;
-    protected final Node<K, V> parent;
+    protected Node left = null;
+    protected Node right = null;
+    protected final Node parent;
 
-    protected Node(final Node<K, V> parent) {
+    protected Node(final Node parent) {
       this.parent = parent;
     }
 
-    protected Node<K, V> getOrCreateEmpty(final boolean leftNode) {
+    protected Node getOrCreateEmpty(final boolean leftNode) {
       if (leftNode) {
         if (left == null) {
-          left = new Node<>(this);
+          left = new Node(this);
         }
         return left;
       } else {
         if (right == null) {
-          right = new Node<>(this);
+          right = new Node(this);
         }
         return right;
       }
@@ -86,7 +87,53 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
      */
     @Override
     public final K getKey() {
+      if (this.parent == null) {
+        return null;
+      }
+      if (key != null) {
+        return key;
+      }
+      final BitSet bits = new BitSet();
+      int levelsDeep = 0;
+      Node previousParent = this;
+      Node currentParent = this.parent;
+      while (currentParent != null) {
+        if (currentParent.right == previousParent) {
+          bits.set(levelsDeep);
+        }
+        previousParent = currentParent;
+        currentParent = currentParent.parent;
+        levelsDeep++;
+      }
+      key = codec.recreateKey(bits, levelsDeep);
       return key;
+    }
+
+    public BitSet shiftRight(final BitSet bits, final int n) {
+      if (n < 0) {
+        throw new IllegalArgumentException("'n' must be >= 0");
+      }
+      if (n >= 64) {
+        throw new IllegalArgumentException("'n' must be < 64");
+      }
+
+      long[] words = bits.toLongArray();
+
+      // Expand array if there will be carry bits
+      if (words[words.length - 1] >>> n > 0) {
+        final long[] tmp = new long[words.length + 1];
+        System.arraycopy(words, 0, tmp, 0, words.length);
+        words = tmp;
+      }
+
+      // Do the shift
+      for (int i = words.length - 1; i > 0; i--) {
+        words[i] <<= n; // Shift current word
+        words[i] |= words[i - 1] >>> (64 - n); // Do the carry
+      }
+      words[0] <<= n; // shift [0] separately, since no carry
+
+      return BitSet.valueOf(words);
     }
 
     /**
@@ -111,6 +158,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
 
     @Override
     public final int hashCode() {
+      final K key = getKey();
       final int keyHash = (key == null ? 0 : key.hashCode());
       final int valueHash = (value == null ? 0 : value.hashCode());
       return keyHash ^ valueHash;
@@ -122,12 +170,12 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
         return false;
       }
       final Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
-      return eq(key, e.getKey()) && eq(value, e.getValue());
+      return eq(getKey(), e.getKey()) && eq(value, e.getValue());
     }
 
     @Override
     public final String toString() {
-      return key + "=" + value;
+      return getKey() + "=" + value;
     }
 
   }
@@ -139,6 +187,17 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
    */
   protected static final boolean eq(final Object o1, final Object o2) {
     return (o1 == null ? o2 == null : o1.equals(o2));
+  }
+
+  public void clearTransientMemory() {
+    entrySet = null;
+    keySet = null;
+    values = null;
+    // clear keys from Nodes
+    Node subTree = root;
+    while ((subTree = successor(subTree, false)) != null) {
+      subTree.key = null;
+    }
   }
 
 
@@ -161,7 +220,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   public int size() {
     if (this.dirty) {
       long total = 0L;
-      Node<K, V> subTree = root;
+      Node subTree = root;
       while ((subTree = successor(subTree, false)) != null) {
         ++total;
       }
@@ -180,34 +239,21 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   @SuppressWarnings("unchecked")
   @Override
   public V get(final Object key) {
-    final Node<K, V> node = getNode((K) key);
+    final Node node = getNode((K) key);
     return node == null ? null : node.value;
   }
 
-  protected Node<K, V> getNode(final K key) {
-    return getNode(key, 0, Integer.MAX_VALUE);
-  }
-
-  protected Node<K, V> getNode(final K key, final int startDepth, final int stopDepth) {
-
-    if (startDepth < 0
-        || stopDepth < 1
-        || startDepth > stopDepth) {
-      throw new IllegalArgumentException("startDepth (" + startDepth + ") must be >= zero, "
-          + "and <= to stopDepth (" + stopDepth + "), which must be >= 1");
-    }
+  protected Node getNode(final K key) {
 
     if (key == null) {
       return null;
     }
 
-    if (codec.length(key) < startDepth) {
-      return null;
-    }
+    final int stopDepth = codec.length(key);
 
-    // Do not branch, even if startDepth > 0, because we are looking up a single record,
+    // Do not branch, because we are looking up a single record,
     // not examining every branch that could contain it, or every value contained in a branch
-    Node<K, V> subNode = root;
+    Node subNode = root;
     int i = 0;
     while (true) {
       if (codec.isLeft(key, i++)) {
@@ -219,9 +265,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
       if (subNode == null) {
         return null;
       }
-      if (subNode.value != null
-          && key.equals(subNode.key)
-          && (i >= startDepth && i <= stopDepth)) {
+      if (subNode.value != null && i == stopDepth) {
         return subNode;
       }
       if (i >= stopDepth) {
@@ -240,18 +284,13 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
     }
 
     final int stopDepth = codec.length(key);
-    Node<K, V> subNode = root;
+    Node subNode = root;
     int i = 0;
     while (true) {
       subNode = subNode.getOrCreateEmpty(codec.isLeft(key, i++));
       if (i == stopDepth) {
         this.dirty = true;
         ++this.modCount;
-        // TODO: is this necessary? the only purpose would be so someone could do == on the key
-        // I do not particularly even want to keep the key around,
-        // since it can be calculated by our position in the tree...
-        // Only keeping around to make the Map interface easier to deal with...
-        subNode.key = key;
         return subNode.setValue(value);
       }
     }
@@ -267,7 +306,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   @Override
   public V remove(final Object key) {
     @SuppressWarnings("unchecked")
-    final Node<K, V> p = getNode((K) key);
+    final Node p = getNode((K) key);
     if (p == null) {
       return null;
     }
@@ -277,7 +316,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
     return oldValue;
   }
 
-  protected void deleteNode(final Node<K, V> node, final boolean deleteChildren) {
+  protected void deleteNode(final Node node, final boolean deleteChildren) {
     if (node == null) {
       return;
     }
@@ -289,8 +328,8 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
       node.right = null;
     }
 
-    Node<K, V> previousParent = node;
-    Node<K, V> currentParent = node.parent;
+    Node previousParent = node;
+    Node currentParent = node.parent;
     while (previousParent.isEmpty() && currentParent != null) {
       if (currentParent.left == previousParent) {
         currentParent.left = null;
@@ -309,7 +348,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
     if (value == null) {
       return false;
     }
-    for (Node<K, V> e = root; e != null; e = successor(e, false)) {
+    for (Node e = root; e != null; e = successor(e, false)) {
       if (eq(value, e.value)) {
         return true;
       }
@@ -317,8 +356,8 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
     return false;
   }
 
-  protected Node<K, V> getLastNode() {
-    Node<K, V> parent = root;
+  protected Node getLastNode() {
+    Node parent = root;
     while (parent.right != null || parent.left != null) {
       if (parent.right != null) {
         parent = parent.right;
@@ -332,7 +371,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   /**
    * Returns the successor of the specified Node Entry, or null if no such.
    */
-  protected static <K, V> Node<K, V> successor(final Node<K, V> node,
+  protected Node successor(final Node node,
       final boolean canBeEmpty) {
     // TODO: convert to loop instead of recursive
 
@@ -354,8 +393,8 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
       return node.right;
     }
 
-    Node<K, V> previousParent = node;
-    Node<K, V> currentParent = node.parent;
+    Node previousParent = node;
+    Node currentParent = node.parent;
     while (currentParent != null) {
 
       if (currentParent.left == previousParent && currentParent.right != null) {
@@ -374,7 +413,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   /**
    * Returns the predecessor of the specified Node Entry, or null if no such.
    */
-  protected static <K, V> Node<K, V> predecessor(final Node<K, V> node,
+  protected Node predecessor(final Node node,
       final boolean canBeEmpty) {
     // TODO: convert to loop instead of recursive
 
@@ -394,7 +433,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
 
     // we are on the right and have a left sibling
     // so explore the left sibling, all the way down to the right-most child
-    Node<K, V> child = node.parent.left;
+    Node child = node.parent.left;
     while (child.right != null || child.left != null) {
       if (child.right != null) {
         child = child.right;
@@ -621,7 +660,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
       @SuppressWarnings("unchecked")
       final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
       final V value = entry.getValue();
-      final Node<K, V> p = getNode(entry.getKey());
+      final Node p = getNode(entry.getKey());
       if (p != null && eq(p.getValue(), value)) {
         deleteNode(p, false);
         return true;
@@ -657,11 +696,11 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
 
 
   protected abstract class PrivateEntryIterator<T> implements Iterator<T> {
-    protected Node<K, V> next;
-    protected Node<K, V> lastReturned;
+    protected Node next;
+    protected Node lastReturned;
     protected int expectedModCount;
 
-    protected PrivateEntryIterator(final Node<K, V> first) {
+    protected PrivateEntryIterator(final Node first) {
       expectedModCount = modCount;
       lastReturned = null;
       next = first;
@@ -673,7 +712,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
     }
 
     protected final Entry<K, V> nextEntry() {
-      final Node<K, V> e = next;
+      final Node e = next;
       if (e == null) {
         throw new NoSuchElementException();
       }
@@ -686,7 +725,7 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
     }
 
     protected final Entry<K, V> prevEntry() {
-      final Node<K, V> e = next;
+      final Node e = next;
       if (e == null) {
         throw new NoSuchElementException();
       }

@@ -56,6 +56,10 @@ public class TestCidr4Trie {
 
     assertEquals(TestUtil.cidrsInOrder.length, trie.size());
 
+    for (final Entry<Cidr4, String> entry : trie.entrySet()) {
+      System.out.println(entry);
+    }
+
     int i = 0;
     for (final Entry<Cidr4, String> entry : trie.entrySet()) {
       assertEquals(cidrsInOrder[i++], entry.getKey().getCidrSignature());

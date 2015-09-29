@@ -5,6 +5,8 @@
  */
 package com.github.veqryn.collect;
 
+import java.util.BitSet;
+
 import com.github.veqryn.net.Cidr4;
 
 /**
@@ -24,6 +26,23 @@ public class Cidr4Codec implements KeyCodec<Cidr4> {
   @Override
   public boolean isLeft(final Cidr4 cidr, final int index) {
     return (cidr.getLowBinaryInteger(true) & (1 << (31 - index))) == 0;
+  }
+
+  @Override
+  public Cidr4 recreateKey(final BitSet bits, final int numElements) {
+
+    if (bits.length() == 0) {
+      return new Cidr4(0, numElements);
+    }
+
+    int binary = (int) bits.toLongArray()[0];
+
+    final int move = 32 - numElements;
+    if (move > 0) {
+      binary = binary << move;
+    }
+
+    return new Cidr4(binary, numElements);
   }
 
 }

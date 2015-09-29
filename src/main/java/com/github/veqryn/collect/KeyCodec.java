@@ -6,6 +6,7 @@
 package com.github.veqryn.collect;
 
 import java.io.Serializable;
+import java.util.BitSet;
 
 /**
  * KeyCodec interface, for encoding, decoding, and analyzing keys in a Trie.
@@ -27,5 +28,14 @@ public interface KeyCodec<K> extends Serializable {
    *         false if the element at this index should be in the right node
    */
   public boolean isLeft(K key, int index);
+
+  /**
+   * @param bits BitSet where the bit at the ({@code numElements} - 1)
+   *        location represents the first element of this key,
+   *        and each bit after that is another element in this key
+   * @param numElements the number of elements in this key
+   * @return A new key equal to the one originally put in
+   */
+  public K recreateKey(BitSet bits, int numElements);
 
 }
