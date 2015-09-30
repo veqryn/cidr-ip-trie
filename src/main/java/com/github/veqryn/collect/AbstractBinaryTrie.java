@@ -26,7 +26,7 @@ import java.util.Set;
  * @param <K> Key
  * @param <V> Value
  */
-public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
+public abstract class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   // TODO: NavigableMap
   // TODO: maybe implement gauva Multimap or SortedSetMultimap
 
@@ -193,10 +193,14 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
 
   @Override
   public int size() {
+    return size(false);
+  }
+
+  protected int size(final boolean countEmptyNodes) {
     if (this.dirty) {
       long total = 0L;
       Node subTree = root;
-      while ((subTree = successor(subTree, false)) != null) {
+      while ((subTree = successor(subTree, countEmptyNodes)) != null) {
         ++total;
       }
       this.size = total;
@@ -290,13 +294,21 @@ public class AbstractBinaryTrie<K, V> implements Map<K, V>, Serializable {
   @Override
   public V put(final K key, final V value) {
     if (key == null) {
-      throw new IllegalArgumentException(getClass().getName() + " does not accept null keys");
+      throw new IllegalArgumentException(getClass().getName()
+          + " does not accept null keys: " + key);
     }
     if (value == null) {
-      throw new IllegalArgumentException(getClass().getName() + " does not accept null values");
+      throw new IllegalArgumentException(getClass().getName()
+          + " does not accept null values: " + value);
     }
 
     final int stopDepth = codec.length(key);
+
+    if (stopDepth <= 0) {
+      throw new IllegalArgumentException(getClass().getName()
+          + " does not accept keys of length <= 0: " + key);
+    }
+
     Node subNode = root;
     int i = 0;
     while (true) {

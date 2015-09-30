@@ -133,29 +133,29 @@ public class TestCidr4Trie {
         trie.entrySet() + "");
 
     assertEquals("depth 1 s: 0.0.0.0/1", trie.get(s1));
-    // assertEquals("depth 3 s: 0.0.0.0/3", trie.get(s3));
+    assertEquals("depth 3 s: 0.0.0.0/3", trie.get(s3));
     assertEquals("depth 1 t: 128.0.0.0/1", trie.get(t1));
-    // assertEquals("depth 3 t: 224.0.0.0/3", trie.get(t3));
+    assertEquals("depth 3 t: 224.0.0.0/3", trie.get(t3));
 
-    // assertEquals("[depth 1 s: 0.0.0.0/1]", trie.suffixValues(s1)+ "");
-    // assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3]",
-    // trie.suffixValues(s3)+ "");
-    // assertEquals("[depth 1 t: 128.0.0.0/1]", trie.suffixValues(t1)+ "");
-    // assertEquals("[depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
-    // trie.suffixValues(t3)+ "");
+    // assertEquals("[depth 1 s: 0.0.0.0/1]", trie.getAll(s1) + "");
+    assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3]",
+        trie.getAll(s3) + "");
+    // assertEquals("[depth 1 t: 128.0.0.0/1]", trie.getAll(t1) + "");
+    assertEquals("[depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
+        trie.getAll(t3) + "");
 
     assertEquals("null=null", trie.root + "");
 
 
     assertEquals("0.0.0.0/1", trie.root.left.getKey() + "");
 
-    // assertEquals("0.0.0.0/2", trie.root.left.left.getKey() + "");
+    assertEquals("0.0.0.0/2", trie.root.left.left.getKey() + "");
 
     assertEquals("0.0.0.0/3", trie.root.left.left.left.getKey() + "");
 
     assertEquals("128.0.0.0/1", trie.root.right.getKey() + "");
 
-    // assertEquals("192.0.0.0/2", trie.root.right.right.getKey() + "");
+    assertEquals("192.0.0.0/2", trie.root.right.right.getKey() + "");
 
     assertEquals("224.0.0.0/3", trie.root.right.right.right.getKey() + "");
 
@@ -195,7 +195,7 @@ public class TestCidr4Trie {
 
     assertEquals("0.0.0.0/1", trie.root.left.getKey() + "");
 
-    // assertEquals("0.0.0.0/2", trie.root.left.left.getKey() + "");
+    assertEquals("0.0.0.0/2", trie.root.left.left.getKey() + "");
 
     assertEquals("0.0.0.0/3", trie.root.left.left.left.getKey() + "");
 
