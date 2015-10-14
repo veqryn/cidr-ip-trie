@@ -31,6 +31,37 @@ public class TestCidr4Trie {
 
 
   @Test
+  public void testClone() {
+
+    final Cidr4 s1 = new Cidr4(0, 1); // zeroes
+    final Cidr4 s3 = new Cidr4(0, 3); // zeroes
+
+    final Cidr4 t1 = new Cidr4(-1, 1); // ones
+    final Cidr4 t3 = new Cidr4(-1, 3); // ones
+
+    final Cidr4Trie<String> trie = new Cidr4Trie<>();
+    final KeyCodec<Cidr4> codec = trie.codec;
+
+    trie.put(s1, "depth 1 s: " + s1);
+    trie.put(s3, "depth 3 s: " + s3);
+
+    trie.put(t1, "depth 1 t: " + t1);
+    trie.put(t3, "depth 3 t: " + t3);
+
+    final AbstractBinaryTrie<Cidr4, String> trie2 = trie.clone();
+    final KeyCodec<Cidr4> codec2 = trie2.codec;
+
+    assertEquals(codec, codec2);
+    assertEquals(trie.size(), trie2.size());
+
+    final Iterator<Entry<Cidr4, String>> iter = trie.entrySet().iterator();
+    final Iterator<Entry<Cidr4, String>> iter2 = trie.entrySet().iterator();
+    for (int i = 0; i < trie.size(); ++i) {
+      assertEquals(iter.next(), iter2.next());
+    }
+  }
+
+  @Test
   public void testNullAllowed() {
     final Cidr4Trie<String> trie = new Cidr4Trie<>();
     assertEquals(null, trie.get(null));

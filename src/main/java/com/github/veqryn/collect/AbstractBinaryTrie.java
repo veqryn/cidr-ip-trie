@@ -44,7 +44,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
   protected final Node root = new Node(null);
 
-  protected transient volatile long size = 0;
+  private transient volatile long size = 0;
   protected transient volatile boolean dirty = false;
   protected transient volatile int modCount = 0;
 
@@ -302,31 +302,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    *
    * @return a shallow copy of this trie/map
    */
-  @SuppressWarnings("unchecked")
   @Override
-  public Object clone() {
-    AbstractBinaryTrie<K, V> clone = null;
-    try {
-      clone = (AbstractBinaryTrie<K, V>) super.clone();
-    } catch (final CloneNotSupportedException e) {
-      throw new InternalError();
-    }
-
-    // Put clone into "virgin" state (except for comparator)
-    clone.root.value = null;
-    clone.root.left = null;
-    clone.root.right = null;
-    clone.size = 0L;
-    clone.modCount = 0;
-    clone.entrySet = null;
-    clone.keySet = null;
-    clone.values = null;
-    clone.descendingMap = null;
-
-    // Initialize clone with our mappings
-    clone.buildFromExisting(this);
-
-    return clone;
+  public AbstractBinaryTrie<K, V> clone() {
+    return new AbstractBinaryTrie<K, V>(this);
   }
 
   protected void buildFromExisting(final AbstractBinaryTrie<K, V> otherTrie) {
