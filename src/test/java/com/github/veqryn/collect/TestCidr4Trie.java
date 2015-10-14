@@ -187,17 +187,17 @@ public class TestCidr4Trie {
     assertEquals("null=null", trie.root + "");
 
 
-    assertEquals("0.0.0.0/1", trie.root.left.getKey() + "");
+    assertEquals("0.0.0.0/1", trie.root.left.getPrivateKeyOrNull() + "");
 
-    assertEquals("0.0.0.0/2", trie.root.left.left.getKey() + "");
+    assertEquals("0.0.0.0/2", Cidr4Trie.resolveKey(trie.root.left.left, trie) + "");
 
-    assertEquals("0.0.0.0/3", trie.root.left.left.left.getKey() + "");
+    assertEquals("0.0.0.0/3", trie.root.left.left.left.getPrivateKeyOrNull() + "");
 
-    assertEquals("128.0.0.0/1", trie.root.right.getKey() + "");
+    assertEquals("128.0.0.0/1", trie.root.right.getPrivateKeyOrNull() + "");
 
-    assertEquals("192.0.0.0/2", trie.root.right.right.getKey() + "");
+    assertEquals("192.0.0.0/2", Cidr4Trie.resolveKey(trie.root.right.right, trie) + "");
 
-    assertEquals("224.0.0.0/3", trie.root.right.right.right.getKey() + "");
+    assertEquals("224.0.0.0/3", trie.root.right.right.right.getPrivateKeyOrNull() + "");
 
 
     assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.getValue() + "");
@@ -233,13 +233,13 @@ public class TestCidr4Trie {
     assertEquals("null=null", trie.root + "");
 
 
-    assertEquals("0.0.0.0/1", trie.root.left.getKey() + "");
+    assertEquals("0.0.0.0/1", trie.root.left.getPrivateKeyOrNull() + "");
 
-    assertEquals("0.0.0.0/2", trie.root.left.left.getKey() + "");
+    assertEquals("0.0.0.0/2", Cidr4Trie.resolveKey(trie.root.left.left, trie) + "");
 
-    assertEquals("0.0.0.0/3", trie.root.left.left.left.getKey() + "");
+    assertEquals("0.0.0.0/3", trie.root.left.left.left.getPrivateKeyOrNull() + "");
 
-    assertEquals("128.0.0.0/1", trie.root.right.getKey() + "");
+    assertEquals("128.0.0.0/1", trie.root.right.getPrivateKeyOrNull() + "");
 
     assertEquals(null, trie.root.right.right);
 
