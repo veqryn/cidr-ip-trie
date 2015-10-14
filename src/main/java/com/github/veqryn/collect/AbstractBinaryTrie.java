@@ -10,7 +10,6 @@ import java.util.AbstractCollection;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -74,7 +73,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
     private static final long serialVersionUID = -534919147906916778L;
 
-    private transient volatile K privateKey = null;
+    private K privateKey = null;
     protected V value = null;
     protected Node<K, V> left = null;
     protected Node<K, V> right = null;
@@ -110,37 +109,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
      */
     @Override
     public final K getKey() {
-      if (this.parent == null) {
-        return null; // We are the root node
-      }
-      if (privateKey != null) {
-        return privateKey;
-      }
-
-      final BitSet bits = new BitSet();
-      int levelsDeep = 0;
-      Node<K, V> previousParent = this;
-      Node<K, V> currentParent = this.parent;
-      while (currentParent != null) {
-        if (currentParent.right == previousParent) {
-          bits.set(levelsDeep);
-        }
-        previousParent = currentParent;
-        currentParent = currentParent.parent;
-        levelsDeep++;
-      }
-
-      return null; // TODO: fix this
-
-      // privateKey = codec.recreateKey(bits, levelsDeep);
-      //
-      // if (privateKey == null) {
-      // throw new IllegalStateException("Unable to create non-null key with key-codec");
-      // }
-      // if (AbstractBinaryTrie.this.getNode(privateKey, true) != this) {
-      // throw new IllegalStateException("Created key not equal to our original key");
-      // }
-      // return privateKey;
+      return privateKey;
     }
 
     /**
@@ -235,11 +204,6 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     keySet = null;
     values = null;
     descendingMap = null;
-    // clear keys from Nodes
-    Node<K, V> subTree = root;
-    while ((subTree = successor(subTree)) != null) {
-      subTree.privateKey = null;
-    }
   }
 
 
@@ -355,7 +319,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       if (i == stopDepth) {
         this.dirty = true;
         ++this.modCount;
-        // subNode.privateKey = key;
+        subNode.privateKey = key;
         return subNode.setValue(value);
       }
     }
