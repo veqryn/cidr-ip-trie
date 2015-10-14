@@ -51,7 +51,6 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   protected transient volatile NavigableSet<K> keySet = null;
   protected transient volatile Collection<V> values = null;
   protected transient volatile NavigableMap<K, V> descendingMap = null;
-  protected transient volatile Comparator<? super K> comparator = null;
 
 
   public AbstractBinaryTrie(final KeyCodec<K> keyCodec) {
@@ -74,7 +73,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       this.parent = parent;
     }
 
-    protected Node getOrCreateEmpty(final boolean leftNode) {
+    protected final Node getOrCreateEmpty(final boolean leftNode) {
       if (leftNode) {
         if (left == null) {
           left = new Node(this);
@@ -188,7 +187,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   /**
    * Return SimpleImmutableEntry for entry, or null if null
    */
-  protected static <K, V> Map.Entry<K, V> exportEntry(final Map.Entry<K, V> entry) {
+  protected static final <K, V> Map.Entry<K, V> exportEntry(final Map.Entry<K, V> entry) {
     // TODO: create an immutable node
     return (entry == null || entry.getValue() == null) ? null
         : new AbstractMap.SimpleImmutableEntry<>(entry);
@@ -199,7 +198,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    *
    * @throws NoSuchElementException if the Entry is null
    */
-  protected static <K> K keyOrNoSuchElementException(final Entry<K, ?> entry) {
+  protected static final <K> K keyOrNoSuchElementException(final Entry<K, ?> entry) {
     if (entry == null || entry.getValue() == null) {
       throw new NoSuchElementException();
     }
@@ -210,7 +209,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    * Returns the key corresponding to the specified Entry,
    * or null if it does not exist
    */
-  protected static <K> K keyOrNull(final Entry<K, ?> entry) {
+  protected static final <K> K keyOrNull(final Entry<K, ?> entry) {
     if (entry == null || entry.getValue() == null) {
       return null;
     }
@@ -222,7 +221,6 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     keySet = null;
     values = null;
     descendingMap = null;
-    comparator = null;
     // clear keys from Nodes
     Node subTree = root;
     while ((subTree = successor(subTree)) != null) {
@@ -271,11 +269,8 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
 
   @Override
-  public Comparator<? super K> comparator() {
-    if (comparator == null) {
-      comparator = codec.comparator();
-    }
-    return comparator;
+  public final Comparator<? super K> comparator() {
+    return codec.comparator();
   }
 
   /**
@@ -283,8 +278,8 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    */
   @SuppressWarnings("unchecked")
   protected final int compare(final K k1, final K k2) {
-    return comparator == null ? ((Comparable<? super K>) k1).compareTo(k2)
-        : comparator.compare(k1, k2);
+    return codec.comparator() == null ? ((Comparable<? super K>) k1).compareTo(k2)
+        : codec.comparator().compare(k1, k2);
   }
 
 
@@ -588,6 +583,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   }
 
 
+
   protected List<V> getAll(final K key) {
     final List<Node> nodes = getAll(key, true);
     final List<V> values = new ArrayList<>(nodes.size());
@@ -625,6 +621,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       }
     }
   }
+
 
 
   protected Node firstNode() {
@@ -816,9 +813,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   protected static final class TrieKeySet<E> extends AbstractSet<E>
       implements NavigableSet<E> {
 
-    private final NavigableMap<E, ? extends Object> m;
+    protected final NavigableMap<E, ? extends Object> m;
 
-    TrieKeySet(final NavigableMap<E, ? extends Object> map) {
+    protected TrieKeySet(final NavigableMap<E, ? extends Object> map) {
       m = map;
     }
 
@@ -964,21 +961,21 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         @Override
         public final Iterator<V> iterator() {
           return new Iterator<V>() {
-            private final Iterator<Entry<K, V>> i = entrySet().iterator();
+            protected final Iterator<Entry<K, V>> iter = entrySet().iterator();
 
             @Override
             public final boolean hasNext() {
-              return i.hasNext();
+              return iter.hasNext();
             }
 
             @Override
             public final V next() {
-              return i.next().getValue();
+              return iter.next().getValue();
             }
 
             @Override
             public final void remove() {
-              i.remove();
+              iter.remove();
             }
           };
         }
@@ -1160,7 +1157,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     }
   }
 
-  protected Iterator<K> keyIterator() {
+  protected final Iterator<K> keyIterator() {
     return new KeyIterator();
   }
 
@@ -1176,7 +1173,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     }
   }
 
-  protected Iterator<K> descendingKeyIterator() {
+  protected final Iterator<K> descendingKeyIterator() {
     return new DescendingKeyIterator();
   }
 
@@ -1243,6 +1240,10 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       if (modCount != expectedModCount) {
         throw new ConcurrentModificationException();
       }
+      // TODO: Do I need this (from TreeMap)? Very confused by this...
+      // deleted entries are replaced by their successors
+      // if (lastReturned.left != null && lastReturned.right != null) {
+      // next = lastReturned;}
       deleteNode(lastReturned, false);
       expectedModCount = modCount;
       lastReturned = null;
@@ -1270,11 +1271,17 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
      * Otherwise, if loInclusive is true, lo is the inclusive bound,
      * else lo is the exclusive bound. Similarly for the upper bound.
      */
-    final K lo, hi;
-    final boolean fromStart, toEnd;
-    final boolean loInclusive, hiInclusive;
+    protected final K lo, hi;
+    protected final boolean fromStart, toEnd;
+    protected final boolean loInclusive, hiInclusive;
 
-    NavigableTrieSubMap(final AbstractBinaryTrie<K, V> m,
+    // Views
+    protected transient volatile NavigableMap<K, V> descendingSubMapView = null;
+    protected transient volatile TrieEntrySetSubMapView entrySetSubMapView = null;
+    protected transient volatile TrieKeySet<K> navigableKeySetSubMapView = null;
+
+
+    protected NavigableTrieSubMap(final AbstractBinaryTrie<K, V> m,
         final boolean fromStart, final K lo, final boolean loInclusive,
         final boolean toEnd, final K hi, final boolean hiInclusive) {
 
@@ -1306,7 +1313,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
     // internal utilities
 
-    final boolean tooLow(final K key) {
+    protected final boolean tooLow(final K key) {
       if (!fromStart) {
         final int c = m.compare(key, lo);
         if (c < 0 || (c == 0 && !loInclusive)) {
@@ -1316,7 +1323,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       return false;
     }
 
-    final boolean tooHigh(final K key) {
+    protected final boolean tooHigh(final K key) {
       if (!toEnd) {
         final int c = m.compare(key, hi);
         if (c > 0 || (c == 0 && !hiInclusive)) {
@@ -1326,16 +1333,16 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       return false;
     }
 
-    final boolean inRange(final K key) {
+    protected final boolean inRange(final K key) {
       return !tooLow(key) && !tooHigh(key);
     }
 
-    final boolean inClosedRange(final K key) {
+    protected final boolean inClosedRange(final K key) {
       return (fromStart || m.compare(key, lo) >= 0)
           && (toEnd || m.compare(hi, key) >= 0);
     }
 
-    final boolean inRange(final K key, final boolean inclusive) {
+    protected final boolean inRange(final K key, final boolean inclusive) {
       return inclusive ? inRange(key) : inClosedRange(key);
     }
 
@@ -1345,91 +1352,91 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
      * versions that invert senses for descending maps
      */
 
-    final Entry<K, V> absLowest() {
-      final Entry<K, V> e =
+    protected final Node absLowest() {
+      final Node e =
           (fromStart ? m.firstNode()
               : (loInclusive ? m.ceilingNode(lo) : m.higherNode(lo)));
       return (e == null || tooHigh(e.getKey())) ? null : e;
     }
 
-    final Entry<K, V> absHighest() {
-      final Entry<K, V> e =
+    protected final Node absHighest() {
+      final Node e =
           (toEnd ? m.lastNode() : (hiInclusive ? m.floorNode(hi) : m.lowerNode(hi)));
       return (e == null || tooLow(e.getKey())) ? null : e;
     }
 
-    final Entry<K, V> absCeiling(final K key) {
+    protected final Node absCeiling(final K key) {
       if (tooLow(key)) {
         return absLowest();
       }
-      final Entry<K, V> e = m.ceilingNode(key);
+      final Node e = m.ceilingNode(key);
       return (e == null || tooHigh(e.getKey())) ? null : e;
     }
 
-    final Entry<K, V> absHigher(final K key) {
+    protected final Node absHigher(final K key) {
       if (tooLow(key)) {
         return absLowest();
       }
-      final Entry<K, V> e = m.higherNode(key);
+      final Node e = m.higherNode(key);
       return (e == null || tooHigh(e.getKey())) ? null : e;
     }
 
-    final Entry<K, V> absFloor(final K key) {
+    protected final Node absFloor(final K key) {
       if (tooHigh(key)) {
         return absHighest();
       }
-      final Entry<K, V> e = m.floorNode(key);
+      final Node e = m.floorNode(key);
       return (e == null || tooLow(e.getKey())) ? null : e;
     }
 
-    final Entry<K, V> absLower(final K key) {
+    protected final Node absLower(final K key) {
       if (tooHigh(key)) {
         return absHighest();
       }
-      final Entry<K, V> e = m.lowerNode(key);
+      final Node e = m.lowerNode(key);
       return (e == null || tooLow(e.getKey())) ? null : e;
     }
 
     /** Returns the absolute high fence for ascending traversal */
-    final Entry<K, V> absHighFence() {
+    protected final Node absHighFence() {
       return (toEnd ? null : (hiInclusive ? m.higherNode(hi) : m.ceilingNode(hi)));
     }
 
     /** Return the absolute low fence for descending traversal */
-    final Entry<K, V> absLowFence() {
+    protected final Node absLowFence() {
       return (fromStart ? null : (loInclusive ? m.lowerNode(lo) : m.floorNode(lo)));
     }
 
     // Abstract methods defined in ascending vs descending classes
     // These relay to the appropriate absolute versions
 
-    abstract Entry<K, V> subLowest();
+    protected abstract Node subLowest();
 
-    abstract Entry<K, V> subHighest();
+    protected abstract Node subHighest();
 
-    abstract Entry<K, V> subCeiling(K key);
+    protected abstract Node subCeiling(K key);
 
-    abstract Entry<K, V> subHigher(K key);
+    protected abstract Node subHigher(K key);
 
-    abstract Entry<K, V> subFloor(K key);
+    protected abstract Node subFloor(K key);
 
-    abstract Entry<K, V> subLower(K key);
+    protected abstract Node subLower(K key);
 
     /** Returns ascending iterator from the perspective of this submap */
-    abstract Iterator<K> keyIterator();
+    protected abstract Iterator<K> keyIterator();
 
     /** Returns descending iterator from the perspective of this submap */
-    abstract Iterator<K> descendingKeyIterator();
+    protected abstract Iterator<K> descendingKeyIterator();
 
     // public methods
 
     @Override
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
       return (fromStart && toEnd) ? m.isEmpty() : entrySet().isEmpty();
     }
 
     @Override
-    public int size() {
+    public final int size() {
       return (fromStart && toEnd) ? m.size() : entrySet().size();
     }
 
@@ -1521,33 +1528,28 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
     @Override
     public final Map.Entry<K, V> pollFirstEntry() {
-      final Entry<K, V> e = subLowest();
+      final Node e = subLowest();
       final Map.Entry<K, V> result = exportEntry(e);
       if (e != null) {
-        m.deleteEntry(e);
+        m.deleteNode(e, false);
       }
       return result;
     }
 
     @Override
     public final Map.Entry<K, V> pollLastEntry() {
-      final Entry<K, V> e = subHighest();
+      final Node e = subHighest();
       final Map.Entry<K, V> result = exportEntry(e);
       if (e != null) {
-        m.deleteEntry(e);
+        m.deleteNode(e, false);
       }
       return result;
     }
 
-    // Views
-    transient NavigableMap<K, V> descendingMapView = null;
-    transient EntrySetView entrySetView = null;
-    transient TrieKeySet<K> navigableKeySetView = null;
-
     @Override
     public final NavigableSet<K> navigableKeySet() {
-      final TrieKeySet<K> nksv = navigableKeySetView;
-      return (nksv != null) ? nksv : (navigableKeySetView = new TrieKeySet(this));
+      final TrieKeySet<K> nksv = navigableKeySetSubMapView;
+      return (nksv != null) ? nksv : (navigableKeySetSubMapView = new TrieKeySet<K>(this));
     }
 
     @Override
@@ -1556,7 +1558,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     }
 
     @Override
-    public NavigableSet<K> descendingKeySet() {
+    public final NavigableSet<K> descendingKeySet() {
       return descendingMap().navigableKeySet();
     }
 
@@ -1577,8 +1579,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
     // View classes
 
-    abstract class EntrySetView extends AbstractSet<Map.Entry<K, V>> {
-      private transient int size = -1, sizeModCount;
+    protected abstract class TrieEntrySetSubMapView extends AbstractSet<Map.Entry<K, V>> {
+
+      private transient int size = -1, sizeModCount = -1;
 
       @Override
       public int size() {
@@ -1588,9 +1591,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         if (size == -1 || sizeModCount != m.modCount) {
           sizeModCount = m.modCount;
           size = 0;
-          final Iterator i = iterator();
+          final Iterator<Map.Entry<K, V>> i = iterator();
           while (i.hasNext()) {
-            size++;
+            ++size;
             i.next();
           }
         }
@@ -1608,14 +1611,14 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         if (!(o instanceof Map.Entry)) {
           return false;
         }
+        @SuppressWarnings("unchecked")
         final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
         final K key = entry.getKey();
         if (!inRange(key)) {
           return false;
         }
-        final Entry node = m.getNode(key);
-        return node != null &&
-            eq(node.getValue(), entry.getValue());
+        final Entry<K, V> node = m.getNode(key);
+        return node != null && eq(node.getValue(), entry.getValue());
       }
 
       @Override
@@ -1623,15 +1626,15 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         if (!(o instanceof Map.Entry)) {
           return false;
         }
+        @SuppressWarnings("unchecked")
         final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
         final K key = entry.getKey();
         if (!inRange(key)) {
           return false;
         }
-        final Entry<K, V> node = m.getNode(key);
-        if (node != null && eq(node.getValue(),
-            entry.getValue())) {
-          m.deleteEntry(node);
+        final Node node = m.getNode(key);
+        if (node != null && eq(node.getValue(), entry.getValue())) {
+          m.deleteNode(node, false);
           return true;
         }
         return false;
@@ -1641,28 +1644,28 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     /**
      * Iterators for SubMaps
      */
-    abstract class SubMapIterator<T> implements Iterator<T> {
-      Entry<K, V> lastReturned;
-      Entry<K, V> next;
-      final Object fenceKey;
-      int expectedModCount;
+    protected abstract class SubMapIterator<T> implements Iterator<T> {
 
-      SubMapIterator(final Entry<K, V> first,
-          final Entry<K, V> fence) {
+      protected Node lastReturned;
+      protected Node next;
+      protected final Object fenceKey;
+      protected int expectedModCount;
+
+      protected SubMapIterator(final Node first, final Node fence) {
         expectedModCount = m.modCount;
         lastReturned = null;
         next = first;
-        fenceKey = fence == null ? UNBOUNDED : fence.getKey();
+        fenceKey = fence == null ? null : fence.getKey();
       }
 
       @Override
       public final boolean hasNext() {
-        return next != null && next.getKey() != fenceKey;
+        return next != null && (fenceKey == null || next.getKey() != fenceKey);
       }
 
-      final Entry<K, V> nextEntry() {
-        final Entry<K, V> e = next;
-        if (e == null || e.getKey() == fenceKey) {
+      protected final Entry<K, V> nextEntry() {
+        final Node e = next;
+        if (e == null || (fenceKey != null && e.getKey() == fenceKey)) {
           throw new NoSuchElementException();
         }
         if (m.modCount != expectedModCount) {
@@ -1673,9 +1676,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         return e;
       }
 
-      final Entry<K, V> prevEntry() {
-        final Entry<K, V> e = next;
-        if (e == null || e.getKey() == fenceKey) {
+      protected final Entry<K, V> prevEntry() {
+        final Node e = next;
+        if (e == null || (fenceKey != null && e.getKey() == fenceKey)) {
           throw new NoSuchElementException();
         }
         if (m.modCount != expectedModCount) {
@@ -1686,39 +1689,39 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         return e;
       }
 
-      final void removeAscending() {
+      protected final void removeAscending() {
         if (lastReturned == null) {
           throw new IllegalStateException();
         }
         if (m.modCount != expectedModCount) {
           throw new ConcurrentModificationException();
         }
+        // TODO: Do I need this (from TreeMap)? Very confused by this...
         // deleted entries are replaced by their successors
-        if (lastReturned.left != null && lastReturned.right != null) {
-          next = lastReturned;
-        }
-        m.deleteEntry(lastReturned);
+        // if (lastReturned.left != null && lastReturned.right != null) {
+        // next = lastReturned; }
+        m.deleteNode(lastReturned, false);
         lastReturned = null;
         expectedModCount = m.modCount;
       }
 
-      final void removeDescending() {
+      protected final void removeDescending() {
         if (lastReturned == null) {
           throw new IllegalStateException();
         }
         if (m.modCount != expectedModCount) {
           throw new ConcurrentModificationException();
         }
-        m.deleteEntry(lastReturned);
+        m.deleteNode(lastReturned, false);
         lastReturned = null;
         expectedModCount = m.modCount;
       }
 
     }
 
-    final class SubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
-      SubMapEntryIterator(final Entry<K, V> first,
-          final Entry<K, V> fence) {
+    protected final class SubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
+
+      protected SubMapEntryIterator(final Node first, final Node fence) {
         super(first, fence);
       }
 
@@ -1733,9 +1736,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       }
     }
 
-    final class SubMapKeyIterator extends SubMapIterator<K> {
-      SubMapKeyIterator(final Entry<K, V> first,
-          final Entry<K, V> fence) {
+    protected final class SubMapKeyIterator extends SubMapIterator<K> {
+
+      protected SubMapKeyIterator(final Node first, final Node fence) {
         super(first, fence);
       }
 
@@ -1750,9 +1753,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       }
     }
 
-    final class DescendingSubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
-      DescendingSubMapEntryIterator(final Entry<K, V> last,
-          final Entry<K, V> fence) {
+    protected final class DescendingSubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
+
+      protected DescendingSubMapEntryIterator(final Node last, final Node fence) {
         super(last, fence);
       }
 
@@ -1767,9 +1770,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       }
     }
 
-    final class DescendingSubMapKeyIterator extends SubMapIterator<K> {
-      DescendingSubMapKeyIterator(final Entry<K, V> last,
-          final Entry<K, V> fence) {
+    protected final class DescendingSubMapKeyIterator extends SubMapIterator<K> {
+
+      protected DescendingSubMapKeyIterator(final Node last, final Node fence) {
         super(last, fence);
       }
 
@@ -1783,6 +1786,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
         removeDescending();
       }
     }
+
   }
 
 

@@ -13,6 +13,8 @@ import java.util.Comparator;
  * KeyCodec interface, for encoding, decoding, and analyzing keys in a Trie.
  *
  * @author Mark Christopher Duncan
+ *
+ * @param <K> Key
  */
 public interface KeyCodec<K> extends Serializable {
 

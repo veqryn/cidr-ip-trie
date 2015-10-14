@@ -1,8 +1,24 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.github.veqryn.collect;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
-public abstract class AbstractKeyCodec<K> implements KeyCodec<K> {
+/**
+ * AbstractKeyCodec implements KeyCodec interface,
+ * for encoding, decoding, and analyzing keys in a Trie.
+ * Includes a predefined comparator that is based solely on the
+ * abstract <code>length</code> and <code>isLeft</code> methods.
+ *
+ * @author Mark Christopher Duncan
+ *
+ * @param <K> Key
+ */
+public abstract class AbstractKeyCodec<K> implements KeyCodec<K>, Serializable {
 
   private static final long serialVersionUID = -3361215683005193832L;
 
@@ -11,7 +27,7 @@ public abstract class AbstractKeyCodec<K> implements KeyCodec<K> {
     return comparator;
   }
 
-  Comparator<? super K> comparator =
+  protected final Comparator<? super K> comparator =
       new Comparator<K>() {
         @Override
         public int compare(final K o1, final K o2) {

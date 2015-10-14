@@ -16,6 +16,8 @@ import com.github.veqryn.net.Cidr4;
  * CidrTrie
  *
  * @author Mark Christopher Duncan
+ *
+ * @param <V>
  */
 public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V>
     implements Map<Cidr4, V>, Serializable {
@@ -61,7 +63,7 @@ public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V>
     }
 
     @Override
-    public Comparator<Cidr4> comparator() {
+    public final Comparator<Cidr4> comparator() {
       return null;
     }
 

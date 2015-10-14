@@ -15,6 +15,8 @@ import java.util.Map;
  * (Practical Algorithm To Retrieve Information Coded In Alphanumeric)
  *
  * @author Mark Christopher Duncan
+ *
+ * @param <V>
  */
 public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V>
     implements Map<String, V>, Serializable {
@@ -61,7 +63,7 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V>
       if (bits.length() == 0) {
         return "";
       }
-      // Bits come in the wrong order for what we are doing
+      // Bits come in the reverse order for what we are doing
       final BitSet reversed = new BitSet();
       for (int i = 0, j = numElements - 1; i < numElements; ++i, --j) {
         reversed.set(j, bits.get(i));
