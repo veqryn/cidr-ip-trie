@@ -21,6 +21,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 
 /**
@@ -50,7 +51,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   protected transient volatile NavigableSet<K> keySet = null;
   protected transient volatile Collection<V> values = null;
   protected transient volatile NavigableMap<K, V> descendingMap = null;
-  protected transient volatile Comparator<K> comparator = null;
+  protected transient volatile Comparator<? super K> comparator = null;
 
 
   public AbstractBinaryTrie(final KeyCodec<K> keyCodec) {
@@ -187,9 +188,10 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   /**
    * Return SimpleImmutableEntry for entry, or null if null
    */
-  protected Map.Entry<K, V> exportEntry(final Map.Entry<K, V> entry) {
+  protected static <K, V> Map.Entry<K, V> exportEntry(final Map.Entry<K, V> entry) {
     // TODO: create an immutable node
-    return (entry == null || entry == root) ? null : new AbstractMap.SimpleImmutableEntry<>(entry);
+    return (entry == null || entry.getValue() == null) ? null
+        : new AbstractMap.SimpleImmutableEntry<>(entry);
   }
 
   /**
@@ -197,8 +199,8 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    *
    * @throws NoSuchElementException if the Entry is null
    */
-  protected K keyOrNoSuchElementException(final Entry<K, ?> entry) {
-    if (entry == null || entry == root) {
+  protected static <K> K keyOrNoSuchElementException(final Entry<K, ?> entry) {
+    if (entry == null || entry.getValue() == null) {
       throw new NoSuchElementException();
     }
     return entry.getKey();
@@ -208,8 +210,8 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    * Returns the key corresponding to the specified Entry,
    * or null if it does not exist
    */
-  protected K keyOrNull(final Entry<K, ?> entry) {
-    if (entry == null || entry == root) {
+  protected static <K> K keyOrNull(final Entry<K, ?> entry) {
+    if (entry == null || entry.getValue() == null) {
       return null;
     }
     return entry.getKey();
@@ -271,35 +273,18 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   @Override
   public Comparator<? super K> comparator() {
     if (comparator == null) {
-      comparator = new Comparator<K>() {
-        @Override
-        public int compare(final K o1, final K o2) {
-          if (o1 == null || o2 == null) {
-            throw new IllegalArgumentException("Null keys not allowed");
-          }
-          if (o1 == o2 || o1.equals(o2)) {
-            return 0;
-          }
-          final int l1 = codec.length(o1);
-          final int l2 = codec.length(o2);
-          final int min = Math.min(l1, l2);
-          boolean left1;
-          boolean left2;
-          for (int i = 0; i < min; ++i) {
-            left1 = codec.isLeft(o1, i);
-            left2 = codec.isLeft(o2, i);
-            if (left1 && !left2) {
-              return -1;
-            }
-            if (!left1 && left2) {
-              return 1;
-            }
-          }
-          return l1 - l2;
-        }
-      };
+      comparator = codec.comparator();
     }
     return comparator;
+  }
+
+  /**
+   * Compares two keys using the correct comparison method for this class.
+   */
+  @SuppressWarnings("unchecked")
+  protected final int compare(final K k1, final K k2) {
+    return comparator == null ? ((Comparable<? super K>) k1).compareTo(k2)
+        : comparator.compare(k1, k2);
   }
 
 
@@ -432,6 +417,14 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     }
   }
 
+  protected Node ceilingNode(final K key) {
+    return ceilingOrHigherNode(key, false);
+  }
+
+  protected Node higherNode(final K key) {
+    return ceilingOrHigherNode(key, true);
+  }
+
   protected Node ceilingOrHigherNode(final K key, final boolean higher) {
 
     if (key == null) {
@@ -476,7 +469,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return exportEntry(ceilingOrHigherNode(key, false));
+    return exportEntry(ceilingNode(key));
   }
 
   @Override
@@ -485,7 +478,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return keyOrNull(ceilingOrHigherNode(key, false));
+    return keyOrNull(ceilingNode(key));
   }
 
   @Override
@@ -494,7 +487,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return exportEntry(ceilingOrHigherNode(key, true));
+    return exportEntry(higherNode(key));
   }
 
   @Override
@@ -503,7 +496,15 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return keyOrNull(ceilingOrHigherNode(key, true));
+    return keyOrNull(higherNode(key));
+  }
+
+  protected Node floorNode(final K key) {
+    return floorOrLowerNode(key, false);
+  }
+
+  protected Node lowerNode(final K key) {
+    return floorOrLowerNode(key, true);
   }
 
   protected Node floorOrLowerNode(final K key, final boolean lower) {
@@ -556,7 +557,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return exportEntry(floorOrLowerNode(key, false));
+    return exportEntry(floorNode(key));
   }
 
   @Override
@@ -565,7 +566,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return keyOrNull(floorOrLowerNode(key, false));
+    return keyOrNull(floorNode(key));
   }
 
   @Override
@@ -574,7 +575,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return exportEntry(floorOrLowerNode(key, true));
+    return exportEntry(lowerNode(key));
   }
 
   @Override
@@ -583,7 +584,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       throw new NullPointerException(getClass().getName()
           + " does not accept null keys: " + key);
     }
-    return keyOrNull(floorOrLowerNode(key, true));
+    return keyOrNull(lowerNode(key));
   }
 
 
@@ -826,7 +827,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       if (m instanceof AbstractBinaryTrie) {
         return ((AbstractBinaryTrie<E, ? extends Object>) m).keyIterator();
       } else {
-        return (((AbstractBinaryTrie.NavigableTrieSubMap<E, ? extends Object>) m).keyIterator());
+        return (((AbstractBinaryTrie<E, ? extends Object>.NavigableTrieSubMap) m).keyIterator());
       }
     }
 
@@ -835,7 +836,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       if (m instanceof AbstractBinaryTrie) {
         return ((AbstractBinaryTrie<E, ? extends Object>) m).descendingKeyIterator();
       } else {
-        return (((AbstractBinaryTrie.NavigableTrieSubMap<E, ? extends Object>) m)
+        return (((AbstractBinaryTrie<E, ? extends Object>.NavigableTrieSubMap) m)
             .descendingKeyIterator());
       }
     }
@@ -1251,14 +1252,537 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
 
 
-  protected abstract static class NavigableTrieSubMap<K, V> extends AbstractMap<K, V>
+  protected abstract class NavigableTrieSubMap extends AbstractMap<K, V>
       implements NavigableMap<K, V>, Serializable {
+
+    private static final long serialVersionUID = 4159238497306996386L;
+
+    /** The backing map. */
+    protected final AbstractBinaryTrie<K, V> m;
+
+    /**
+     * Endpoints are represented as triples
+     * (fromStart, lo, loInclusive) and (toEnd, hi, hiInclusive).
+     *
+     * If fromStart is true, then the low (absolute) bound is the
+     * start of the backing map, and the other values are ignored.
+     *
+     * Otherwise, if loInclusive is true, lo is the inclusive bound,
+     * else lo is the exclusive bound. Similarly for the upper bound.
+     */
+    final K lo, hi;
+    final boolean fromStart, toEnd;
+    final boolean loInclusive, hiInclusive;
+
+    NavigableTrieSubMap(final AbstractBinaryTrie<K, V> m,
+        final boolean fromStart, final K lo, final boolean loInclusive,
+        final boolean toEnd, final K hi, final boolean hiInclusive) {
+
+      if (!fromStart && !toEnd) {
+        if (m.compare(lo, hi) > 0) {
+          throw new IllegalArgumentException("fromKey > toKey");
+        }
+
+      } else {
+
+        // Type check
+        if (!fromStart) {
+          m.compare(lo, lo);
+        }
+
+        if (!toEnd) {
+          m.compare(hi, hi);
+        }
+      }
+
+      this.m = m;
+      this.fromStart = fromStart;
+      this.lo = lo;
+      this.loInclusive = loInclusive;
+      this.toEnd = toEnd;
+      this.hi = hi;
+      this.hiInclusive = hiInclusive;
+    }
+
+    // internal utilities
+
+    final boolean tooLow(final K key) {
+      if (!fromStart) {
+        final int c = m.compare(key, lo);
+        if (c < 0 || (c == 0 && !loInclusive)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    final boolean tooHigh(final K key) {
+      if (!toEnd) {
+        final int c = m.compare(key, hi);
+        if (c > 0 || (c == 0 && !hiInclusive)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    final boolean inRange(final K key) {
+      return !tooLow(key) && !tooHigh(key);
+    }
+
+    final boolean inClosedRange(final K key) {
+      return (fromStart || m.compare(key, lo) >= 0)
+          && (toEnd || m.compare(hi, key) >= 0);
+    }
+
+    final boolean inRange(final K key, final boolean inclusive) {
+      return inclusive ? inRange(key) : inClosedRange(key);
+    }
+
+    /*
+     * Absolute versions of relation operations.
+     * Subclasses map to these using like-named "sub"
+     * versions that invert senses for descending maps
+     */
+
+    final Entry<K, V> absLowest() {
+      final Entry<K, V> e =
+          (fromStart ? m.firstNode()
+              : (loInclusive ? m.ceilingNode(lo) : m.higherNode(lo)));
+      return (e == null || tooHigh(e.getKey())) ? null : e;
+    }
+
+    final Entry<K, V> absHighest() {
+      final Entry<K, V> e =
+          (toEnd ? m.lastNode() : (hiInclusive ? m.floorNode(hi) : m.lowerNode(hi)));
+      return (e == null || tooLow(e.getKey())) ? null : e;
+    }
+
+    final Entry<K, V> absCeiling(final K key) {
+      if (tooLow(key)) {
+        return absLowest();
+      }
+      final Entry<K, V> e = m.ceilingNode(key);
+      return (e == null || tooHigh(e.getKey())) ? null : e;
+    }
+
+    final Entry<K, V> absHigher(final K key) {
+      if (tooLow(key)) {
+        return absLowest();
+      }
+      final Entry<K, V> e = m.higherNode(key);
+      return (e == null || tooHigh(e.getKey())) ? null : e;
+    }
+
+    final Entry<K, V> absFloor(final K key) {
+      if (tooHigh(key)) {
+        return absHighest();
+      }
+      final Entry<K, V> e = m.floorNode(key);
+      return (e == null || tooLow(e.getKey())) ? null : e;
+    }
+
+    final Entry<K, V> absLower(final K key) {
+      if (tooHigh(key)) {
+        return absHighest();
+      }
+      final Entry<K, V> e = m.lowerNode(key);
+      return (e == null || tooLow(e.getKey())) ? null : e;
+    }
+
+    /** Returns the absolute high fence for ascending traversal */
+    final Entry<K, V> absHighFence() {
+      return (toEnd ? null : (hiInclusive ? m.higherNode(hi) : m.ceilingNode(hi)));
+    }
+
+    /** Return the absolute low fence for descending traversal */
+    final Entry<K, V> absLowFence() {
+      return (fromStart ? null : (loInclusive ? m.lowerNode(lo) : m.floorNode(lo)));
+    }
+
+    // Abstract methods defined in ascending vs descending classes
+    // These relay to the appropriate absolute versions
+
+    abstract Entry<K, V> subLowest();
+
+    abstract Entry<K, V> subHighest();
+
+    abstract Entry<K, V> subCeiling(K key);
+
+    abstract Entry<K, V> subHigher(K key);
+
+    abstract Entry<K, V> subFloor(K key);
+
+    abstract Entry<K, V> subLower(K key);
 
     /** Returns ascending iterator from the perspective of this submap */
     abstract Iterator<K> keyIterator();
 
     /** Returns descending iterator from the perspective of this submap */
     abstract Iterator<K> descendingKeyIterator();
+
+    // public methods
+
+    @Override
+    public boolean isEmpty() {
+      return (fromStart && toEnd) ? m.isEmpty() : entrySet().isEmpty();
+    }
+
+    @Override
+    public int size() {
+      return (fromStart && toEnd) ? m.size() : entrySet().size();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public final boolean containsKey(final Object key) {
+      return inRange((K) key) && m.containsKey(key);
+    }
+
+    @Override
+    public final V put(final K key, final V value) {
+      if (!inRange(key)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      return m.put(key, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public final V get(final Object key) {
+      return !inRange((K) key) ? null : m.get(key);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public final V remove(final Object key) {
+      return !inRange((K) key) ? null : m.remove(key);
+    }
+
+    @Override
+    public final Map.Entry<K, V> ceilingEntry(final K key) {
+      return exportEntry(subCeiling(key));
+    }
+
+    @Override
+    public final K ceilingKey(final K key) {
+      return keyOrNull(subCeiling(key));
+    }
+
+    @Override
+    public final Map.Entry<K, V> higherEntry(final K key) {
+      return exportEntry(subHigher(key));
+    }
+
+    @Override
+    public final K higherKey(final K key) {
+      return keyOrNull(subHigher(key));
+    }
+
+    @Override
+    public final Map.Entry<K, V> floorEntry(final K key) {
+      return exportEntry(subFloor(key));
+    }
+
+    @Override
+    public final K floorKey(final K key) {
+      return keyOrNull(subFloor(key));
+    }
+
+    @Override
+    public final Map.Entry<K, V> lowerEntry(final K key) {
+      return exportEntry(subLower(key));
+    }
+
+    @Override
+    public final K lowerKey(final K key) {
+      return keyOrNull(subLower(key));
+    }
+
+    @Override
+    public final K firstKey() {
+      return keyOrNoSuchElementException(subLowest());
+    }
+
+    @Override
+    public final K lastKey() {
+      return keyOrNoSuchElementException(subHighest());
+    }
+
+    @Override
+    public final Map.Entry<K, V> firstEntry() {
+      return exportEntry(subLowest());
+    }
+
+    @Override
+    public final Map.Entry<K, V> lastEntry() {
+      return exportEntry(subHighest());
+    }
+
+    @Override
+    public final Map.Entry<K, V> pollFirstEntry() {
+      final Entry<K, V> e = subLowest();
+      final Map.Entry<K, V> result = exportEntry(e);
+      if (e != null) {
+        m.deleteEntry(e);
+      }
+      return result;
+    }
+
+    @Override
+    public final Map.Entry<K, V> pollLastEntry() {
+      final Entry<K, V> e = subHighest();
+      final Map.Entry<K, V> result = exportEntry(e);
+      if (e != null) {
+        m.deleteEntry(e);
+      }
+      return result;
+    }
+
+    // Views
+    transient NavigableMap<K, V> descendingMapView = null;
+    transient EntrySetView entrySetView = null;
+    transient TrieKeySet<K> navigableKeySetView = null;
+
+    @Override
+    public final NavigableSet<K> navigableKeySet() {
+      final TrieKeySet<K> nksv = navigableKeySetView;
+      return (nksv != null) ? nksv : (navigableKeySetView = new TrieKeySet(this));
+    }
+
+    @Override
+    public final Set<K> keySet() {
+      return navigableKeySet();
+    }
+
+    @Override
+    public NavigableSet<K> descendingKeySet() {
+      return descendingMap().navigableKeySet();
+    }
+
+    @Override
+    public final SortedMap<K, V> subMap(final K fromKey, final K toKey) {
+      return subMap(fromKey, true, toKey, false);
+    }
+
+    @Override
+    public final SortedMap<K, V> headMap(final K toKey) {
+      return headMap(toKey, false);
+    }
+
+    @Override
+    public final SortedMap<K, V> tailMap(final K fromKey) {
+      return tailMap(fromKey, true);
+    }
+
+    // View classes
+
+    abstract class EntrySetView extends AbstractSet<Map.Entry<K, V>> {
+      private transient int size = -1, sizeModCount;
+
+      @Override
+      public int size() {
+        if (fromStart && toEnd) {
+          return m.size();
+        }
+        if (size == -1 || sizeModCount != m.modCount) {
+          sizeModCount = m.modCount;
+          size = 0;
+          final Iterator i = iterator();
+          while (i.hasNext()) {
+            size++;
+            i.next();
+          }
+        }
+        return size;
+      }
+
+      @Override
+      public boolean isEmpty() {
+        final Entry<K, V> n = absLowest();
+        return n == null || tooHigh(n.getKey());
+      }
+
+      @Override
+      public boolean contains(final Object o) {
+        if (!(o instanceof Map.Entry)) {
+          return false;
+        }
+        final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+        final K key = entry.getKey();
+        if (!inRange(key)) {
+          return false;
+        }
+        final Entry node = m.getNode(key);
+        return node != null &&
+            eq(node.getValue(), entry.getValue());
+      }
+
+      @Override
+      public boolean remove(final Object o) {
+        if (!(o instanceof Map.Entry)) {
+          return false;
+        }
+        final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+        final K key = entry.getKey();
+        if (!inRange(key)) {
+          return false;
+        }
+        final Entry<K, V> node = m.getNode(key);
+        if (node != null && eq(node.getValue(),
+            entry.getValue())) {
+          m.deleteEntry(node);
+          return true;
+        }
+        return false;
+      }
+    }
+
+    /**
+     * Iterators for SubMaps
+     */
+    abstract class SubMapIterator<T> implements Iterator<T> {
+      Entry<K, V> lastReturned;
+      Entry<K, V> next;
+      final Object fenceKey;
+      int expectedModCount;
+
+      SubMapIterator(final Entry<K, V> first,
+          final Entry<K, V> fence) {
+        expectedModCount = m.modCount;
+        lastReturned = null;
+        next = first;
+        fenceKey = fence == null ? UNBOUNDED : fence.getKey();
+      }
+
+      @Override
+      public final boolean hasNext() {
+        return next != null && next.getKey() != fenceKey;
+      }
+
+      final Entry<K, V> nextEntry() {
+        final Entry<K, V> e = next;
+        if (e == null || e.getKey() == fenceKey) {
+          throw new NoSuchElementException();
+        }
+        if (m.modCount != expectedModCount) {
+          throw new ConcurrentModificationException();
+        }
+        next = successor(e);
+        lastReturned = e;
+        return e;
+      }
+
+      final Entry<K, V> prevEntry() {
+        final Entry<K, V> e = next;
+        if (e == null || e.getKey() == fenceKey) {
+          throw new NoSuchElementException();
+        }
+        if (m.modCount != expectedModCount) {
+          throw new ConcurrentModificationException();
+        }
+        next = predecessor(e);
+        lastReturned = e;
+        return e;
+      }
+
+      final void removeAscending() {
+        if (lastReturned == null) {
+          throw new IllegalStateException();
+        }
+        if (m.modCount != expectedModCount) {
+          throw new ConcurrentModificationException();
+        }
+        // deleted entries are replaced by their successors
+        if (lastReturned.left != null && lastReturned.right != null) {
+          next = lastReturned;
+        }
+        m.deleteEntry(lastReturned);
+        lastReturned = null;
+        expectedModCount = m.modCount;
+      }
+
+      final void removeDescending() {
+        if (lastReturned == null) {
+          throw new IllegalStateException();
+        }
+        if (m.modCount != expectedModCount) {
+          throw new ConcurrentModificationException();
+        }
+        m.deleteEntry(lastReturned);
+        lastReturned = null;
+        expectedModCount = m.modCount;
+      }
+
+    }
+
+    final class SubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
+      SubMapEntryIterator(final Entry<K, V> first,
+          final Entry<K, V> fence) {
+        super(first, fence);
+      }
+
+      @Override
+      public Map.Entry<K, V> next() {
+        return nextEntry();
+      }
+
+      @Override
+      public void remove() {
+        removeAscending();
+      }
+    }
+
+    final class SubMapKeyIterator extends SubMapIterator<K> {
+      SubMapKeyIterator(final Entry<K, V> first,
+          final Entry<K, V> fence) {
+        super(first, fence);
+      }
+
+      @Override
+      public K next() {
+        return nextEntry().getKey();
+      }
+
+      @Override
+      public void remove() {
+        removeAscending();
+      }
+    }
+
+    final class DescendingSubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
+      DescendingSubMapEntryIterator(final Entry<K, V> last,
+          final Entry<K, V> fence) {
+        super(last, fence);
+      }
+
+      @Override
+      public Map.Entry<K, V> next() {
+        return prevEntry();
+      }
+
+      @Override
+      public void remove() {
+        removeDescending();
+      }
+    }
+
+    final class DescendingSubMapKeyIterator extends SubMapIterator<K> {
+      DescendingSubMapKeyIterator(final Entry<K, V> last,
+          final Entry<K, V> fence) {
+        super(last, fence);
+      }
+
+      @Override
+      public K next() {
+        return prevEntry().getKey();
+      }
+
+      @Override
+      public void remove() {
+        removeDescending();
+      }
+    }
   }
 
 

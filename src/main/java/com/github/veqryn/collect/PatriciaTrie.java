@@ -28,7 +28,8 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V>
   /**
    * PatriciaCodec
    */
-  public static final class PatriciaCodec implements KeyCodec<String>, Serializable {
+  public static final class PatriciaCodec extends AbstractKeyCodec<String>
+      implements KeyCodec<String>, Serializable {
 
     private static final long serialVersionUID = -3361216681617901600L;
 

@@ -7,6 +7,7 @@ package com.github.veqryn.collect;
 
 import java.io.Serializable;
 import java.util.BitSet;
+import java.util.Comparator;
 
 /**
  * KeyCodec interface, for encoding, decoding, and analyzing keys in a Trie.
@@ -37,5 +38,25 @@ public interface KeyCodec<K> extends Serializable {
    * @return A new key equal to the one originally put in
    */
   public K recreateKey(BitSet bits, int numElements);
+
+  /**
+   * Returns a comparator consistent with the <code>isLeft</code> and <code>length</code> methods,
+   * or <code>null</code> if the key (<code>K</code>) is naturally consistent.</br>
+   *
+   * To be consistent, the comparator must follow these rules:</br>
+   *
+   * 1. Two keys are considered equal if <code>length</code> returns the same value for both,
+   * and for each element index less than the length, <code>isLeft</code> returns the same value for
+   * both.</br>
+   *
+   * 2. Key1 is considered less than Key2 if Key1 has a smaller <code>length</code> and for each
+   * element index less than its length, <code>isLeft</code> returns the same value for both.</br>
+   *
+   * 3. Key1 is considered less than Key2 if for any element index within both key's range,
+   * <code>isLeft</code> is true for Key1 but false for Key2
+   *
+   * @return Comparator consistent with the KeyCodec interface methods
+   */
+  public Comparator<? super K> comparator();
 
 }

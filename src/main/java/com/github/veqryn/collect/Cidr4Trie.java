@@ -7,6 +7,7 @@ package com.github.veqryn.collect;
 
 import java.io.Serializable;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.Map;
 
 import com.github.veqryn.net.Cidr4;
@@ -57,6 +58,11 @@ public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V>
       }
 
       return new Cidr4(binary, numElements);
+    }
+
+    @Override
+    public Comparator<Cidr4> comparator() {
+      return null;
     }
 
   }
