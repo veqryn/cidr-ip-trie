@@ -12,6 +12,7 @@ import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -216,6 +217,8 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     return entry.getKey();
   }
 
+
+
   protected void clearTransientMemory() {
     entrySet = null;
     keySet = null;
@@ -227,7 +230,6 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       subTree.key = null;
     }
   }
-
 
 
   @Override
@@ -1258,6 +1260,9 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
     private static final long serialVersionUID = 4159238497306996386L;
 
+    // TODO: Add the Trie methods to the SubMap, because SubMap is really only useful
+    // for this Trie if we have the same Trie specific methods in the submap as well
+
     /** The backing map. */
     protected final AbstractBinaryTrie<K, V> m;
 
@@ -1697,6 +1702,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
           throw new ConcurrentModificationException();
         }
         // TODO: Do I need this (from TreeMap)? Very confused by this...
+        // Why would the next ever become the last?
         // deleted entries are replaced by their successors
         // if (lastReturned.left != null && lastReturned.right != null) {
         // next = lastReturned; }
@@ -1791,53 +1797,292 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
 
 
+  protected final class AscendingSubMap extends NavigableTrieSubMap {
+
+    private static final long serialVersionUID = 912986545866124060L;
+
+    protected AscendingSubMap(final AbstractBinaryTrie<K, V> m,
+        final boolean fromStart, final K lo, final boolean loInclusive,
+        final boolean toEnd, final K hi, final boolean hiInclusive) {
+      super(m, fromStart, lo, loInclusive, toEnd, hi, hiInclusive);
+    }
+
+    @Override
+    public final Comparator<? super K> comparator() {
+      return m.comparator();
+    }
+
+    @Override
+    public final NavigableMap<K, V> subMap(final K fromKey, final boolean fromInclusive,
+        final K toKey, final boolean toInclusive) {
+
+      if (!inRange(fromKey, fromInclusive)) {
+        throw new IllegalArgumentException("fromKey out of range");
+      }
+      if (!inRange(toKey, toInclusive)) {
+        throw new IllegalArgumentException("toKey out of range");
+      }
+      return new AscendingSubMap(m,
+          false, fromKey, fromInclusive,
+          false, toKey, toInclusive);
+    }
+
+    @Override
+    public final NavigableMap<K, V> headMap(final K toKey, final boolean inclusive) {
+
+      if (!inRange(toKey, inclusive)) {
+        throw new IllegalArgumentException("toKey out of range");
+      }
+      return new AscendingSubMap(m,
+          fromStart, lo, loInclusive,
+          false, toKey, inclusive);
+    }
+
+    @Override
+    public final NavigableMap<K, V> tailMap(final K fromKey, final boolean inclusive) {
+
+      if (!inRange(fromKey, inclusive)) {
+        throw new IllegalArgumentException("fromKey out of range");
+      }
+      return new AscendingSubMap(m,
+          false, fromKey, inclusive,
+          toEnd, hi, hiInclusive);
+    }
+
+    @Override
+    public final NavigableMap<K, V> descendingMap() {
+
+      final NavigableMap<K, V> mv = descendingSubMapView;
+      return (mv != null) ? mv : (descendingSubMapView =
+          new DescendingSubMap(m,
+              fromStart, lo, loInclusive,
+              toEnd, hi, hiInclusive));
+    }
+
+    @Override
+    protected final Iterator<K> keyIterator() {
+      return new SubMapKeyIterator(absLowest(), absHighFence());
+    }
+
+    @Override
+    protected final Iterator<K> descendingKeyIterator() {
+      return new DescendingSubMapKeyIterator(absHighest(), absLowFence());
+    }
+
+    protected final class AscendingEntrySetView extends TrieEntrySetSubMapView {
+      @Override
+      public Iterator<Map.Entry<K, V>> iterator() {
+        return new SubMapEntryIterator(absLowest(), absHighFence());
+      }
+    }
+
+    @Override
+    public final Set<Map.Entry<K, V>> entrySet() {
+      final TrieEntrySetSubMapView es = entrySetSubMapView;
+      return (es != null) ? es : new AscendingEntrySetView();
+    }
+
+    @Override
+    protected final Node subLowest() {
+      return absLowest();
+    }
+
+    @Override
+    protected final Node subHighest() {
+      return absHighest();
+    }
+
+    @Override
+    protected final Node subCeiling(final K key) {
+      return absCeiling(key);
+    }
+
+    @Override
+    protected final Node subHigher(final K key) {
+      return absHigher(key);
+    }
+
+    @Override
+    protected final Node subFloor(final K key) {
+      return absFloor(key);
+    }
+
+    @Override
+    protected final Node subLower(final K key) {
+      return absLower(key);
+    }
+  }
+
+
+  protected final class DescendingSubMap extends NavigableTrieSubMap {
+
+    private static final long serialVersionUID = 912986545866120460L;
+
+    protected DescendingSubMap(final AbstractBinaryTrie<K, V> m,
+        final boolean fromStart, final K lo, final boolean loInclusive,
+        final boolean toEnd, final K hi, final boolean hiInclusive) {
+      super(m, fromStart, lo, loInclusive, toEnd, hi, hiInclusive);
+    }
+
+    protected final Comparator<? super K> reverseComparator =
+        Collections.reverseOrder(m.comparator());
+
+    @Override
+    public final Comparator<? super K> comparator() {
+      return reverseComparator;
+    }
+
+    @Override
+    public final NavigableMap<K, V> subMap(final K fromKey, final boolean fromInclusive,
+        final K toKey, final boolean toInclusive) {
+
+      if (!inRange(fromKey, fromInclusive)) {
+        throw new IllegalArgumentException("fromKey out of range");
+      }
+      if (!inRange(toKey, toInclusive)) {
+        throw new IllegalArgumentException("toKey out of range");
+      }
+      return new DescendingSubMap(m,
+          false, toKey, toInclusive,
+          false, fromKey, fromInclusive);
+    }
+
+    @Override
+    public final NavigableMap<K, V> headMap(final K toKey, final boolean inclusive) {
+
+      if (!inRange(toKey, inclusive)) {
+        throw new IllegalArgumentException("toKey out of range");
+      }
+      return new DescendingSubMap(m,
+          false, toKey, inclusive,
+          toEnd, hi, hiInclusive);
+    }
+
+    @Override
+    public final NavigableMap<K, V> tailMap(final K fromKey, final boolean inclusive) {
+
+      if (!inRange(fromKey, inclusive)) {
+        throw new IllegalArgumentException("fromKey out of range");
+      }
+      return new DescendingSubMap(m,
+          fromStart, lo, loInclusive,
+          false, fromKey, inclusive);
+    }
+
+    @Override
+    public final NavigableMap<K, V> descendingMap() {
+
+      final NavigableMap<K, V> mv = descendingSubMapView;
+      return (mv != null) ? mv : (descendingSubMapView =
+          new AscendingSubMap(m,
+              fromStart, lo, loInclusive,
+              toEnd, hi, hiInclusive));
+    }
+
+    @Override
+    protected final Iterator<K> keyIterator() {
+      return new DescendingSubMapKeyIterator(absHighest(), absLowFence());
+    }
+
+    @Override
+    protected final Iterator<K> descendingKeyIterator() {
+      return new SubMapKeyIterator(absLowest(), absHighFence());
+    }
+
+    protected final class DescendingEntrySetView extends TrieEntrySetSubMapView {
+      @Override
+      public Iterator<Map.Entry<K, V>> iterator() {
+        return new DescendingSubMapEntryIterator(absHighest(), absLowFence());
+      }
+    }
+
+    @Override
+    public final Set<Map.Entry<K, V>> entrySet() {
+      final TrieEntrySetSubMapView es = entrySetSubMapView;
+      return (es != null) ? es : new DescendingEntrySetView();
+    }
+
+    @Override
+    protected final Node subLowest() {
+      return absHighest();
+    }
+
+    @Override
+    protected final Node subHighest() {
+      return absLowest();
+    }
+
+    @Override
+    protected final Node subCeiling(final K key) {
+      return absFloor(key);
+    }
+
+    @Override
+    protected final Node subHigher(final K key) {
+      return absLower(key);
+    }
+
+    @Override
+    protected final Node subFloor(final K key) {
+      return absCeiling(key);
+    }
+
+    @Override
+    protected final Node subLower(final K key) {
+      return absHigher(key);
+    }
+  }
+
+
+
   @Override
-  public NavigableMap<K, V> descendingMap() {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> descendingMap() {
+    final NavigableMap<K, V> km = descendingMap;
+    return (km != null) ? km : (descendingMap = new DescendingSubMap(this,
+        true, null, true,
+        true, null, true));
   }
 
   @Override
-  public NavigableSet<K> descendingKeySet() {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableSet<K> descendingKeySet() {
+    return descendingMap().navigableKeySet();
   }
 
   @Override
-  public NavigableMap<K, V> subMap(final K fromKey, final boolean fromInclusive, final K toKey,
-      final boolean toInclusive) {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> subMap(final K fromKey, final boolean fromInclusive,
+      final K toKey, final boolean toInclusive) {
+    return new AscendingSubMap(this,
+        false, fromKey, fromInclusive,
+        false, toKey, toInclusive);
   }
 
   @Override
-  public NavigableMap<K, V> subMap(final K fromKey, final K toKey) {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> subMap(final K fromKey, final K toKey) {
+    return subMap(fromKey, true, toKey, false);
   }
 
   @Override
-  public NavigableMap<K, V> headMap(final K toKey, final boolean inclusive) {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> headMap(final K toKey, final boolean inclusive) {
+    return new AscendingSubMap(this,
+        true, null, true,
+        false, toKey, inclusive);
   }
 
   @Override
-  public NavigableMap<K, V> headMap(final K toKey) {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> headMap(final K toKey) {
+    return headMap(toKey, false);
   }
 
   @Override
-  public NavigableMap<K, V> tailMap(final K fromKey, final boolean inclusive) {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> tailMap(final K fromKey, final boolean inclusive) {
+    return new AscendingSubMap(this,
+        false, fromKey, inclusive,
+        true, null, true);
   }
 
   @Override
-  public NavigableMap<K, V> tailMap(final K fromKey) {
-    // TODO Auto-generated method stub
-    return null;
+  public final NavigableMap<K, V> tailMap(final K fromKey) {
+    return tailMap(fromKey, true);
   }
 
 }
