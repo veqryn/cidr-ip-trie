@@ -10,6 +10,7 @@ import java.util.AbstractCollection;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -73,7 +74,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
     private static final long serialVersionUID = -534919147906916778L;
 
-    private K privateKey = null;
+    private transient volatile K privateKey = null;
     protected V value = null;
     protected Node<K, V> left = null;
     protected Node<K, V> right = null;
@@ -107,9 +108,34 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     /**
      * @return the key
      */
+    @SuppressWarnings("unchecked")
     @Override
     public final K getKey() {
-      return privateKey;
+
+      if (privateKey != null) {
+        return privateKey;
+      }
+
+      if (this.parent == null) {
+        return null; // We are the root node
+      }
+
+      final BitSet bits = new BitSet();
+      int levelsDeep = 0;
+      Node<K, V> previousParent = this;
+      Node<K, V> currentParent = this.parent;
+      while (currentParent != null) {
+        if (currentParent.right == previousParent) {
+          bits.set(levelsDeep);
+        }
+        previousParent = currentParent;
+        currentParent = currentParent.parent;
+        levelsDeep++;
+      }
+
+      // Type erasure will not care
+      // So as long as we can convert it before it leaves the parent class, we are ok
+      return (K) new CodecElements(bits, levelsDeep);
     }
 
     /**
@@ -153,6 +179,62 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     public final String toString() {
       return getKey() + "=" + value;
     }
+
+  }
+
+  protected static final class CodecElements implements Serializable {
+
+    private static final long serialVersionUID = -3206679175141036878L;
+
+    protected final BitSet bits;
+    protected final int levelsDeep;
+
+    protected CodecElements(final BitSet bits, final int levelsDeep) {
+      this.bits = bits;
+      this.levelsDeep = levelsDeep;
+    }
+
+    public final BitSet getBits() {
+      return bits;
+    }
+
+    public final int getLevelsDeep() {
+      return levelsDeep;
+    }
+
+  }
+
+  protected static final <K, V> Node<K, V> resolveKey(final AbstractBinaryTrie<K, V> trie,
+      final Node<K, V> node) {
+
+    if (node.privateKey != null) {
+      return node;
+    }
+
+    if (node.parent == null) {
+      return null; // We are the root node
+    }
+
+    final K elementsPretendingToBeK = node.getKey();
+    if (!(elementsPretendingToBeK instanceof CodecElements)) {
+      throw new IllegalStateException(
+          "CodecElements object not returned by getKey, instead got: " + elementsPretendingToBeK);
+    }
+    final CodecElements elements = (CodecElements) elementsPretendingToBeK;
+
+
+    final K key = trie.codec.recreateKey(elements.bits, elements.levelsDeep);
+
+    if (key == null) {
+      throw new IllegalStateException("Unable to create non-null key with key-codec");
+    }
+    if (trie.getNode(key, true) != node) {
+      throw new IllegalStateException("Created key not equal to our original key");
+    }
+
+    node.privateKey = key;
+
+    return node;
 
   }
 
@@ -204,6 +286,11 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
     keySet = null;
     values = null;
     descendingMap = null;
+    // clear keys from Nodes
+    Node<K, V> subTree = root;
+    while ((subTree = successor(subTree)) != null) {
+      subTree.privateKey = null;
+    }
   }
 
 
@@ -319,7 +406,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       if (i == stopDepth) {
         this.dirty = true;
         ++this.modCount;
-        subNode.privateKey = key;
+        // subNode.privateKey = key;
         return subNode.setValue(value);
       }
     }
@@ -1267,7 +1354,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       }
       next = successor(e);
       lastReturned = e;
-      return e;
+      return resolveKey(AbstractBinaryTrie.this, e);
     }
 
     protected final Entry<K, V> prevEntry() {
@@ -1280,7 +1367,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       }
       next = predecessor(e);
       lastReturned = e;
-      return e;
+      return resolveKey(AbstractBinaryTrie.this, e);
     }
 
     @Override
