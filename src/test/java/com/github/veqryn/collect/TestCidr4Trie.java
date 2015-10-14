@@ -7,6 +7,7 @@ package com.github.veqryn.collect;
 
 import static com.github.veqryn.net.TestUtil.cidrsInOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -50,14 +51,22 @@ public class TestCidr4Trie {
 
     final AbstractBinaryTrie<Cidr4, String> trie2 = trie.clone();
     final KeyCodec<Cidr4> codec2 = trie2.codec;
+    {
+      assertEquals(codec, codec2);
+      assertEquals(trie.size(), trie2.size());
 
-    assertEquals(codec, codec2);
-    assertEquals(trie.size(), trie2.size());
-
-    final Iterator<Entry<Cidr4, String>> iter = trie.entrySet().iterator();
-    final Iterator<Entry<Cidr4, String>> iter2 = trie.entrySet().iterator();
-    for (int i = 0; i < trie.size(); ++i) {
-      assertEquals(iter.next(), iter2.next());
+      final Iterator<Entry<Cidr4, String>> iter = trie.entrySet().iterator();
+      final Iterator<Entry<Cidr4, String>> iter2 = trie.entrySet().iterator();
+      for (int i = 0; i < trie.size(); ++i) {
+        assertEquals(iter.next(), iter2.next());
+      }
+      assertEquals(trie, trie2);
+    }
+    trie2.remove(t3);
+    {
+      assertEquals(codec, codec2);
+      assertEquals(trie.size(), trie2.size() + 1);
+      assertNotEquals(trie, trie2);
     }
   }
 

@@ -36,7 +36,6 @@ import java.util.SortedSet;
 public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializable, Cloneable {
   // maybe implement guava Multimap or SortedSetMultimap
   // maybe implement apache commons collection interfaces?
-  // TODO: implement externalizable, writeObject, readObject
   // TODO: create interface(s), have the SubMaps implement and return them as well
 
   private static final long serialVersionUID = 4494549156276631388L;
@@ -193,7 +192,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
    * that it copes with {@code null} o1 properly.
    */
   protected static final boolean eq(final Object o1, final Object o2) {
-    return (o1 == null ? o2 == null : o1.equals(o2));
+    return (o1 == null ? o2 == null : (o1 == o2 || o1.equals(o2)));
   }
 
   /**
@@ -840,7 +839,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
   @Override
   public int hashCode() {
-    // TODO: optimize this for our trie, then delete (currently copied from AbstractMap)
+    // To stay compatible with Map interface, we are equal to any map with the same mappings
     int h = 0;
     final Iterator<Entry<K, V>> i = entrySet().iterator();
     while (i.hasNext()) {
@@ -851,7 +850,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
   @Override
   public boolean equals(final Object o) {
-    // TODO: optimize this for our trie, then delete (currently copied from AbstractMap)
+
     if (o == this) {
       return true;
     }
@@ -864,26 +863,69 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
       return false;
     }
 
-    try {
-      final Iterator<Entry<K, V>> i = entrySet().iterator();
-      while (i.hasNext()) {
-        final Entry<K, V> e = i.next();
-        final K key = e.getKey();
-        final V value = e.getValue();
-        if (value == null) {
-          if (!(m.get(key) == null && m.containsKey(key))) {
-            return false;
-          }
-        } else {
-          if (!value.equals(m.get(key))) {
-            return false;
+    if (m instanceof AbstractBinaryTrie) {
+      // We are comparing against another AbstractBinaryTrie, so we can take shortcuts
+      final AbstractBinaryTrie<?, ?> t = (AbstractBinaryTrie<?, ?>) m;
+      return compareAllNodes(this.root, t.root);
+
+    } else {
+      // To stay compatible with Map interface, we are equal to any map with the same mappings
+      try {
+        final Iterator<Entry<K, V>> i = entrySet().iterator();
+        while (i.hasNext()) {
+          final Entry<K, V> e = i.next();
+          final K key = e.getKey();
+          final V value = e.getValue();
+          if (value == null) {
+            if (!(m.get(key) == null && m.containsKey(key))) {
+              return false;
+            }
+          } else {
+            if (!value.equals(m.get(key))) {
+              return false;
+            }
           }
         }
+      } catch (final ClassCastException unused) {
+        return false;
+      } catch (final NullPointerException unused) {
+        return false;
       }
-    } catch (final ClassCastException unused) {
+
+      return true;
+    }
+
+  }
+
+  private static final boolean compareAllNodes(
+      final AbstractBinaryTrie<?, ?>.Node myNode,
+      final AbstractBinaryTrie<?, ?>.Node otherNode) {
+
+    if ((myNode.left == null && otherNode.left != null)
+        || (myNode.left != null && otherNode.left == null)) {
       return false;
-    } catch (final NullPointerException unused) {
+    }
+
+    if ((myNode.right == null && otherNode.right != null)
+        || (myNode.right != null && otherNode.right == null)) {
       return false;
+    }
+
+    if (!eq(myNode.value, otherNode.value)) {
+      return false;
+    }
+
+    // TODO: figure out how to do this with loops instead of recursion
+    if (myNode.left != null && otherNode.left != null) {
+      if (!compareAllNodes(myNode.left, otherNode.left)) {
+        return false;
+      }
+    }
+
+    if (myNode.right != null && otherNode.right != null) {
+      if (!compareAllNodes(myNode.right, otherNode.right)) {
+        return false;
+      }
     }
 
     return true;
@@ -893,7 +935,7 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
   @Override
   public String toString() {
-    // TODO: optimize this for our trie, then delete (currently copied from AbstractMap)
+    // TODO: maybe instead of creating a map string, create a ascii diagram for the tree structure?
     final Iterator<Entry<K, V>> i = entrySet().iterator();
     if (!i.hasNext()) {
       return "{}";
