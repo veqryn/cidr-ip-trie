@@ -1002,55 +1002,50 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
   @Override
   public Collection<V> values() {
-    // TODO: optimize this for our trie, then delete (currently copied from AbstractMap)
     if (values == null) {
-      values = new AbstractCollection<V>() {
-        @Override
-        public final Iterator<V> iterator() {
-          return new Iterator<V>() {
-            protected final Iterator<Entry<K, V>> iter = entrySet().iterator();
-
-            @Override
-            public final boolean hasNext() {
-              return iter.hasNext();
-            }
-
-            @Override
-            public final V next() {
-              return iter.next().getValue();
-            }
-
-            @Override
-            public final void remove() {
-              iter.remove();
-            }
-          };
-        }
-
-        @Override
-        public final int size() {
-          return AbstractBinaryTrie.this.size();
-        }
-
-        @Override
-        public final boolean isEmpty() {
-          return AbstractBinaryTrie.this.isEmpty();
-        }
-
-        @Override
-        public final void clear() {
-          AbstractBinaryTrie.this.clear();
-        }
-
-        @Override
-        public final boolean contains(final Object v) {
-          return AbstractBinaryTrie.this.containsValue(v);
-        }
-      };
+      values = new TrieValues();
     }
     return values;
   }
 
+  protected final class TrieValues extends AbstractCollection<V> {
+
+    @Override
+    public final Iterator<V> iterator() {
+      return new ValueIterator();
+    }
+
+    @Override
+    public final int size() {
+      return AbstractBinaryTrie.this.size();
+    }
+
+    @Override
+    public final boolean isEmpty() {
+      return AbstractBinaryTrie.this.isEmpty();
+    }
+
+    @Override
+    public final boolean contains(final Object o) {
+      return AbstractBinaryTrie.this.containsValue(o);
+    }
+
+    @Override
+    public final boolean remove(final Object o) {
+      for (Node e = firstNode(); e != null; e = successor(e)) {
+        if (eq(e.getValue(), o)) {
+          deleteNode(e, false);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public final void clear() {
+      AbstractBinaryTrie.this.clear();
+    }
+  }
 
 
   @Override
