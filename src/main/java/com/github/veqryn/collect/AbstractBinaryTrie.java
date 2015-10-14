@@ -33,7 +33,7 @@ import java.util.SortedSet;
  * @param <K> Key
  * @param <V> Value
  */
-public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializable {
+public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializable, Cloneable {
   // maybe implement guava Multimap or SortedSetMultimap
   // maybe implement apache commons collection interfaces?
   // TODO: implement externalizable, writeObject, readObject
@@ -56,6 +56,16 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
 
   public AbstractBinaryTrie(final KeyCodec<K> keyCodec) {
     this.codec = keyCodec;
+  }
+
+  public AbstractBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap) {
+    this.codec = keyCodec;
+    this.putAll(otherMap);
+  }
+
+  public AbstractBinaryTrie(final AbstractBinaryTrie<K, V> otherTrie) {
+    this.codec = otherTrie.codec;
+    this.buildFromExisting(otherTrie);
   }
 
 
@@ -282,6 +292,60 @@ public class AbstractBinaryTrie<K, V> implements NavigableMap<K, V>, Serializabl
   protected final int compare(final K k1, final K k2) {
     return codec.comparator() == null ? ((Comparable<? super K>) k1).compareTo(k2)
         : codec.comparator().compare(k1, k2);
+  }
+
+
+
+  /**
+   * Returns a shallow copy of this {@code AbstractBinaryTrie} instance.
+   * (The keys and values themselves are not cloned.)
+   *
+   * @return a shallow copy of this trie/map
+   */
+  @SuppressWarnings("unchecked")
+  @Override
+  public Object clone() {
+    AbstractBinaryTrie<K, V> clone = null;
+    try {
+      clone = (AbstractBinaryTrie<K, V>) super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new InternalError();
+    }
+
+    // Put clone into "virgin" state (except for comparator)
+    clone.root.value = null;
+    clone.root.left = null;
+    clone.root.right = null;
+    clone.size = 0L;
+    clone.modCount = 0;
+    clone.entrySet = null;
+    clone.keySet = null;
+    clone.values = null;
+    clone.descendingMap = null;
+
+    // Initialize clone with our mappings
+    clone.buildFromExisting(this);
+
+    return clone;
+  }
+
+  protected void buildFromExisting(final AbstractBinaryTrie<K, V> otherTrie) {
+    this.buildFromExisting(this.root, otherTrie.root);
+    this.dirty = true;
+    ++this.modCount;
+  }
+
+  private final void buildFromExisting(final Node myNode, final Node otherNode) {
+
+    myNode.value = otherNode.value;
+
+    // TODO: figure out how to do this with loops instead of recursion
+    if (otherNode.left != null) {
+      buildFromExisting(myNode.getOrCreateEmpty(true), otherNode.left);
+    }
+    if (otherNode.right != null) {
+      buildFromExisting(myNode.getOrCreateEmpty(false), otherNode.right);
+    }
   }
 
 
