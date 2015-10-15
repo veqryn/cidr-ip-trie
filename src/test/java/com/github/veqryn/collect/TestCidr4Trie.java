@@ -71,15 +71,6 @@ public class TestCidr4Trie {
   }
 
   @Test
-  public void testNullAllowed() {
-    final Cidr4Trie<String> trie = new Cidr4Trie<>();
-    assertEquals(null, trie.get(null));
-    assertEquals(false, trie.containsKey(null));
-    assertEquals(false, trie.containsValue(null));
-    assertEquals(null, trie.remove(null));
-  }
-
-  @Test
   public void testOrder() {
 
     final Cidr4Trie<String> trie = new Cidr4Trie<>();
@@ -179,10 +170,10 @@ public class TestCidr4Trie {
 
     // assertEquals("[depth 1 s: 0.0.0.0/1]", trie.getAll(s1) + "");
     assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3]",
-        trie.getAll(s3) + "");
+        trie.suffixValues(s3, true) + "");
     // assertEquals("[depth 1 t: 128.0.0.0/1]", trie.getAll(t1) + "");
     assertEquals("[depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
-        trie.getAll(t3) + "");
+        trie.suffixValues(t3, true) + "");
 
     assertEquals("null=null", trie.root + "");
 
