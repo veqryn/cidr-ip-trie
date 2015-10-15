@@ -572,12 +572,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
 
   protected static <K, V> List<Node<K, V>> getNodes(final K key, Node<K, V> node,
-      final KeyCodec<K> codec, final boolean includeSuffixedByKey, final boolean keyInclusive,
+      final KeyCodec<K> codec, final boolean includePrefixOfKey, final boolean keyInclusive,
       final boolean includePrefixedByKey, final boolean canBeEmpty) {
 
     final List<Node<K, V>> nodes = new ArrayList<>();
 
-    if (!includeSuffixedByKey && !keyInclusive && !includePrefixedByKey) {
+    if (!includePrefixOfKey && !keyInclusive && !includePrefixedByKey) {
       throw new IllegalArgumentException("Not including any of suffixes, the key, or prefixes");
     }
 
@@ -617,7 +617,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         // If conditions match, add the nodes
         if (node.value != null || canBeEmpty) {
 
-          if (i < stopDepth && includeSuffixedByKey) {
+          if (i < stopDepth && includePrefixOfKey) {
             nodes.add(node);
           }
 
@@ -646,7 +646,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   // TODO: turn these into View's backed by the trie map
   @Override
-  public Collection<V> suffixValues(final K key, final boolean keyInclusive) {
+  public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
     final Collection<V> values = new ArrayList<>();
     for (final Node<K, V> node : getNodes(key, root, codec, true, keyInclusive, false, false)) {
       values.add(node.value);
@@ -655,7 +655,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   }
 
   @Override
-  public Collection<V> prefixValues(final K key, final boolean keyInclusive) {
+  public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
     final Collection<V> values = new ArrayList<>();
     for (final Node<K, V> node : getNodes(key, root, codec, false, keyInclusive, true, false)) {
       values.add(node.value);
@@ -664,7 +664,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   }
 
   @Override
-  public Collection<V> containingValues(final K key) {
+  public Collection<V> valuesPrefixOfOrBy(final K key) {
     final Collection<V> values = new ArrayList<>();
     for (final Node<K, V> node : getNodes(key, root, codec, true, true, true, false)) {
       values.add(node.value);
@@ -675,25 +675,25 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   // TODO: Can be made more efficient, no need to get all nodes, just the first/last
   @Override
-  public V shortestSuffixValue(final K key, final boolean keyInclusive) {
+  public V shortestValuePrefixOf(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, true, keyInclusive, false, false);
     return nodes.isEmpty() ? null : nodes.get(0).value;
   }
 
   @Override
-  public V shortestPrefixValue(final K key, final boolean keyInclusive) {
+  public V shortestValuePrefixedBy(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, false, keyInclusive, true, false);
     return nodes.isEmpty() ? null : nodes.get(0).value;
   }
 
   @Override
-  public V longestSuffixValue(final K key, final boolean keyInclusive) {
+  public V longestValuePrefixOf(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, true, keyInclusive, false, false);
     return nodes.isEmpty() ? null : nodes.get(nodes.size() - 1).value;
   }
 
   @Override
-  public V longestPrefixValue(final K key, final boolean keyInclusive) {
+  public V longestValuePrefixedBy(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, false, keyInclusive, true, false);
     return nodes.isEmpty() ? null : nodes.get(nodes.size() - 1).value;
   }
@@ -2176,43 +2176,43 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     // Trie methods
 
     @Override
-    public Collection<V> suffixValues(final K key, final boolean keyInclusive) {
+    public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public Collection<V> prefixValues(final K key, final boolean keyInclusive) {
+    public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public Collection<V> containingValues(final K key) {
+    public Collection<V> valuesPrefixOfOrBy(final K key) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V shortestSuffixValue(final K key, final boolean keyInclusive) {
+    public V shortestValuePrefixOf(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V shortestPrefixValue(final K key, final boolean keyInclusive) {
+    public V shortestValuePrefixedBy(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V longestSuffixValue(final K key, final boolean keyInclusive) {
+    public V longestValuePrefixOf(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V longestPrefixValue(final K key, final boolean keyInclusive) {
+    public V longestValuePrefixedBy(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }

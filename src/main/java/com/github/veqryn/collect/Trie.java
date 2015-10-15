@@ -12,25 +12,25 @@ public interface Trie<K, V> {
 
   // Methods specific only to Trie:
 
-  Collection<V> suffixValues(K key, boolean keyInclusive);
+  Collection<V> valuesPrefixOf(K key, boolean keyInclusive);
 
 
-  Collection<V> prefixValues(K key, boolean keyInclusive);
+  Collection<V> valuesPrefixedBy(K key, boolean keyInclusive);
 
 
-  Collection<V> containingValues(K key);
+  Collection<V> valuesPrefixOfOrBy(K key);
 
 
-  V shortestSuffixValue(K key, boolean keyInclusive);
+  V shortestValuePrefixOf(K key, boolean keyInclusive);
 
 
-  V shortestPrefixValue(K key, boolean keyInclusive);
+  V shortestValuePrefixedBy(K key, boolean keyInclusive);
 
 
-  V longestSuffixValue(K key, boolean keyInclusive);
+  V longestValuePrefixOf(K key, boolean keyInclusive);
 
 
-  V longestPrefixValue(K key, boolean keyInclusive);
+  V longestValuePrefixedBy(K key, boolean keyInclusive);
 
 
 

@@ -170,10 +170,10 @@ public class TestCidr4Trie {
 
     // assertEquals("[depth 1 s: 0.0.0.0/1]", trie.getAll(s1) + "");
     assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3]",
-        trie.suffixValues(s3, true) + "");
+        trie.valuesPrefixOf(s3, true) + "");
     // assertEquals("[depth 1 t: 128.0.0.0/1]", trie.getAll(t1) + "");
     assertEquals("[depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
-        trie.suffixValues(t3, true) + "");
+        trie.valuesPrefixOf(t3, true) + "");
 
     assertEquals("null=null", trie.root + "");
 
