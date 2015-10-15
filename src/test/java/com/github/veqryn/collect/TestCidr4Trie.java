@@ -16,6 +16,7 @@ import java.util.TreeSet;
 
 import org.junit.Test;
 
+import com.github.veqryn.collect.AbstractBinaryTrie.Node;
 import com.github.veqryn.net.Cidr4;
 import com.github.veqryn.net.TestUtil;
 
@@ -90,6 +91,12 @@ public class TestCidr4Trie {
     int i = 0;
     for (final Entry<Cidr4, String> entry : trie.entrySet()) {
       assertEquals(cidrsInOrder[i++], entry.getKey().getCidrSignature());
+    }
+
+    Node<Cidr4, String> node = trie.lastNode();
+    for (i = cidrsInOrder.length - 1; i >= 0; --i) {
+      assertEquals(cidrsInOrder[i], node.getPrivateKeyOrNull().getCidrSignature());
+      node = AbstractBinaryTrie.predecessor(node);
     }
 
   }

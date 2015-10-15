@@ -21,16 +21,16 @@ public interface Trie<K, V> {
   Collection<V> valuesPrefixOfOrBy(K key);
 
 
-  V shortestValuePrefixOf(K key, boolean keyInclusive);
+  V valueShortestPrefixOf(K key, boolean keyInclusive);
 
 
-  V shortestValuePrefixedBy(K key, boolean keyInclusive);
+  V valueShortestPrefixedBy(K key, boolean keyInclusive);
 
 
-  V longestValuePrefixOf(K key, boolean keyInclusive);
+  V valueLongestPrefixOf(K key, boolean keyInclusive);
 
 
-  V longestValuePrefixedBy(K key, boolean keyInclusive);
+  V valueLongestPrefixedBy(K key, boolean keyInclusive);
 
 
 

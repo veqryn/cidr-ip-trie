@@ -233,6 +233,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   protected static final <K, V> Node<K, V> resolveNode(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
 
+    System.out.println(); // TODO: remove this when done testing
+
     if (node == null || node.parent == null) {
       return null; // If no parents, then it is the root node
     }
@@ -253,6 +255,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     }
 
     node.privateKey = key;
+
+    System.out.println("Resolving Node's Key: " + key); // TODO: remove this when done testing
 
     return node;
 
@@ -534,7 +538,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   protected static <K, V> Node<K, V> getNode(final K key, final Node<K, V> startingNode,
       final KeyCodec<K> codec, final boolean canBeEmpty) {
     // While we could technically combine getNode and getNodes, the speed and
-    // simplicity of getNode outweighs forcing exact match get's to go through getNodes
+    // simplicity of getNode outweighs forcing exact match get's to use getNodes
 
     if (key == null) {
       return null;
@@ -675,25 +679,25 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   // TODO: Can be made more efficient, no need to get all nodes, just the first/last
   @Override
-  public V shortestValuePrefixOf(final K key, final boolean keyInclusive) {
+  public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, true, keyInclusive, false, false);
     return nodes.isEmpty() ? null : nodes.get(0).value;
   }
 
   @Override
-  public V shortestValuePrefixedBy(final K key, final boolean keyInclusive) {
+  public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, false, keyInclusive, true, false);
     return nodes.isEmpty() ? null : nodes.get(0).value;
   }
 
   @Override
-  public V longestValuePrefixOf(final K key, final boolean keyInclusive) {
+  public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, true, keyInclusive, false, false);
     return nodes.isEmpty() ? null : nodes.get(nodes.size() - 1).value;
   }
 
   @Override
-  public V longestValuePrefixedBy(final K key, final boolean keyInclusive) {
+  public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
     final List<Node<K, V>> nodes = getNodes(key, root, codec, false, keyInclusive, true, false);
     return nodes.isEmpty() ? null : nodes.get(nodes.size() - 1).value;
   }
@@ -1332,38 +1336,44 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   @Override
   public Collection<V> values() {
     if (values == null) {
-      values = new TrieValues();
+      values = new TrieValues<K, V>(this);
     }
     return values;
   }
 
-  protected final class TrieValues extends AbstractCollection<V> {
+  protected static final class TrieValues<K, V> extends AbstractCollection<V> {
+
+    protected final AbstractBinaryTrie<K, V> m; // the backing map
+
+    protected TrieValues(final AbstractBinaryTrie<K, V> map) {
+      this.m = map;
+    }
 
     @Override
     public final Iterator<V> iterator() {
-      return new ValueIterator();
+      return new ValueIterator<K, V>(m);
     }
 
     @Override
     public final int size() {
-      return AbstractBinaryTrie.this.size();
+      return m.size();
     }
 
     @Override
     public final boolean isEmpty() {
-      return AbstractBinaryTrie.this.isEmpty();
+      return m.isEmpty();
     }
 
     @Override
     public final boolean contains(final Object o) {
-      return AbstractBinaryTrie.this.containsValue(o);
+      return m.containsValue(o);
     }
 
     @Override
     public final boolean remove(final Object o) {
-      for (Node<K, V> e = firstNode(); e != null; e = successor(e)) {
+      for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
         if (eq(e.getValue(), o)) {
-          deleteNode(e, false);
+          m.deleteNode(e, false);
           return true;
         }
       }
@@ -1372,7 +1382,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
     @Override
     public final void clear() {
-      AbstractBinaryTrie.this.clear();
+      m.clear();
     }
   }
 
@@ -1388,7 +1398,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
     @Override
     public final Iterator<Map.Entry<K, V>> iterator() {
-      return new EntryIterator();
+      return new EntryIterator<K, V>(AbstractBinaryTrie.this);
     }
 
     @Override
@@ -1432,70 +1442,75 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
 
 
-  protected final class EntryIterator extends PrivateEntryIterator<Map.Entry<K, V>> {
+  protected static final class EntryIterator<K, V>
+      extends PrivateEntryIterator<K, V, Map.Entry<K, V>> {
 
-    protected EntryIterator() {
-      super(firstNode());
+    protected EntryIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.firstNode());
     }
 
     @Override
     public final Map.Entry<K, V> next() {
-      return nextEntry();
+      return exportEntry(nextNode(), m);
     }
   }
 
-  protected final class ValueIterator extends PrivateEntryIterator<V> {
+  protected static final class ValueIterator<K, V> extends PrivateEntryIterator<K, V, V> {
 
-    protected ValueIterator() {
-      super(firstNode());
+    protected ValueIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.firstNode());
     }
 
     @Override
     public final V next() {
-      return nextEntry().getValue();
+      return nextNode().getValue();
     }
   }
 
   protected final Iterator<K> keyIterator() {
-    return new KeyIterator();
+    return new KeyIterator<K, V>(this);
   }
 
-  protected final class KeyIterator extends PrivateEntryIterator<K> {
+  protected static final class KeyIterator<K, V> extends PrivateEntryIterator<K, V, K> {
 
-    protected KeyIterator() {
-      super(firstNode());
+    protected KeyIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.firstNode());
     }
 
     @Override
     public final K next() {
-      return nextEntry().getKey();
+      return exportEntry(nextNode(), m).getKey();
     }
   }
 
   protected final Iterator<K> descendingKeyIterator() {
-    return new DescendingKeyIterator();
+    return new DescendingKeyIterator<K, V>(this);
   }
 
-  protected final class DescendingKeyIterator extends PrivateEntryIterator<K> {
+  protected static final class DescendingKeyIterator<K, V> extends PrivateEntryIterator<K, V, K> {
 
-    protected DescendingKeyIterator() {
-      super(lastNode());
+    protected DescendingKeyIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.lastNode());
     }
 
     @Override
     public final K next() {
-      return prevEntry().getKey();
+      return exportEntry(prevNode(), m).getKey();
     }
   }
 
 
-  protected abstract class PrivateEntryIterator<T> implements Iterator<T> {
+  protected abstract static class PrivateEntryIterator<K, V, T> implements Iterator<T> {
+
+    protected final AbstractBinaryTrie<K, V> m; // the backing map
+
     protected Node<K, V> next;
     protected Node<K, V> lastReturned;
     protected int expectedModCount;
 
-    protected PrivateEntryIterator(final Node<K, V> first) {
-      expectedModCount = modCount;
+    protected PrivateEntryIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
+      this.m = map;
+      expectedModCount = m.modCount;
       lastReturned = null;
       next = first;
     }
@@ -1505,30 +1520,30 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       return next != null;
     }
 
-    protected final Entry<K, V> nextEntry() {
+    protected final Node<K, V> nextNode() {
       final Node<K, V> e = next;
       if (e == null) {
         throw new NoSuchElementException();
       }
-      if (modCount != expectedModCount) {
+      if (m.modCount != expectedModCount) {
         throw new ConcurrentModificationException();
       }
       next = successor(e);
       lastReturned = e;
-      return exportEntry(e, AbstractBinaryTrie.this);
+      return e;
     }
 
-    protected final Entry<K, V> prevEntry() {
+    protected final Node<K, V> prevNode() {
       final Node<K, V> e = next;
       if (e == null) {
         throw new NoSuchElementException();
       }
-      if (modCount != expectedModCount) {
+      if (m.modCount != expectedModCount) {
         throw new ConcurrentModificationException();
       }
       next = predecessor(e);
       lastReturned = e;
-      return exportEntry(e, AbstractBinaryTrie.this);
+      return e;
     }
 
     @Override
@@ -1536,15 +1551,15 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       if (lastReturned == null) {
         throw new IllegalStateException();
       }
-      if (modCount != expectedModCount) {
+      if (m.modCount != expectedModCount) {
         throw new ConcurrentModificationException();
       }
       // TODO: Do I need this (from TreeMap)? Very confused by this...
       // deleted entries are replaced by their successors
       // if (lastReturned.left != null && lastReturned.right != null) {
       // next = lastReturned;}
-      deleteNode(lastReturned, false);
-      expectedModCount = modCount;
+      m.deleteNode(lastReturned, false);
+      expectedModCount = m.modCount;
       lastReturned = null;
     }
 
@@ -1664,6 +1679,14 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
           new DescendingSubMap<K, V>(m,
               fromStart, lo, loInclusive,
               toEnd, hi, hiInclusive));
+    }
+
+    @Override
+    public Collection<V> values() {
+      if (valuesSubMapView == null) {
+        valuesSubMapView = new TrieSubMapValues(absLowest(), absHighFence());
+      }
+      return valuesSubMapView;
     }
 
     @Override
@@ -1789,6 +1812,25 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     }
 
     @Override
+    public Collection<V> values() {
+      if (valuesSubMapView == null) {
+        valuesSubMapView = new DescendingTrieSubMapValues(absHighest(), absLowFence());
+      }
+      return valuesSubMapView;
+    }
+
+    protected final class DescendingTrieSubMapValues extends TrieSubMapValues {
+      protected DescendingTrieSubMapValues(final Node<K, V> last, final Node<K, V> fence) {
+        super(last, fence);
+      }
+
+      @Override
+      public final Iterator<V> iterator() {
+        return new DescendingSubMapValueIterator(first, fence);
+      }
+    }
+
+    @Override
     protected final Iterator<K> keyIterator() {
       return new DescendingSubMapKeyIterator(absHighest(), absLowFence());
     }
@@ -1874,6 +1916,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     protected transient volatile NavigableTrie<K, V> descendingSubMapView = null;
     protected transient volatile TrieEntrySetSubMapView entrySetSubMapView = null;
     protected transient volatile TrieKeySet<K> navigableKeySetSubMapView = null;
+    protected transient volatile Collection<V> valuesSubMapView = null;
 
 
     protected NavigableTrieSubMap(final AbstractBinaryTrie<K, V> m,
@@ -2021,6 +2064,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
     /** Returns descending iterator from the perspective of this submap */
     protected abstract Iterator<K> descendingKeyIterator();
+
+    @Override
+    public abstract Collection<V> values();
 
     // public methods
 
@@ -2194,25 +2240,25 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     }
 
     @Override
-    public V shortestValuePrefixOf(final K key, final boolean keyInclusive) {
+    public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V shortestValuePrefixedBy(final K key, final boolean keyInclusive) {
+    public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V longestValuePrefixOf(final K key, final boolean keyInclusive) {
+    public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
 
     @Override
-    public V longestValuePrefixedBy(final K key, final boolean keyInclusive) {
+    public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
       // TODO Auto-generated method stub
       return null;
     }
@@ -2283,6 +2329,53 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       }
     }
 
+    protected class TrieSubMapValues extends AbstractCollection<V> {
+
+      protected final Node<K, V> first;
+      protected final Node<K, V> fence;
+
+      protected TrieSubMapValues(final Node<K, V> first, final Node<K, V> fence) {
+        this.first = first;
+        this.fence = fence;
+      }
+
+      @Override
+      public Iterator<V> iterator() {
+        return new SubMapValueIterator(first, fence);
+      }
+
+      @Override
+      public final int size() {
+        return m.size();
+      }
+
+      @Override
+      public final boolean isEmpty() {
+        return m.isEmpty();
+      }
+
+      @Override
+      public final boolean contains(final Object o) {
+        return m.containsValue(o);
+      }
+
+      @Override
+      public final boolean remove(final Object o) {
+        for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
+          if (eq(e.getValue(), o)) {
+            m.deleteNode(e, false);
+            return true;
+          }
+        }
+        return false;
+      }
+
+      @Override
+      public final void clear() {
+        m.clear();
+      }
+    }
+
 
 
     protected final class SubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
@@ -2293,7 +2386,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
       @Override
       public final Map.Entry<K, V> next() {
-        return nextEntry();
+        return exportEntry(nextNode(), NavigableTrieSubMap.this.m);
       }
 
       @Override
@@ -2310,11 +2403,28 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
       @Override
       public final K next() {
-        return nextEntry().getKey();
+        return exportEntry(nextNode(), NavigableTrieSubMap.this.m).getKey();
       }
 
       @Override
       public final void remove() {
+        removeAscending();
+      }
+    }
+
+    protected final class SubMapValueIterator extends SubMapIterator<V> {
+
+      protected SubMapValueIterator(final Node<K, V> first, final Node<K, V> fence) {
+        super(first, fence);
+      }
+
+      @Override
+      public final V next() {
+        return nextNode().getValue();
+      }
+
+      @Override
+      public void remove() {
         removeAscending();
       }
     }
@@ -2327,7 +2437,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
       @Override
       public final Map.Entry<K, V> next() {
-        return prevEntry();
+        return exportEntry(prevNode(), NavigableTrieSubMap.this.m);
       }
 
       @Override
@@ -2344,11 +2454,28 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
       @Override
       public final K next() {
-        return prevEntry().getKey();
+        return exportEntry(prevNode(), NavigableTrieSubMap.this.m).getKey();
       }
 
       @Override
       public final void remove() {
+        removeDescending();
+      }
+    }
+
+    protected final class DescendingSubMapValueIterator extends SubMapIterator<V> {
+
+      protected DescendingSubMapValueIterator(final Node<K, V> last, final Node<K, V> fence) {
+        super(last, fence);
+      }
+
+      @Override
+      public final V next() {
+        return prevNode().getValue();
+      }
+
+      @Override
+      public void remove() {
         removeDescending();
       }
     }
@@ -2376,7 +2503,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         return next != null && (fenceKey == null || resolveKey(next, m) != fenceKey);
       }
 
-      protected final Entry<K, V> nextEntry() {
+      protected final Node<K, V> nextNode() {
         final Node<K, V> e = next;
         if (e == null || (fenceKey != null && resolveKey(e, m) == fenceKey)) {
           throw new NoSuchElementException();
@@ -2386,10 +2513,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         }
         next = successor(e);
         lastReturned = e;
-        return exportEntry(e, NavigableTrieSubMap.this.m);
+        return e;
       }
 
-      protected final Entry<K, V> prevEntry() {
+      protected final Node<K, V> prevNode() {
         final Node<K, V> e = next;
         if (e == null || (fenceKey != null && resolveKey(e, m) == fenceKey)) {
           throw new NoSuchElementException();
@@ -2399,7 +2526,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         }
         next = predecessor(e);
         lastReturned = e;
-        return exportEntry(e, NavigableTrieSubMap.this.m);
+        return e;
       }
 
       protected final void removeAscending() {
