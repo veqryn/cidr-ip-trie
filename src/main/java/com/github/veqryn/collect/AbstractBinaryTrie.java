@@ -44,7 +44,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   protected final Node<K, V> root = new Node<K, V>(null);
 
-  private transient volatile long size = 0;
+  protected long size = 0;
+
   protected transient volatile int modCount = 0;
 
   protected transient volatile TrieEntrySet entrySet = null;
@@ -393,25 +394,48 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   }
 
   protected void buildFromExisting(final AbstractBinaryTrie<K, V> otherTrie) {
-    this.buildFromExisting(this.root, otherTrie.root);
+
+    Node<K, V> myNode = this.root;
+    Node<K, V> otherNode = otherTrie.root;
+
+    // Pre-Order tree traversal
+    outer: while (otherNode != null) {
+
+      if (otherNode.left != null) {
+        otherNode = otherNode.left;
+        myNode = myNode.getOrCreateEmpty(true);
+        myNode.value = otherNode.value;
+        // myNode.key = otherNode.key;
+        continue;
+      }
+
+      if (otherNode.right != null) {
+        otherNode = otherNode.right;
+        myNode = myNode.getOrCreateEmpty(false);
+        myNode.value = otherNode.value;
+        // myNode.key = otherNode.key;
+        continue;
+      }
+
+      // We are a leaf node
+      while (otherNode.parent != null) {
+
+        if (otherNode == otherNode.parent.left && otherNode.parent.right != null) {
+          otherNode = otherNode.parent.right;
+          myNode = myNode.parent.getOrCreateEmpty(false);
+          myNode.value = otherNode.value;
+          // myNode.key = otherNode.key;
+          continue outer;
+        }
+        otherNode = otherNode.parent;
+        myNode = myNode.parent;
+      }
+
+    }
+
+    this.size = otherTrie.size;
     ++this.modCount;
-  }
 
-  private final void buildFromExisting(final Node<K, V> myNode, final Node<K, V> otherNode) {
-
-    if (otherNode.value != null) {
-      myNode.value = otherNode.value;
-      ++this.size;
-    }
-    // myNode.key = otherNode.key;
-
-    // TODO: figure out how to do this with loops instead of recursion
-    if (otherNode.left != null) {
-      buildFromExisting(myNode.getOrCreateEmpty(true), otherNode.left);
-    }
-    if (otherNode.right != null) {
-      buildFromExisting(myNode.getOrCreateEmpty(false), otherNode.right);
-    }
   }
 
 
