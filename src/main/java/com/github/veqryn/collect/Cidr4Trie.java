@@ -8,7 +8,6 @@ package com.github.veqryn.collect;
 import java.io.Serializable;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.Map;
 
 import com.github.veqryn.net.Cidr4;
 
@@ -19,8 +18,7 @@ import com.github.veqryn.net.Cidr4;
  *
  * @param <V>
  */
-public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V>
-    implements Map<Cidr4, V>, Serializable {
+public final class Cidr4Trie<V> extends AbstractNavigableBinaryTrie<Cidr4, V> {
 
   private static final long serialVersionUID = -8113898642923790939L;
 
