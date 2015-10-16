@@ -1127,7 +1127,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   }
 
-  private static final boolean compareAllNodes(
+  protected static final boolean compareNodeAndExistenceOfChildren(
       final AbstractBinaryTrie.Node<?, ?> myNode,
       final AbstractBinaryTrie.Node<?, ?> otherNode) {
 
@@ -1145,27 +1145,59 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       return false;
     }
 
-    // TODO: figure out how to do this with loops instead of recursion
-    if (myNode.left != null && otherNode.left != null) {
-      if (!compareAllNodes(myNode.left, otherNode.left)) {
-        return false;
-      }
-    }
+    return true;
 
-    if (myNode.right != null && otherNode.right != null) {
-      if (!compareAllNodes(myNode.right, otherNode.right)) {
-        return false;
+  }
+
+  protected static final boolean compareAllNodes(Node<?, ?> myNode, Node<?, ?> otherNode) {
+
+    // Pre-Order tree traversal
+    outer: while (otherNode != null) {
+
+      if (otherNode.left != null) {
+        otherNode = otherNode.left;
+        myNode = myNode.left;
+        if (!compareNodeAndExistenceOfChildren(myNode, otherNode)) {
+          return false;
+        }
+        continue;
       }
+
+      if (otherNode.right != null) {
+        otherNode = otherNode.right;
+        myNode = myNode.right;
+        if (!compareNodeAndExistenceOfChildren(myNode, otherNode)) {
+          return false;
+        }
+        continue;
+      }
+
+      // We are a leaf node
+      while (otherNode.parent != null) {
+
+        if (otherNode == otherNode.parent.left && otherNode.parent.right != null) {
+          otherNode = otherNode.parent.right;
+          myNode = myNode.parent.right;
+          if (!compareNodeAndExistenceOfChildren(myNode, otherNode)) {
+            return false;
+          }
+          continue outer;
+        }
+        otherNode = otherNode.parent;
+        myNode = myNode.parent;
+      }
+
     }
 
     return true;
+
   }
 
 
 
   @Override
   public String toString() {
-    // TODO: maybe instead of creating a map string, create a ascii diagram for the tree structure?
+    // maybe create a ascii diagram for the tree structure?
     final Iterator<Entry<K, V>> i = entrySet().iterator();
     if (!i.hasNext()) {
       return "{}";
