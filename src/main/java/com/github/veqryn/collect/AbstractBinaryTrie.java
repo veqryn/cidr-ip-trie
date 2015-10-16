@@ -45,7 +45,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
   protected final Node<K, V> root = new Node<K, V>(null);
 
   private transient volatile long size = 0;
-  protected transient volatile boolean dirty = false;
   protected transient volatile int modCount = 0;
 
   protected transient volatile TrieEntrySet entrySet = null;
@@ -239,7 +238,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       return null; // If no parents, then it is the root node
     }
 
-    if (node.privateKey != null) {
+    // key has already been resolved, or we shouldn't have a key because we don't have a value
+    if (node.privateKey != null || node.value == null) {
       return node;
     }
 
@@ -335,7 +335,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     this.root.right = null;
     this.size = 0L;
     ++this.modCount;
-    this.dirty = false;
   }
 
 
@@ -347,21 +346,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   @Override
   public int size() {
-    return size(null, false);
+    return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) size;
   }
 
   protected int size(final Node<K, V> parentFence, final boolean countEmptyNodes) {
-    // TODO: maybe switch to keeping size up to date all the time
-    if (this.dirty) {
-      long total = 0L;
-      Node<K, V> subTree = root;
-      while ((subTree = successor(subTree, parentFence, countEmptyNodes)) != null) {
-        ++total;
-      }
-      this.size = total;
-      this.dirty = false;
+    long total = 0L;
+    Node<K, V> subTree = root;
+    while ((subTree = successor(subTree, parentFence, countEmptyNodes)) != null) {
+      ++total;
     }
-    return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) size;
+    return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
   }
 
 
@@ -400,13 +394,15 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
   protected void buildFromExisting(final AbstractBinaryTrie<K, V> otherTrie) {
     this.buildFromExisting(this.root, otherTrie.root);
-    this.dirty = true;
     ++this.modCount;
   }
 
   private final void buildFromExisting(final Node<K, V> myNode, final Node<K, V> otherNode) {
 
-    myNode.value = otherNode.value;
+    if (otherNode.value != null) {
+      myNode.value = otherNode.value;
+      ++this.size;
+    }
     // myNode.key = otherNode.key;
 
     // TODO: figure out how to do this with loops instead of recursion
@@ -445,7 +441,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     while (true) {
       subNode = subNode.getOrCreateEmpty(codec.isLeft(key, i++));
       if (i == stopDepth) {
-        this.dirty = true;
+        ++this.size;
         ++this.modCount;
         // subNode.privateKey = key;
         return subNode.setValue(value);
@@ -476,36 +472,28 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     }
 
     final V oldValue = p.value;
-    deleteNode(p, false);
+    deleteNode(p);
     return oldValue;
   }
 
-  protected void deleteNode(final Node<K, V> node, final boolean deleteChildren) {
-    if (node == null) {
+  protected void deleteNode(Node<K, V> node) {
+    if (node == null || node.value == null) {
       return;
     }
 
+    --this.size;
+    ++modCount;
     node.value = null;
     node.privateKey = null;
 
-    if (deleteChildren) {
-      node.left = null;
-      node.right = null;
-    }
-
-    Node<K, V> previousParent = node;
-    Node<K, V> currentParent = node.parent;
-    while (previousParent.isEmpty() && currentParent != null) {
-      if (currentParent.left == previousParent) {
-        currentParent.left = null;
+    while (node.isEmpty() && node.parent != null) {
+      if (node.parent.left == node) {
+        node.parent.left = null;
       } else {
-        currentParent.right = null;
+        node.parent.right = null;
       }
-      previousParent = currentParent;
-      currentParent = currentParent.parent;
+      node = node.parent;
     }
-    ++modCount;
-    dirty = true;
   }
 
 
@@ -895,7 +883,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     final Node<K, V> polled = firstNode();
     final Map.Entry<K, V> result = exportEntry(polled, this);
     if (polled != null) {
-      deleteNode(polled, false);
+      deleteNode(polled);
     }
     return result;
   }
@@ -984,7 +972,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     final Node<K, V> polled = lastNode();
     final Map.Entry<K, V> result = exportEntry(polled, this);
     if (polled != null && polled != root) {
-      deleteNode(polled, false);
+      deleteNode(polled);
     }
     return result;
   }
@@ -1373,7 +1361,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     public final boolean remove(final Object o) {
       for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
         if (eq(e.getValue(), o)) {
-          m.deleteNode(e, false);
+          m.deleteNode(e);
           return true;
         }
       }
@@ -1423,7 +1411,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       final V value = entry.getValue();
       final Node<K, V> p = getNode(entry.getKey());
       if (p != null && eq(p.getValue(), value)) {
-        deleteNode(p, false);
+        deleteNode(p);
         return true;
       }
       return false;
@@ -1558,7 +1546,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       // deleted entries are replaced by their successors
       // if (lastReturned.left != null && lastReturned.right != null) {
       // next = lastReturned;}
-      m.deleteNode(lastReturned, false);
+      m.deleteNode(lastReturned);
       expectedModCount = m.modCount;
       lastReturned = null;
     }
@@ -1892,9 +1880,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
     private static final long serialVersionUID = 4159238497306996386L;
 
-    // TODO: Add the Trie methods to the SubMap, because SubMap is really only useful
-    // for this Trie if we have the same Trie specific methods in the submap as well
-
     /** The backing map. */
     protected final AbstractBinaryTrie<K, V> m;
 
@@ -2171,7 +2156,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       final Node<K, V> e = subLowest();
       final Map.Entry<K, V> result = exportEntry(e, m);
       if (e != null) {
-        m.deleteNode(e, false);
+        m.deleteNode(e);
       }
       return result;
     }
@@ -2181,7 +2166,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       final Node<K, V> e = subHighest();
       final Map.Entry<K, V> result = exportEntry(e, m);
       if (e != null) {
-        m.deleteNode(e, false);
+        m.deleteNode(e);
       }
       return result;
     }
@@ -2221,46 +2206,103 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
 
     // Trie methods
 
+    // TODO: turn into views
     @Override
     public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, keyInclusive)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final Collection<V> values = new ArrayList<>();
+      for (final Node<K, V> node : getNodes(key, m.root, m.codec, true, keyInclusive, false,
+          false)) {
+        if (inRange(resolveKey(node, m), keyInclusive)) {
+          values.add(node.value);
+        }
+      }
+      return values;
     }
 
     @Override
     public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, keyInclusive)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final Collection<V> values = new ArrayList<>();
+      for (final Node<K, V> node : getNodes(key, m.root, m.codec, false, keyInclusive, true,
+          false)) {
+        if (inRange(resolveKey(node, m), keyInclusive)) {
+          values.add(node.value);
+        }
+      }
+      return values;
     }
 
     @Override
     public Collection<V> valuesPrefixOfOrBy(final K key) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, true)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final Collection<V> values = new ArrayList<>();
+      for (final Node<K, V> node : getNodes(key, m.root, m.codec, true, true, true, false)) {
+        if (inRange(resolveKey(node, m), true)) {
+          values.add(node.value);
+        }
+      }
+      return values;
     }
 
+
+    // TODO: Can be made more efficient, no need to get all nodes, just the first/last
     @Override
     public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, keyInclusive)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final List<Node<K, V>> nodes =
+          getNodes(key, m.root, m.codec, true, keyInclusive, false, false);
+      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(0), m), keyInclusive)) {
+        return null;
+      }
+      return nodes.get(0).value;
     }
 
     @Override
     public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, keyInclusive)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final List<Node<K, V>> nodes =
+          getNodes(key, m.root, m.codec, false, keyInclusive, true, false);
+      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(0), m), keyInclusive)) {
+        return null;
+      }
+      return nodes.get(0).value;
     }
 
     @Override
     public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, keyInclusive)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final List<Node<K, V>> nodes =
+          getNodes(key, m.root, m.codec, true, keyInclusive, false, false);
+      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(nodes.size() - 1), m), keyInclusive)) {
+        return null;
+      }
+      return nodes.get(nodes.size() - 1).value;
     }
 
     @Override
     public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
-      // TODO Auto-generated method stub
-      return null;
+      if (!inRange(key, keyInclusive)) {
+        throw new IllegalArgumentException("key out of range");
+      }
+      final List<Node<K, V>> nodes =
+          getNodes(key, m.root, m.codec, false, keyInclusive, true, false);
+      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(nodes.size() - 1), m), keyInclusive)) {
+        return null;
+      }
+      return nodes.get(nodes.size() - 1).value;
     }
 
 
@@ -2322,7 +2364,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         }
         final Node<K, V> node = m.getNode(key);
         if (node != null && eq(node.getValue(), entry.getValue())) {
-          m.deleteNode(node, false);
+          m.deleteNode(node);
           return true;
         }
         return false;
@@ -2363,7 +2405,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
       public final boolean remove(final Object o) {
         for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
           if (eq(e.getValue(), o)) {
-            m.deleteNode(e, false);
+            m.deleteNode(e);
             return true;
           }
         }
@@ -2541,7 +2583,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         // deleted entries are replaced by their successors
         // if (lastReturned.left != null && lastReturned.right != null) {
         // next = lastReturned; }
-        m.deleteNode(lastReturned, false);
+        m.deleteNode(lastReturned);
         lastReturned = null;
         expectedModCount = m.modCount;
       }
@@ -2553,7 +2595,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         if (m.modCount != expectedModCount) {
           throw new ConcurrentModificationException();
         }
-        m.deleteNode(lastReturned, false);
+        m.deleteNode(lastReturned);
         lastReturned = null;
         expectedModCount = m.modCount;
       }
