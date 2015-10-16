@@ -8,6 +8,7 @@ package com.github.veqryn.collect;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.BitSet;
+import java.util.Map;
 
 /**
  * PatriciaTrie
@@ -21,9 +22,30 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
   private static final long serialVersionUID = -6067883352977753038L;
 
+
+
   public PatriciaTrie() {
-    super(new PatriciaCodec());
+    super(new PatriciaCodec(), false, true);
   }
+
+  public PatriciaTrie(final boolean cacheKeys, final boolean writeKeys) {
+    super(new PatriciaCodec(), cacheKeys, writeKeys);
+  }
+
+  public PatriciaTrie(final Map<String, V> otherMap) {
+    super(new PatriciaCodec(), otherMap, false, true);
+  }
+
+  public PatriciaTrie(final Map<String, V> otherMap, final boolean cacheKeys,
+      final boolean writeKeys) {
+    super(new PatriciaCodec(), otherMap, cacheKeys, writeKeys);
+  }
+
+  public PatriciaTrie(final PatriciaTrie<V> otherTrie) {
+    super(otherTrie);
+  }
+
+
 
   /**
    * PatriciaCodec

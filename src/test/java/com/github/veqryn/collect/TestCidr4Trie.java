@@ -9,6 +9,7 @@ import static com.github.veqryn.net.TestUtil.cidrsInOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -20,6 +21,7 @@ import org.junit.Test;
 import com.github.veqryn.collect.AbstractBinaryTrie.Node;
 import com.github.veqryn.net.Cidr4;
 import com.github.veqryn.net.TestUtil;
+import com.github.veqryn.util.TestingUtil;
 
 /**
  * Tests for the CidrTrie class
@@ -105,16 +107,17 @@ public class TestCidr4Trie {
 
     Node<Cidr4, String> node = trie.lastNode();
     for (i = cidrsInOrder.length - 1; i >= 0; --i) {
-      assertEquals(cidrsInOrder[i], node.getPrivateKeyOrNull().getCidrSignature());
+      assertEquals(cidrsInOrder[i], AbstractBinaryTrie.resolveKey(node, trie).getCidrSignature());
       node = AbstractBinaryTrie.predecessor(node);
     }
 
   }
 
+  @SuppressWarnings("unchecked")
   @Test
-  public void testWhatever() {
+  public void testWhatever() throws ClassNotFoundException, IOException {
 
-    final Cidr4Trie<String> trie = new Cidr4Trie<>();
+    Cidr4Trie<String> trie = new Cidr4Trie<>(false, false);
 
     for (final Object[] cidr : TestUtil.cidrs) {
       // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
@@ -147,6 +150,18 @@ public class TestCidr4Trie {
     for (final Entry<Cidr4, String> value : reversed.entrySet()) {
       System.out.println(value);
     }
+    byte[] bytes = TestingUtil.pickle(trie);
+    // Files.write(Paths.get("key.txt"), bytes);
+    final Cidr4Trie<String> other = TestingUtil.unpickle(bytes, Cidr4Trie.class);
+    assertEquals(trie, other);
+    assertEquals(trie.hashCode(), other.hashCode());
+
+    other.setCacheKeys(true);
+    other.setWriteKeys(true);
+    bytes = TestingUtil.pickle(other);
+    trie = TestingUtil.unpickle(bytes, Cidr4Trie.class);
+    assertEquals(trie, other);
+    assertEquals(trie.hashCode(), other.hashCode());
   }
 
   @Test
@@ -233,17 +248,18 @@ public class TestCidr4Trie {
     assertEquals("null=null", trie.root + "");
 
 
-    assertEquals("0.0.0.0/1", trie.root.left.getPrivateKeyOrNull() + "");
+    assertEquals("0.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.left, trie) + "");
 
     // assertEquals("0.0.0.0/2", Cidr4Trie.resolveKey(trie.root.left.left, trie) + "");
 
-    assertEquals("0.0.0.0/3", trie.root.left.left.left.getPrivateKeyOrNull() + "");
+    assertEquals("0.0.0.0/3", AbstractBinaryTrie.resolveKey(trie.root.left.left.left, trie) + "");
 
-    assertEquals("128.0.0.0/1", trie.root.right.getPrivateKeyOrNull() + "");
+    assertEquals("128.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.right, trie) + "");
 
     // assertEquals("192.0.0.0/2", Cidr4Trie.resolveKey(trie.root.right.right, trie) + "");
 
-    assertEquals("224.0.0.0/3", trie.root.right.right.right.getPrivateKeyOrNull() + "");
+    assertEquals("224.0.0.0/3",
+        AbstractBinaryTrie.resolveKey(trie.root.right.right.right, trie) + "");
 
 
     assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.getValue() + "");
@@ -279,13 +295,13 @@ public class TestCidr4Trie {
     assertEquals("null=null", trie.root + "");
 
 
-    assertEquals("0.0.0.0/1", trie.root.left.getPrivateKeyOrNull() + "");
+    assertEquals("0.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.left, trie) + "");
 
     // assertEquals("0.0.0.0/2", Cidr4Trie.resolveKey(trie.root.left.left, trie) + "");
 
-    assertEquals("0.0.0.0/3", trie.root.left.left.left.getPrivateKeyOrNull() + "");
+    assertEquals("0.0.0.0/3", AbstractBinaryTrie.resolveKey(trie.root.left.left.left, trie) + "");
 
-    assertEquals("128.0.0.0/1", trie.root.right.getPrivateKeyOrNull() + "");
+    assertEquals("128.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.right, trie) + "");
 
     assertEquals(null, trie.root.right.right);
 

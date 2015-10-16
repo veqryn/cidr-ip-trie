@@ -47,12 +47,14 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
-  public AbstractNavigableBinaryTrie(final KeyCodec<K> keyCodec) {
-    super(keyCodec);
+  public AbstractNavigableBinaryTrie(final KeyCodec<K> keyCodec, final boolean cacheKeys,
+      final boolean writeKeys) {
+    super(keyCodec, cacheKeys, writeKeys);
   }
 
-  public AbstractNavigableBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap) {
-    super(keyCodec, otherMap);
+  public AbstractNavigableBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap,
+      final boolean cacheKeys, final boolean writeKeys) {
+    super(keyCodec, otherMap, cacheKeys, writeKeys);
   }
 
   public AbstractNavigableBinaryTrie(final AbstractBinaryTrie<K, V> otherTrie) {
@@ -70,9 +72,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     if (entry == null || entry.getValue() == null) {
       return null;
     }
-    final Node<K, V> resolved = resolveNode(entry, trie);
-    return new AbstractMap.SimpleImmutableEntry<>(resolved.getPrivateKeyOrNull(),
-        resolved.getValue());
+    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(entry, trie), entry.getValue());
   }
 
   /**

@@ -9,8 +9,6 @@ import static com.github.veqryn.net.Ips.format;
 import static com.github.veqryn.net.Ips.toArray;
 import static com.github.veqryn.net.TestUtil.cidrs;
 import static com.github.veqryn.net.TestUtil.cidrsInOrder;
-import static com.github.veqryn.net.TestUtil.pickle;
-import static com.github.veqryn.net.TestUtil.unpickle;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,6 +25,8 @@ import java.util.TreeSet;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.github.veqryn.util.TestingUtil;
 
 /**
  * Tests for the Ips utility class
@@ -408,8 +408,8 @@ public class TestCidr4 {
   @Test
   public void testSerializability() throws ClassNotFoundException, IOException {
     for (final Cidr4 cidr : fromString) {
-      final byte[] bytes = pickle(cidr);
-      final Cidr4 other = unpickle(bytes, Cidr4.class);
+      final byte[] bytes = TestingUtil.pickle(cidr);
+      final Cidr4 other = TestingUtil.unpickle(bytes, Cidr4.class);
       assertEquals(cidr, other);
       assertEquals(cidr.hashCode(), other.hashCode());
     }

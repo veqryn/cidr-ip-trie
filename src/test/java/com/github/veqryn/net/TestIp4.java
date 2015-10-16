@@ -7,8 +7,6 @@ package com.github.veqryn.net;
 
 import static com.github.veqryn.net.TestUtil.ips;
 import static com.github.veqryn.net.TestUtil.ipsInOrder;
-import static com.github.veqryn.net.TestUtil.pickle;
-import static com.github.veqryn.net.TestUtil.unpickle;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -22,6 +20,8 @@ import java.util.TreeSet;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.github.veqryn.util.TestingUtil;
 
 /**
  * Tests for the Ip4 class
@@ -130,8 +130,8 @@ public class TestIp4 {
   @Test
   public void testSerializability() throws ClassNotFoundException, IOException {
     for (final Ip4 ip : fromString) {
-      final byte[] bytes = pickle(ip);
-      final Ip4 other = unpickle(bytes, Ip4.class);
+      final byte[] bytes = TestingUtil.pickle(ip);
+      final Ip4 other = TestingUtil.unpickle(bytes, Ip4.class);
       assertEquals(ip, other);
       assertEquals(ip.hashCode(), other.hashCode());
     }

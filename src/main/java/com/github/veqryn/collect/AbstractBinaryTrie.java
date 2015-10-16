@@ -5,6 +5,9 @@
  */
 package com.github.veqryn.collect;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -29,31 +32,36 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   protected final KeyCodec<K> codec;
 
-  protected final Node<K, V> root = new Node<K, V>(null);
+  protected transient boolean cacheKeys = false;
+  protected transient boolean writeKeys = true;
 
-  protected long size = 0;
+  // our node's (or their keys and values) actually get serialized by writeObject
+  protected transient Node<K, V> root = new Node<K, V>(null);
 
-  protected transient volatile int modCount = 0;
+  protected transient long size = 0;
+
+  protected transient int modCount = 0;
 
 
 
-  public AbstractBinaryTrie(final KeyCodec<K> keyCodec) {
+  public AbstractBinaryTrie(final KeyCodec<K> keyCodec, final boolean cacheKeys,
+      final boolean writeKeys) {
     if (keyCodec == null) {
       throw new NullPointerException("KeyCodec may not be null");
     }
+    this.cacheKeys = cacheKeys;
+    this.writeKeys = writeKeys;
     this.codec = keyCodec;
   }
 
-  public AbstractBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap) {
-    if (keyCodec == null) {
-      throw new NullPointerException("KeyCodec may not be null");
-    }
-    this.codec = keyCodec;
+  public AbstractBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap,
+      final boolean cacheKeys, final boolean writeKeys) {
+    this(keyCodec, cacheKeys, writeKeys);
     this.putAll(otherMap);
   }
 
   public AbstractBinaryTrie(final AbstractBinaryTrie<K, V> otherTrie) {
-    this.codec = otherTrie.codec;
+    this(otherTrie.codec, otherTrie.cacheKeys, otherTrie.writeKeys);
     this.buildFromExisting(otherTrie);
   }
 
@@ -61,6 +69,24 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   public KeyCodec<K> getCodec() {
     return codec;
+  }
+
+
+  public boolean isCacheKeys() {
+    return cacheKeys;
+  }
+
+  public void setCacheKeys(final boolean cacheKeys) {
+    this.cacheKeys = cacheKeys;
+  }
+
+
+  public boolean isWriteKeys() {
+    return writeKeys;
+  }
+
+  public void setWriteKeys(final boolean writeKeys) {
+    this.writeKeys = writeKeys;
   }
 
 
@@ -73,9 +99,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     /**
      * Do not directly reference <code>privateKey</code>.
-     * Instead use <code>resolveKey(trie, node)</code>
+     * Instead use <code>resolveKey(node, trie)</code> to first create the key.
+     *
+     * @return the key (K) if it has been resolved, or null otherwise.
      */
-    protected transient volatile K privateKey = null;
+    private transient K privateKey = null;
     protected V value = null;
     protected Node<K, V> left = null;
     protected Node<K, V> right = null;
@@ -124,16 +152,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return oldValue;
     }
 
-    /**
-     * Do not directly reference <code>getPrivateKeyOrNull</code>.
-     * Instead use <code>resolveKey(trie, node)</code>
-     *
-     * @return the key (K) if it has been resolved, or null otherwise
-     */
-    protected final K getPrivateKeyOrNull() {
-      return privateKey;
-    }
-
     protected final CodecElements getCodecElements() {
 
       if (this.parent == null) {
@@ -168,7 +186,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     @Override
     public final String toString() {
-      return (getPrivateKeyOrNull() != null ? getPrivateKeyOrNull() : getCodecElements())
+      return (privateKey != null ? privateKey : getCodecElements())
           + "=" + value;
     }
   }
@@ -216,7 +234,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   protected static final <K, V> K resolveKey(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
     final Node<K, V> resolved = resolveNode(node, trie);
-    return resolved == null ? null : resolved.getPrivateKeyOrNull();
+    return resolved == null ? null : resolved.privateKey;
   }
 
   protected static final <K, V> Node<K, V> resolveNode(final Node<K, V> node,
@@ -385,8 +403,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         if (subNode.value == null) {
           ++this.size;
         }
+        if (cacheKeys) {
+          subNode.privateKey = key;
+        }
         ++this.modCount;
-        // subNode.privateKey = key;
         return subNode.value = value;
       }
     }
@@ -886,6 +906,75 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
     return sb.append('}').toString();
   }
+
+
+
+  private void writeObject(final ObjectOutputStream s) throws IOException {
+    // Write out the codec and any hidden stuff
+    s.defaultWriteObject();
+
+    // Write out cacheKeys (whether we are keeping keys around or not)
+    s.writeBoolean(cacheKeys);
+
+    // Write out writeKeys (whether we are writing out keys or not)
+    s.writeBoolean(writeKeys);
+
+    // Write out size (number of Mappings)
+    s.writeLong(size);
+
+    if (writeKeys) {
+      // If writeKeys, Write out keys and values (alternating)
+      for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
+        s.writeObject(resolveKey(node, this));
+        s.writeObject(node.getValue());
+        if (!cacheKeys) {
+          node.privateKey = null; // Clear the key
+        }
+      }
+    } else {
+      // If not writing keys, Just write out the root node
+      s.writeObject(root);
+      // Because each Node has 3 reference pointers to up to 3 other Nodes,
+      // (pointers are 32 or 64 bits) writing out the nodes like this ends up saving space when the
+      // size of keys > size of 3 pointers, but costs extra space if size of key < 3 pointers
+      // Even if the size of keys is smaller, writing the root nodes would be faster than
+      // resolving and writing un-cached non-resolved keys
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void readObject(final ObjectInputStream s) throws IOException, ClassNotFoundException {
+    // Read in the codec and any hidden stuff
+    s.defaultReadObject();
+
+    // Read in cacheKeys (whether we are keeping keys around or not)
+    this.cacheKeys = s.readBoolean();
+
+    // Read in writeKeys (whether we are writing out keys or not)
+    this.writeKeys = s.readBoolean();
+
+    // Read in size (number of Mappings)
+    final long originalSize = s.readLong();
+
+    if (writeKeys) {
+      // If writeKeys, read in keys and values (alternating)
+      this.root = new Node<K, V>(null);
+      for (int i = 0; i < originalSize; ++i) {
+        final K key = (K) s.readObject();
+        final V value = (V) s.readObject();
+        this.put(key, value);
+      }
+      assert(this.size == originalSize);
+    } else {
+      // If not writing keys, Just read in the root node
+      this.root = (Node<K, V>) s.readObject();
+      assert(this.root.value == null);
+      assert(this.root.parent == null);
+      this.size = originalSize;
+    }
+
+  }
+
 
 
 }
