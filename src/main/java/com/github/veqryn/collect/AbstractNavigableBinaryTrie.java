@@ -350,6 +350,56 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public boolean equals(final Object o) {
+
+    if (o == this) {
+      return true;
+    }
+
+    if (o instanceof AbstractBinaryTrie) {
+      // We are comparing against another AbstractBinaryTrie, so we can take shortcuts
+      final AbstractBinaryTrie<K, V> t = (AbstractBinaryTrie<K, V>) o;
+      if (t.size() != size()) {
+        return false;
+      }
+      return compareAllNodes(this.root, t.root);
+    }
+
+    if (o instanceof Map) {
+      final Map<K, V> m = (Map<K, V>) o;
+      if (m.size() != size()) {
+        return false;
+      }
+      // To stay compatible with Map interface, we are equal to any map with the same mappings
+      try {
+        for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
+          final V value = node.getValue();
+          final K key = resolveKey(node, this);
+          if (value == null) {
+            if (!(m.get(key) == null && m.containsKey(key))) {
+              return false;
+            }
+          } else {
+            if (!value.equals(m.get(key))) {
+              return false;
+            }
+          }
+        }
+      } catch (final ClassCastException unused) {
+        return false;
+      } catch (final NullPointerException unused) {
+        return false;
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+
+
   @Override
   public boolean containsValue(final Object value) throws ClassCastException, NullPointerException {
     if (value == null) {

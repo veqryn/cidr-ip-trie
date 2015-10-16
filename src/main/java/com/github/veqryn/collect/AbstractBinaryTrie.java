@@ -775,6 +775,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+
+  @SuppressWarnings("unchecked")
   @Override
   public boolean equals(final Object o) {
 
@@ -784,47 +786,19 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     if (o instanceof AbstractBinaryTrie) {
       // We are comparing against another AbstractBinaryTrie, so we can take shortcuts
-      final AbstractBinaryTrie<?, ?> t = (AbstractBinaryTrie<?, ?>) o;
+      final AbstractBinaryTrie<K, V> t = (AbstractBinaryTrie<K, V>) o;
       if (t.size() != size()) {
         return false;
       }
       return compareAllNodes(this.root, t.root);
     }
 
-    if (o instanceof Map) {
-      final Map<?, ?> m = (Map<?, ?>) o;
-      if (m.size() != size()) {
-        return false;
-      }
-      // To stay compatible with Map interface, we are equal to any map with the same mappings
-      try {
-        for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
-          final V value = node.getValue();
-          final K key = resolveKey(node, this);
-          if (value == null) {
-            if (!(m.get(key) == null && m.containsKey(key))) {
-              return false;
-            }
-          } else {
-            if (!value.equals(m.get(key))) {
-              return false;
-            }
-          }
-        }
-      } catch (final ClassCastException unused) {
-        return false;
-      } catch (final NullPointerException unused) {
-        return false;
-      }
-      return true;
-    }
-
     return false;
   }
 
-  protected static final boolean compareNodeAndExistenceOfChildren(
-      final AbstractBinaryTrie.Node<?, ?> myNode,
-      final AbstractBinaryTrie.Node<?, ?> otherNode) {
+  protected static final <K, V> boolean compareNodeAndExistenceOfChildren(
+      final AbstractBinaryTrie.Node<K, V> myNode,
+      final AbstractBinaryTrie.Node<K, V> otherNode) {
 
     if ((myNode.left == null && otherNode.left != null)
         || (myNode.left != null && otherNode.left == null)) {
@@ -843,7 +817,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return true;
   }
 
-  protected static final boolean compareAllNodes(Node<?, ?> myNode, Node<?, ?> otherNode) {
+  protected static final <K, V> boolean compareAllNodes(Node<K, V> myNode, Node<K, V> otherNode) {
 
     // Pre-Order tree traversal
     outer: while (otherNode != null) {
