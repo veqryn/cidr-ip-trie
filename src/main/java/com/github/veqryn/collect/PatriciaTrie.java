@@ -8,7 +8,6 @@ package com.github.veqryn.collect;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.BitSet;
-import java.util.Map;
 
 /**
  * PatriciaTrie
@@ -18,8 +17,7 @@ import java.util.Map;
  *
  * @param <V>
  */
-public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V>
-    implements Map<String, V>, Serializable {
+public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V> {
 
   private static final long serialVersionUID = -6067883352977753038L;
 
