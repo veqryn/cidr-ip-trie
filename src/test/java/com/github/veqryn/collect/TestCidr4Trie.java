@@ -64,9 +64,18 @@ public class TestCidr4Trie {
       }
       assertEquals(trie, trie2);
     }
+    trie.put(t3, "not equal");
+    {
+      assertEquals(trie.size(), trie2.size());
+      assertNotEquals(trie, trie2);
+    }
+    trie.put(t3, "depth 3 t: " + t3);
+    {
+      assertEquals(trie.size(), trie2.size());
+      assertEquals(trie, trie2);
+    }
     trie2.remove(t3);
     {
-      assertEquals(codec, codec2);
       assertEquals(trie.size(), trie2.size() + 1);
       assertNotEquals(trie, trie2);
     }

@@ -430,6 +430,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         otherNode = otherNode.parent;
         myNode = myNode.parent;
       }
+      break;
 
     }
 
@@ -465,10 +466,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
     while (true) {
       subNode = subNode.getOrCreateEmpty(codec.isLeft(key, i++));
       if (i == stopDepth) {
-        ++this.size;
+        if (subNode.value == null) {
+          ++this.size;
+        }
         ++this.modCount;
         // subNode.privateKey = key;
-        return subNode.setValue(value);
+        return subNode.value = value;
       }
     }
   }
@@ -1186,6 +1189,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, NavigableTrie<K, V>
         otherNode = otherNode.parent;
         myNode = myNode.parent;
       }
+      break;
 
     }
 
