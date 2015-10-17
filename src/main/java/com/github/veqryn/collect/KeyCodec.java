@@ -22,7 +22,7 @@ public interface KeyCodec<K> extends Serializable {
    * @param key
    * @return number of elements in this key object
    */
-  public int length(K key);
+  int length(K key);
 
   /**
    * @param key
@@ -30,7 +30,7 @@ public interface KeyCodec<K> extends Serializable {
    * @return true if the element at this index should be in the left node,
    *         false if the element at this index should be in the right node
    */
-  public boolean isLeft(K key, int index);
+  boolean isLeft(K key, int index);
 
   /**
    * @param bits BitSet where the bit at the ({@code numElements} - 1)
@@ -39,7 +39,7 @@ public interface KeyCodec<K> extends Serializable {
    * @param numElements the number of elements in this key
    * @return A new key equal to the one originally put in
    */
-  public K recreateKey(BitSet bits, int numElements);
+  K recreateKey(BitSet bits, int numElements);
 
   /**
    * Returns a comparator consistent with the <code>isLeft</code> and <code>length</code> methods,
@@ -59,6 +59,6 @@ public interface KeyCodec<K> extends Serializable {
    *
    * @return Comparator consistent with the KeyCodec interface methods
    */
-  public Comparator<? super K> comparator();
+  Comparator<? super K> comparator();
 
 }

@@ -9,11 +9,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 
 /**
@@ -598,59 +602,57 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
-
-  // TODO: turn these into View's backed by the trie map
   @Override
   public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
-    final Collection<V> values = new ArrayList<>();
-    for (final Node<K, V> node : getNodes(key, root, codec, true, keyInclusive, false, false)) {
-      values.add(node.value);
-    }
-    return values;
+    return new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false);
   }
 
   @Override
   public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
-    final Collection<V> values = new ArrayList<>();
-    for (final Node<K, V> node : getNodes(key, root, codec, false, keyInclusive, true, false)) {
-      values.add(node.value);
-    }
-    return values;
+    return new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false);
   }
 
   @Override
   public Collection<V> valuesPrefixOfOrBy(final K key) {
-    final Collection<V> values = new ArrayList<>();
-    for (final Node<K, V> node : getNodes(key, root, codec, true, true, true, false)) {
-      values.add(node.value);
-    }
-    return values;
+    return new TriePrefixValues<K, V>(this, key, true, true, true, false);
   }
 
 
-  // TODO: Can be made more efficient, no need to get all nodes, just the first/last
   @Override
   public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
-    final List<Node<K, V>> nodes = getNodes(key, root, codec, true, keyInclusive, false, false);
-    return nodes.isEmpty() ? null : nodes.get(0).value;
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
+    return iter.hasNext() ? iter.next() : null;
   }
 
   @Override
   public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
-    final List<Node<K, V>> nodes = getNodes(key, root, codec, false, keyInclusive, true, false);
-    return nodes.isEmpty() ? null : nodes.get(0).value;
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
+    return iter.hasNext() ? iter.next() : null;
   }
 
   @Override
   public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
-    final List<Node<K, V>> nodes = getNodes(key, root, codec, true, keyInclusive, false, false);
-    return nodes.isEmpty() ? null : nodes.get(nodes.size() - 1).value;
+    // TODO: is it even possible to iterate backwards through prefixes?
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
+    V value = null;
+    while (iter.hasNext()) {
+      value = iter.next();
+    }
+    return value;
   }
 
   @Override
   public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
-    final List<Node<K, V>> nodes = getNodes(key, root, codec, false, keyInclusive, true, false);
-    return nodes.isEmpty() ? null : nodes.get(nodes.size() - 1).value;
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
+    V value = null;
+    while (iter.hasNext()) {
+      value = iter.next();
+    }
+    return value;
   }
 
 
@@ -776,6 +778,248 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     }
     return null;
+  }
+
+
+
+  protected static final class TriePrefixValues<K, V> extends AbstractCollection<V> {
+
+    protected final AbstractBinaryTrie<K, V> trie; // the backing trie
+
+    protected final K key;
+    protected final boolean includePrefixOfKey;
+    protected final boolean keyInclusive;
+    protected final boolean includePrefixedByKey;
+    protected final boolean canBeEmpty;
+
+
+    protected TriePrefixValues(final AbstractBinaryTrie<K, V> trie, final K key,
+        final boolean includePrefixOfKey, final boolean keyInclusive,
+        final boolean includePrefixedByKey, final boolean canBeEmpty) {
+      this.trie = trie;
+      this.key = key;
+      this.includePrefixOfKey = includePrefixOfKey;
+      this.keyInclusive = keyInclusive;
+      this.includePrefixedByKey = includePrefixedByKey;
+      this.canBeEmpty = canBeEmpty;
+    }
+
+    @Override
+    public final Iterator<V> iterator() {
+      return new ValuePrefixIterator<K, V>(trie, key, includePrefixOfKey, keyInclusive,
+          includePrefixedByKey, canBeEmpty);
+    }
+
+    @SuppressWarnings("unused")
+    @Override
+    public final int size() {
+      long total = 0L;
+      for (final V value : this) {
+        ++total;
+      }
+      return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
+    }
+
+    @Override
+    public final boolean isEmpty() {
+      return iterator().hasNext();
+    }
+
+    @Override
+    public final boolean remove(final Object o) {
+      Node<K, V> node = null;
+      final Iterator<Node<K, V>> iter =
+          new NodePrefixIterator<K, V>(trie, key, includePrefixOfKey, keyInclusive,
+              includePrefixedByKey, canBeEmpty);
+      while (iter.hasNext()) {
+        node = iter.next();
+        if (eq(node.value, o)) {
+          trie.deleteNode(node);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public final void clear() {
+      final Iterator<Node<K, V>> iter =
+          new NodePrefixIterator<K, V>(trie, key, includePrefixOfKey, keyInclusive,
+              includePrefixedByKey, canBeEmpty);
+      while (iter.hasNext()) {
+        trie.deleteNode(iter.next());
+      }
+    }
+  }
+
+
+
+  protected static final class ValuePrefixIterator<K, V> extends PrivatePrefixIterator<K, V, V> {
+
+    protected ValuePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
+        final boolean includePrefixOfKey, final boolean keyInclusive,
+        final boolean includePrefixedByKey, final boolean canBeEmpty) {
+      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey, canBeEmpty);
+    }
+
+    @Override
+    public final V next() {
+      return nextNode().getValue();
+    }
+  }
+
+  protected static final class NodePrefixIterator<K, V>
+      extends PrivatePrefixIterator<K, V, Node<K, V>> {
+
+    protected NodePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
+        final boolean includePrefixOfKey, final boolean keyInclusive,
+        final boolean includePrefixedByKey, final boolean canBeEmpty) {
+      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey, canBeEmpty);
+    }
+
+    @Override
+    public final Node<K, V> next() {
+      return nextNode();
+    }
+  }
+
+
+  protected abstract static class PrivatePrefixIterator<K, V, T> implements Iterator<T> {
+
+    protected final AbstractBinaryTrie<K, V> trie; // the backing trie
+
+    protected Node<K, V> next;
+    protected Node<K, V> lastReturned;
+    protected int expectedModCount;
+    protected final K key;
+    protected final int stopDepth;
+    protected int index = 0;
+    protected Node<K, V> limit = null;
+    protected final boolean includePrefixOfKey;
+    protected final boolean keyInclusive;
+    protected final boolean includePrefixedByKey;
+    protected final boolean canBeEmpty;
+
+    protected PrivatePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
+        final boolean includePrefixOfKey, final boolean keyInclusive,
+        final boolean includePrefixedByKey, final boolean canBeEmpty) {
+
+      if (!includePrefixOfKey && !keyInclusive && !includePrefixedByKey) {
+        throw new IllegalArgumentException("Not including any of suffixes, the key, or prefixes");
+      }
+
+      if (key == null) {
+        throw new NullPointerException(getClass().getName()
+            + " does not allow null keys: " + key);
+      }
+
+      this.trie = trie;
+      this.expectedModCount = trie.modCount;
+
+      this.key = key;
+      this.includePrefixOfKey = includePrefixOfKey;
+      this.keyInclusive = keyInclusive;
+      this.includePrefixedByKey = includePrefixedByKey;
+      this.canBeEmpty = canBeEmpty;
+
+      this.stopDepth = trie.codec.length(key);
+
+      if (this.stopDepth <= 0) {
+        throw new IllegalArgumentException(AbstractBinaryTrie.class.getClass().getName()
+            + " does not accept keys of length <= 0: " + key);
+      }
+
+      this.lastReturned = null;
+      this.next = getNextPrefixNode(trie.root); // must always start at root
+    }
+
+
+    protected Node<K, V> getNextPrefixNode(Node<K, V> node) {
+
+      while (node != null) {
+
+        if (index > stopDepth) {
+          // Traverse all nodes under the Key (limit)
+          node = successor(node, limit, canBeEmpty);
+
+        } else {
+          // Traverse only the path that matches our Key
+          if (trie.codec.isLeft(key, index++)) {
+            node = node.left;
+          } else {
+            node = node.right;
+          }
+          if (index == stopDepth) {
+            // Force any subsequent tree traversal to be under this node (the Key)
+            limit = node;
+          }
+        }
+
+        if (node != null) {
+          // If conditions match, return the node
+          if (node.value != null || canBeEmpty) {
+
+            if (index < stopDepth) {
+              if (includePrefixOfKey) {
+                return node;
+              }
+
+            } else if (index == stopDepth) {
+              if (keyInclusive) {
+                return node;
+              }
+
+            } else { // index > stopDepth
+              if (includePrefixedByKey) {
+                return node;
+              }
+            }
+
+          }
+
+          // Exit early if all further conditions are false
+          if ((index + 1 == stopDepth && (!keyInclusive && !includePrefixedByKey))
+              || (index >= stopDepth && !includePrefixedByKey)) {
+            return null;
+          }
+        }
+      }
+
+      return null;
+    }
+
+
+    @Override
+    public final boolean hasNext() {
+      return next != null;
+    }
+
+    protected final Node<K, V> nextNode() {
+      final Node<K, V> e = next;
+      if (e == null) {
+        throw new NoSuchElementException();
+      }
+      if (trie.modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
+      next = getNextPrefixNode(e);
+      lastReturned = e;
+      return e;
+    }
+
+    @Override
+    public final void remove() {
+      if (lastReturned == null) {
+        throw new IllegalStateException();
+      }
+      if (trie.modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
+      trie.deleteNode(lastReturned);
+      expectedModCount = trie.modCount;
+      lastReturned = null;
+    }
+
   }
 
 

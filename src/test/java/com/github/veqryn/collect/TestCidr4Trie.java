@@ -132,24 +132,39 @@ public class TestCidr4Trie {
 
     final Set<Entry<Cidr4, String>> entries = trie.entrySet();
     System.out.println(entries.size());
+    System.out.println();
     final Collection<String> values = trie.values();
     System.out.println(trie.valueLongestPrefixOf(new Cidr4("128.0.0.0/10"), true));
+    System.out.println();
     for (final String value : values) {
       System.out.println(value);
     }
+    System.out.println();
+    for (final String value : trie.valuesPrefixOf(new Cidr4("128.0.0.4/32"), true)) {
+      System.out.println(value);
+    }
+    System.out.println();
+    for (final String value : trie.valuesPrefixedBy(new Cidr4("128.0.0.0/24"), true)) {
+      System.out.println(value);
+    }
+    System.out.println();
 
     final NavigableTrie<Cidr4, String> reversed = trie.descendingMap();
     System.out.println(reversed.size());
     final Set<Entry<Cidr4, String>> reversedEntries = reversed.entrySet();
     System.out.println(reversedEntries.size());
+    System.out.println();
     final Collection<String> reversedValues = reversed.values();
     System.out.println(reversed.valueLongestPrefixOf(new Cidr4("128.0.0.0/10"), true));
+    System.out.println();
     for (final String value : reversedValues) {
       System.out.println(value);
     }
+    System.out.println();
     for (final Entry<Cidr4, String> value : reversed.entrySet()) {
       System.out.println(value);
     }
+    System.out.println();
     byte[] bytes = TestingUtil.pickle(trie);
     // Files.write(Paths.get("key.txt"), bytes);
     final Cidr4Trie<String> other = TestingUtil.unpickle(bytes, Cidr4Trie.class);

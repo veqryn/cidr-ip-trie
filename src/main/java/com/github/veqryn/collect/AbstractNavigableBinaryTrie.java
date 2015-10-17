@@ -527,9 +527,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     @Override
     public final boolean remove(final Object o) {
-      final int oldSize = size();
-      m.remove(o);
-      return size() != oldSize;
+      return m.remove(o) != null;
     }
 
     @Override
@@ -1466,7 +1464,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     // Trie methods
 
-    // TODO: turn into views
     @Override
     public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
       if (!inRange(key, keyInclusive)) {
