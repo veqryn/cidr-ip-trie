@@ -10,12 +10,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.AbstractCollection;
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -530,133 +528,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  protected static <K, V> List<Node<K, V>> getNodes(final K key, Node<K, V> node,
-      final KeyCodec<K> codec, final boolean includePrefixOfKey, final boolean keyInclusive,
-      final boolean includePrefixedByKey, final boolean canBeEmpty) {
-
-    final List<Node<K, V>> nodes = new ArrayList<>();
-
-    if (!includePrefixOfKey && !keyInclusive && !includePrefixedByKey) {
-      throw new IllegalArgumentException("Not including any of suffixes, the key, or prefixes");
-    }
-
-    if (key == null) {
-      return nodes;
-    }
-
-    final int stopDepth = codec.length(key);
-
-    if (stopDepth <= 0) {
-      throw new IllegalArgumentException(AbstractBinaryTrie.class.getClass().getName()
-          + " does not accept keys of length <= 0: " + key);
-    }
-
-    Node<K, V> limit = null;
-    int i = 0;
-    while (node != null) {
-
-      if (i > stopDepth) {
-        // Traverse all nodes under the Key (limit)
-        node = successor(node, limit, canBeEmpty);
-
-      } else {
-        // Traverse only the path that matches our Key
-        if (codec.isLeft(key, i++)) {
-          node = node.left;
-        } else {
-          node = node.right;
-        }
-        // Force any subsequent tree traversal to be under this node (the Key)
-        if (i == stopDepth) {
-          limit = node;
-        }
-      }
-
-      if (node != null) {
-        // If conditions match, add the nodes
-        if (node.value != null || canBeEmpty) {
-
-          if (i < stopDepth && includePrefixOfKey) {
-            nodes.add(node);
-          }
-
-          if (i == stopDepth && keyInclusive) {
-            nodes.add(node);
-          }
-
-          if (i > stopDepth && includePrefixedByKey) {
-            nodes.add(node);
-          }
-
-        }
-
-        // Exit early if all further conditions are false
-        if ((i + 1 == stopDepth && (!keyInclusive && !includePrefixedByKey))
-            || (i >= stopDepth && !includePrefixedByKey)) {
-          return nodes;
-        }
-      }
-    }
-
-    return nodes;
-  }
-
-
-  @Override
-  public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
-    return new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false);
-  }
-
-  @Override
-  public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
-    return new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false);
-  }
-
-  @Override
-  public Collection<V> valuesPrefixOfOrBy(final K key) {
-    return new TriePrefixValues<K, V>(this, key, true, true, true, false);
-  }
-
-
-  @Override
-  public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
-    return iter.hasNext() ? iter.next() : null;
-  }
-
-  @Override
-  public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
-    return iter.hasNext() ? iter.next() : null;
-  }
-
-  @Override
-  public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
-    // TODO: is it even possible to iterate backwards through prefixes?
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
-    V value = null;
-    while (iter.hasNext()) {
-      value = iter.next();
-    }
-    return value;
-  }
-
-  @Override
-  public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
-    V value = null;
-    while (iter.hasNext()) {
-      value = iter.next();
-    }
-    return value;
-  }
-
-
-
   protected Node<K, V> firstNode() {
     return successor(root);
   }
@@ -782,7 +653,61 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  protected static final class TriePrefixValues<K, V> extends AbstractCollection<V> {
+  @Override
+  public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
+    return new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false);
+  }
+
+  @Override
+  public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
+    return new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false);
+  }
+
+  @Override
+  public Collection<V> valuesPrefixOfOrBy(final K key) {
+    return new TriePrefixValues<K, V>(this, key, true, true, true, false);
+  }
+
+
+  @Override
+  public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
+    return iter.hasNext() ? iter.next() : null;
+  }
+
+  @Override
+  public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
+    return iter.hasNext() ? iter.next() : null;
+  }
+
+  @Override
+  public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
+    V value = null;
+    while (iter.hasNext()) {
+      value = iter.next();
+    }
+    return value;
+  }
+
+  @Override
+  public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
+    final Iterator<V> iter =
+        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
+    V value = null;
+    while (iter.hasNext()) {
+      value = iter.next();
+    }
+    return value;
+  }
+
+
+
+  protected static class TriePrefixValues<K, V> extends AbstractCollection<V> {
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
 
@@ -904,10 +829,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         final boolean includePrefixOfKey, final boolean keyInclusive,
         final boolean includePrefixedByKey, final boolean canBeEmpty) {
 
-      if (!includePrefixOfKey && !keyInclusive && !includePrefixedByKey) {
-        throw new IllegalArgumentException("Not including any of suffixes, the key, or prefixes");
-      }
-
       if (key == null) {
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + key);
@@ -957,7 +878,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
         if (node != null) {
           // If conditions match, return the node
-          if (node.value != null || canBeEmpty) {
+          if ((node.value != null || canBeEmpty) && inRange(node)) {
 
             if (index < stopDepth) {
               if (includePrefixOfKey) {
@@ -986,6 +907,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       }
 
       return null;
+    }
+
+
+    protected boolean inRange(final Node<K, V> node) {
+      return true;
     }
 
 

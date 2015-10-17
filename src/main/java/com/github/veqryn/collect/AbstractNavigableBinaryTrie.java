@@ -9,13 +9,11 @@ import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -1464,102 +1462,163 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     // Trie methods
 
+
     @Override
     public Collection<V> valuesPrefixOf(final K key, final boolean keyInclusive) {
-      if (!inRange(key, keyInclusive)) {
-        throw new IllegalArgumentException("key out of range");
-      }
-      final Collection<V> values = new ArrayList<>();
-      for (final Node<K, V> node : getNodes(key, m.root, m.codec, true, keyInclusive, false,
-          false)) {
-        if (inRange(resolveKey(node, m), keyInclusive)) {
-          values.add(node.value);
-        }
-      }
-      return values;
+      return new TriePrefixSubMapValues(key, true, keyInclusive, false, false);
     }
 
     @Override
     public Collection<V> valuesPrefixedBy(final K key, final boolean keyInclusive) {
-      if (!inRange(key, keyInclusive)) {
-        throw new IllegalArgumentException("key out of range");
-      }
-      final Collection<V> values = new ArrayList<>();
-      for (final Node<K, V> node : getNodes(key, m.root, m.codec, false, keyInclusive, true,
-          false)) {
-        if (inRange(resolveKey(node, m), keyInclusive)) {
-          values.add(node.value);
-        }
-      }
-      return values;
+      return new TriePrefixSubMapValues(key, false, keyInclusive, true, false);
     }
 
     @Override
     public Collection<V> valuesPrefixOfOrBy(final K key) {
-      if (!inRange(key, true)) {
-        throw new IllegalArgumentException("key out of range");
-      }
-      final Collection<V> values = new ArrayList<>();
-      for (final Node<K, V> node : getNodes(key, m.root, m.codec, true, true, true, false)) {
-        if (inRange(resolveKey(node, m), true)) {
-          values.add(node.value);
-        }
-      }
-      return values;
+      return new TriePrefixSubMapValues(key, true, true, true, false);
     }
 
 
-    // TODO: Can be made more efficient, no need to get all nodes, just the first/last
     @Override
     public V valueShortestPrefixOf(final K key, final boolean keyInclusive) {
-      if (!inRange(key, keyInclusive)) {
-        throw new IllegalArgumentException("key out of range");
-      }
-      final List<Node<K, V>> nodes =
-          getNodes(key, m.root, m.codec, true, keyInclusive, false, false);
-      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(0), m), keyInclusive)) {
-        return null;
-      }
-      return nodes.get(0).value;
+      final Iterator<V> iter =
+          new TriePrefixSubMapValues(key, true, keyInclusive, false, false).iterator();
+      return iter.hasNext() ? iter.next() : null;
     }
 
     @Override
     public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
-      if (!inRange(key, keyInclusive)) {
-        throw new IllegalArgumentException("key out of range");
-      }
-      final List<Node<K, V>> nodes =
-          getNodes(key, m.root, m.codec, false, keyInclusive, true, false);
-      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(0), m), keyInclusive)) {
-        return null;
-      }
-      return nodes.get(0).value;
+      final Iterator<V> iter =
+          new TriePrefixSubMapValues(key, false, keyInclusive, true, false).iterator();
+      return iter.hasNext() ? iter.next() : null;
     }
 
     @Override
     public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
-      if (!inRange(key, keyInclusive)) {
-        throw new IllegalArgumentException("key out of range");
+      final Iterator<V> iter =
+          new TriePrefixSubMapValues(key, true, keyInclusive, false, false).iterator();
+      V value = null;
+      while (iter.hasNext()) {
+        value = iter.next();
       }
-      final List<Node<K, V>> nodes =
-          getNodes(key, m.root, m.codec, true, keyInclusive, false, false);
-      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(nodes.size() - 1), m), keyInclusive)) {
-        return null;
-      }
-      return nodes.get(nodes.size() - 1).value;
+      return value;
     }
 
     @Override
     public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
-      if (!inRange(key, keyInclusive)) {
-        throw new IllegalArgumentException("key out of range");
+      final Iterator<V> iter =
+          new TriePrefixSubMapValues(key, false, keyInclusive, true, false).iterator();
+      V value = null;
+      while (iter.hasNext()) {
+        value = iter.next();
       }
-      final List<Node<K, V>> nodes =
-          getNodes(key, m.root, m.codec, false, keyInclusive, true, false);
-      if (nodes.isEmpty() || !inRange(resolveKey(nodes.get(nodes.size() - 1), m), keyInclusive)) {
-        return null;
+      return value;
+    }
+
+
+    protected class TriePrefixSubMapValues extends AbstractCollection<V> {
+
+      protected final K key;
+      protected final boolean includePrefixOfKey;
+      protected final boolean keyInclusive;
+      protected final boolean includePrefixedByKey;
+      protected final boolean canBeEmpty;
+
+
+      protected TriePrefixSubMapValues(final K key,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey, final boolean canBeEmpty) {
+        this.key = key;
+        this.includePrefixOfKey = includePrefixOfKey;
+        this.keyInclusive = keyInclusive;
+        this.includePrefixedByKey = includePrefixedByKey;
+        this.canBeEmpty = canBeEmpty;
       }
-      return nodes.get(nodes.size() - 1).value;
+
+      @Override
+      public final Iterator<V> iterator() {
+        return new ValuePrefixSubMapIterator(key, includePrefixOfKey, keyInclusive,
+            includePrefixedByKey, canBeEmpty);
+      }
+
+      @SuppressWarnings("unused")
+      @Override
+      public final int size() {
+        long total = 0L;
+        for (final V value : this) {
+          ++total;
+        }
+        return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
+      }
+
+      @Override
+      public final boolean isEmpty() {
+        return iterator().hasNext();
+      }
+
+      @Override
+      public final boolean remove(final Object o) {
+        Node<K, V> node = null;
+        final Iterator<Node<K, V>> iter =
+            new NodePrefixSubMapIterator(key, includePrefixOfKey, keyInclusive,
+                includePrefixedByKey, canBeEmpty);
+        while (iter.hasNext()) {
+          node = iter.next();
+          if (eq(node.value, o)) {
+            m.deleteNode(node);
+            return true;
+          }
+        }
+        return false;
+      }
+
+      @Override
+      public final void clear() {
+        final Iterator<Node<K, V>> iter =
+            new NodePrefixSubMapIterator(key, includePrefixOfKey, keyInclusive,
+                includePrefixedByKey, canBeEmpty);
+        while (iter.hasNext()) {
+          m.deleteNode(iter.next());
+        }
+      }
+    }
+
+    protected final class ValuePrefixSubMapIterator extends PrivatePrefixIterator<K, V, V> {
+
+      protected ValuePrefixSubMapIterator(final K key,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey, final boolean canBeEmpty) {
+        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey, canBeEmpty);
+      }
+
+      @Override
+      public final V next() {
+        return nextNode().getValue();
+      }
+
+      @Override
+      protected boolean inRange(final Node<K, V> node) {
+        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      }
+    }
+
+    protected final class NodePrefixSubMapIterator extends PrivatePrefixIterator<K, V, Node<K, V>> {
+
+      protected NodePrefixSubMapIterator(final K key,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey, final boolean canBeEmpty) {
+        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey, canBeEmpty);
+      }
+
+      @Override
+      public final Node<K, V> next() {
+        return nextNode();
+      }
+
+      @Override
+      protected boolean inRange(final Node<K, V> node) {
+        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      }
     }
 
 
@@ -1643,26 +1702,29 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         return new SubMapValueIterator(first, fence);
       }
 
+      @SuppressWarnings("unused")
       @Override
       public final int size() {
-        return m.size();
+        long total = 0L;
+        for (final V value : this) {
+          ++total;
+        }
+        return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
       }
 
       @Override
       public final boolean isEmpty() {
-        return m.isEmpty();
-      }
-
-      @Override
-      public final boolean contains(final Object o) {
-        return m.containsValue(o);
+        return iterator().hasNext();
       }
 
       @Override
       public final boolean remove(final Object o) {
-        for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
-          if (eq(e.getValue(), o)) {
-            m.deleteNode(e);
+        Node<K, V> node = null;
+        final Iterator<Node<K, V>> iter = new SubMapNodeIterator(first, fence);
+        while (iter.hasNext()) {
+          node = iter.next();
+          if (eq(node.value, o)) {
+            m.deleteNode(node);
             return true;
           }
         }
@@ -1671,7 +1733,10 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       public final void clear() {
-        m.clear();
+        final Iterator<Node<K, V>> iter = new SubMapNodeIterator(first, fence);
+        while (iter.hasNext()) {
+          m.deleteNode(iter.next());
+        }
       }
     }
 
@@ -1720,6 +1785,23 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       @Override
       public final V next() {
         return nextNode().getValue();
+      }
+
+      @Override
+      public void remove() {
+        removeAscending();
+      }
+    }
+
+    protected final class SubMapNodeIterator extends SubMapIterator<Node<K, V>> {
+
+      protected SubMapNodeIterator(final Node<K, V> first, final Node<K, V> fence) {
+        super(first, fence);
+      }
+
+      @Override
+      public final Node<K, V> next() {
+        return nextNode();
       }
 
       @Override
