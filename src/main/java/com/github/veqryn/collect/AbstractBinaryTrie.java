@@ -274,10 +274,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    */
   protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> entry,
       final AbstractBinaryTrie<K, V> trie) {
-    // Resolve the Key if missing
     if (entry == null || entry.getValue() == null) {
       return null;
     }
+    // Resolve the Key if missing
     return new AbstractMap.SimpleImmutableEntry<>(resolveKey(entry, trie), entry.getValue());
   }
 

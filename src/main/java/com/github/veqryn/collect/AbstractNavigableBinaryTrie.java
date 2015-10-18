@@ -331,22 +331,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
   @Override
-  public boolean containsValue(final Object value) throws ClassCastException, NullPointerException {
-    if (value == null) {
-      throw new NullPointerException(getClass().getName()
-          + " does not allow null values: " + value);
-    }
-    for (Node<K, V> e = firstNode(); e != null; e = successor(e)) {
-      if (eq(value, e.value)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-
-
-  @Override
   public NavigableSet<K> keySet() {
     return navigableKeySet();
   }
@@ -354,17 +338,17 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
   @Override
   public NavigableSet<K> navigableKeySet() {
     if (navigableKeySet == null) {
-      navigableKeySet = new TrieKeySet<K>(this);
+      navigableKeySet = new NavigableTrieKeySet<K>(this);
     }
     return navigableKeySet;
   }
 
-  protected static final class TrieKeySet<E> extends AbstractSet<E>
+  protected static final class NavigableTrieKeySet<E> extends AbstractSet<E>
       implements NavigableSet<E> {
 
     protected final NavigableTrie<E, ? extends Object> m;
 
-    protected TrieKeySet(final NavigableTrie<E, ? extends Object> map) {
+    protected NavigableTrieKeySet(final NavigableTrie<E, ? extends Object> map) {
       m = map;
     }
 
@@ -463,18 +447,18 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     @Override
     public final NavigableSet<E> subSet(final E fromElement, final boolean fromInclusive,
         final E toElement, final boolean toInclusive) {
-      return new TrieKeySet<>(m.subMap(fromElement, fromInclusive,
+      return new NavigableTrieKeySet<>(m.subMap(fromElement, fromInclusive,
           toElement, toInclusive));
     }
 
     @Override
     public final NavigableSet<E> headSet(final E toElement, final boolean inclusive) {
-      return new TrieKeySet<>(m.headMap(toElement, inclusive));
+      return new NavigableTrieKeySet<>(m.headMap(toElement, inclusive));
     }
 
     @Override
     public final NavigableSet<E> tailSet(final E fromElement, final boolean inclusive) {
-      return new TrieKeySet<>(m.tailMap(fromElement, inclusive));
+      return new NavigableTrieKeySet<>(m.tailMap(fromElement, inclusive));
     }
 
     @Override
@@ -494,7 +478,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     @Override
     public final NavigableSet<E> descendingSet() {
-      return new TrieKeySet<E>(m.descendingMap());
+      return new NavigableTrieKeySet<E>(m.descendingMap());
     }
 
   }
@@ -872,7 +856,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     // Views
     protected transient NavigableTrie<K, V> descendingSubMapView = null;
     protected transient TrieEntrySetSubMapView entrySetSubMapView = null;
-    protected transient TrieKeySet<K> navigableKeySetSubMapView = null;
+    protected transient NavigableTrieKeySet<K> navigableKeySetSubMapView = null;
     protected transient Collection<V> valuesSubMapView = null;
 
 
@@ -1145,8 +1129,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     @Override
     public final NavigableSet<K> navigableKeySet() {
-      final TrieKeySet<K> nksv = navigableKeySetSubMapView;
-      return (nksv != null) ? nksv : (navigableKeySetSubMapView = new TrieKeySet<K>(this));
+      final NavigableTrieKeySet<K> nksv = navigableKeySetSubMapView;
+      return (nksv != null) ? nksv : (navigableKeySetSubMapView = new NavigableTrieKeySet<K>(this));
     }
 
     @Override
