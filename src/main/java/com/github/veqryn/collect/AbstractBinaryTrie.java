@@ -21,9 +21,28 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 
-
 /**
- * AbstractBinaryTrie class
+ * Implementation of the {@link Trie} interface, as an
+ * uncompressed binary bitwise trie. For more information, see:
+ * <a href="http://en.wikipedia.org/wiki/Trie">wikipedia entry on tries</a>.
+ *
+ * <p>
+ * Works best with short binary data, such as IP addresses or CIDR ranges.
+ *
+ * Keys will be analyzed as they come in by a {@link KeyCodec}, for the
+ * length of their elements, and for the element at any index belonging in
+ * either the left or right nodes in a tree. A single empty root node is our
+ * starting point, with nodes containing references to their parent, their
+ * left and right children if any, and their value if any. Leaf nodes must
+ * always have a value, but intermediate nodes may or may not have values.
+ *
+ * <p>
+ * Keys and Values may never be {@code null}, and therefore if any node
+ * has a value, it implicitly has a key.
+ *
+ * <p>
+ * Keys and Values are returned in an order according to the order of the
+ * elements in the key, and the number of elements in the key.
  *
  * @author Mark Christopher Duncan
  *
@@ -36,13 +55,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   private static final long serialVersionUID = 4494549156276631388L;
 
 
+  /** The {@link KeyCodec} being used to analyze keys */
   protected final KeyCodec<K> codec;
 
-  protected transient boolean cacheKeys;
-  protected transient boolean writeKeys;
+  /** If true, keys will be kept around. If false, keys will be recreated if needed */
+  protected transient boolean cacheKeys; // final
+  /** If true, keys will be written out on serialization, if false the nodes will be */
+  protected transient boolean writeKeys; // final
 
-  // our node's (or their keys and values) actually get serialized by writeObject
-  protected transient Node<K, V> root = new Node<K, V>(null);
+  /** The entry point for the start of any lookup. Root can not hold a value. */
+  protected transient Node<K, V> root = new Node<K, V>(null); // final
 
   protected transient long size = 0;
 
@@ -54,6 +76,73 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * Create an empty {@link AbstractBinaryTrie} using the given
+   * {@link KeyCodec}, and settings for keeping/caching or not of keys after
+   * insertion and writing out or not of keys during serialization.
+   *
+   * <p>
+   * {@link Trie}s do not necessarily need to store the full values of each
+   * key, because a key can be determined and recreated by its position within
+   * the trie's structure. Therefore this implementation provides options
+   * on what to do with the keys after their node has been created.
+   *
+   * <p>
+   * If {@code cacheKeys} is set to true, keys will be permanently kept after
+   * being inserted with the {@link #put} operation, and will maintain their
+   * == identity with the original keys. If set to false, keys will be
+   * discarded, allowing for a much smaller memory footprint, at the cost
+   * of increased cpu time should the keys need to be recreated (which would
+   * only occur if the methods {@link #keySet}, {@link #entrySet},
+   * {@link #equals}, and {@link #hashCode} were called, because they either
+   * give up the full key for outside use, or hash or compare full keys).
+   * After being recreated, the keys will be cached so that subsequent lookups
+   * do not need to recreate the key. The recreated keys will be equal
+   * to the original key, but will not be the same reference pointer
+   * (unless the KeyCodec being used is doing some magic).
+   *
+   * <p>
+   * If {@code writeKeys} is set to true, keys will be written out during
+   * serialization (alternating with their respective values, just like a
+   * regular map). If set to false, keys will not be written out, and
+   * instead the node structure (and each node's value) will be written out.
+   * Because each Node has 3 reference pointers to up to 3 other Nodes,
+   * (pointers are usually 32 bits) writing out the nodes like this ends up
+   * saving space when the size of keys > size of 3 pointers, but costs extra
+   * space if size of key < 3 pointers. Even if the size of keys is smaller,
+   * writing the root nodes would be faster than recreating keys if the keys
+   * are not being kept/cached.
+   *
+   * <p>
+   * To summarize, there are really 3 options:
+   *
+   * <p>
+   * 1. cacheKeys = false & writeKeys = false: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, but size of serialized trie will most likely be larger,
+   * but this all depends on the key class.
+   *
+   * <p>
+   * 2. cacheKeys = false & writeKeys = true: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Slightly slower
+   * speed of serialization, but size of serialized trie will most likely be
+   * smaller, but this all depends on the key class.
+   *
+   * <p>
+   * 3. cacheKeys = true & writeKeys = true: More memory used at runtime,
+   * but faster to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, and size of serialized trie will most likely be smaller,
+   * but this all depends on the key class.
+   *
+   *
+   * @param keyCodec KeyCodec for analyzing of keys
+   * @param cacheKeys true if the Trie should store keys after insertion,
+   *        false if the Trie should discard keys after the insertion of their
+   *        value
+   * @param writeKeys true if on serialization of the trie, the keys should
+   *        be written out to the stream, and false if the keys should not be
+   *        (the trie will write out the structure of its nodes instead)
+   */
   public AbstractBinaryTrie(final KeyCodec<K> keyCodec, final boolean cacheKeys,
       final boolean writeKeys) {
     if (keyCodec == null) {
@@ -64,12 +153,88 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     this.codec = keyCodec;
   }
 
+  /**
+   * Create a {@link AbstractBinaryTrie} using the given {@link KeyCodec},
+   * and settings for keeping/caching or not of keys after insertion and
+   * writing out or not of keys during serialization. The trie will be filled
+   * with the keys and values in the provided map.
+   *
+   * <p>
+   * {@link Trie}s do not necessarily need to store the full values of each
+   * key, because a key can be determined and recreated by its position within
+   * the trie's structure. Therefore this implementation provides options
+   * on what to do with the keys after their node has been created.
+   *
+   * <p>
+   * If {@code cacheKeys} is set to true, keys will be permanently kept after
+   * being inserted with the {@link #put} operation, and will maintain their
+   * == identity with the original keys. If set to false, keys will be
+   * discarded, allowing for a much smaller memory footprint, at the cost
+   * of increased cpu time should the keys need to be recreated (which would
+   * only occur if the methods {@link #keySet}, {@link #entrySet},
+   * {@link #equals}, and {@link #hashCode} were called, because they either
+   * give up the full key for outside use, or hash or compare full keys).
+   * After being recreated, the keys will be cached so that subsequent lookups
+   * do not need to recreate the key. The recreated keys will be equal
+   * to the original key, but will not be the same reference pointer
+   * (unless the KeyCodec being used is doing some magic).
+   *
+   * <p>
+   * If {@code writeKeys} is set to true, keys will be written out during
+   * serialization (alternating with their respective values, just like a
+   * regular map). If set to false, keys will not be written out, and
+   * instead the node structure (and each node's value) will be written out.
+   * Because each Node has 3 reference pointers to up to 3 other Nodes,
+   * (pointers are usually 32 bits) writing out the nodes like this ends up
+   * saving space when the size of keys > size of 3 pointers, but costs extra
+   * space if size of key < 3 pointers. Even if the size of keys is smaller,
+   * writing the root nodes would be faster than recreating keys if the keys
+   * are not being kept/cached.
+   *
+   * <p>
+   * To summarize, there are really 3 options:
+   *
+   * <p>
+   * 1. cacheKeys = false & writeKeys = false: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, but size of serialized trie will most likely be larger,
+   * but this all depends on the key class.
+   *
+   * <p>
+   * 2. cacheKeys = false & writeKeys = true: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Slightly slower
+   * speed of serialization, but size of serialized trie will most likely be
+   * smaller, but this all depends on the key class.
+   *
+   * <p>
+   * 3. cacheKeys = true & writeKeys = true: More memory used at runtime,
+   * but faster to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, and size of serialized trie will most likely be smaller,
+   * but this all depends on the key class.
+   *
+   * @param keyCodec KeyCodec for analyzing of keys
+   * @param otherMap Map of keys and values, which will be {@link #putAll}
+   *        into the newly created trie
+   * @param cacheKeys true if the Trie should store keys after insertion,
+   *        false if the Trie should discard keys after the insertion of their
+   *        value
+   * @param writeKeys true if on serialization of the trie, the keys should
+   *        be written out to the stream, and false if the keys should not be
+   *        (the trie will write out the structure of its nodes instead)
+   */
   public AbstractBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap,
       final boolean cacheKeys, final boolean writeKeys) {
     this(keyCodec, cacheKeys, writeKeys);
     this.putAll(otherMap);
   }
 
+  /**
+   * Copy constructor, creates a shallow copy of this
+   * {@link AbstractBinaryTrie} instance.
+   * (The keys and values themselves are not copied.)
+   *
+   * @param otherTrie AbstractBinaryTrie
+   */
   public AbstractBinaryTrie(final AbstractBinaryTrie<K, V> otherTrie) {
     this(otherTrie.codec, otherTrie.cacheKeys, otherTrie.writeKeys);
     this.buildFromExisting(otherTrie);
@@ -77,6 +242,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * @return {@link KeyCodec} used by this {@link Trie}
+   */
   public KeyCodec<K> getCodec() {
     return codec;
   }
@@ -152,14 +320,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
       final BitSet bits = new BitSet();
       int levelsDeep = 0;
-      Node<K, V> previousParent = this;
-      Node<K, V> currentParent = this.parent;
-      while (currentParent != null) {
-        if (currentParent.right == previousParent) {
+      Node<K, V> node = this;
+      while (node.parent != null) {
+        if (node.parent.right == node) {
           bits.set(levelsDeep);
         }
-        previousParent = currentParent;
-        currentParent = currentParent.parent;
+        node = node.parent;
         levelsDeep++;
       }
 
@@ -327,7 +493,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   /**
-   * Returns a shallow copy of this {@code AbstractBinaryTrie} instance.
+   * Returns a shallow copy of this {@link AbstractBinaryTrie} instance.
    * (The keys and values themselves are not cloned.)
    *
    * @return a shallow copy of this trie/map
@@ -867,6 +1033,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
 
 
+    // TODO: previous/descending could be done by first getting the last node via nextPrefix,
+    // then working your way back with opposite logic to nextPrefix
     protected Node<K, V> getNextPrefixNode(Node<K, V> node) {
 
       while (node != null) {

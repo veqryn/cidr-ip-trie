@@ -22,18 +22,38 @@ import java.util.Set;
  * of the found node. This makes a trie ideal for prefix searching.
  *
  * <p>
+ * Trie traversal, insert, delete, predecessor, successor, get, prefix of,
+ * prefixed by operations are performed in at worst O(K) time, where K
+ * is the number of elements in the largest item in the trie. In practice,
+ * operations actually take O(A(K)) time, where A(K) is the average number
+ * of elements in all items in the trie.
+ *
+ * <p>
+ * A Trie requires very few comparisons to keys while doing any operation.
+ * While performing a lookup, each comparison (at most K of them, described
+ * above) will perform a single element comparison against only the given key,
+ * instead of comparing the entire key to multiple other keys.
+ *
+ * <p>
+ * The Trie will return values in an order determined by a combination of
+ * the length and elements in a key, specific to the implementation and
+ * purpose of the concrete Trie being used.
+ * However it is guaranteed that <code>prefix of</code> methods will return
+ * values in the order of their key's length, from smallest to largest.
+ *
+ * <p>
  * Trie extends {@link Map}, but unlike a normal Map or Tree, Tries
  * do not need to store the Key associated with any node/value,
- * because the is defined by its position within the trie.
+ * because the key is defined by its position within the trie.
  * All subsequent keys underneath that key's node are descendants
  * of that key and are prefixed by it.
  * For this reason, implementations of Trie may or may not hold onto
  * the key instances that are put into it. If a trie implementation
- * or configuration does not hold onto the key, any method which
- * returns or directly uses a key ({@link #keySet}, {@link #entrySet},
- * {@link #equals}, {@link #hashCode}) could potentially take longer
- * than a regular Map/Tree would to complete, because each key must
- * be recreated before being used.
+ * or configuration does not hold onto the key, any method which returns
+ * or directly uses a key (example: {@link #keySet}, {@link #entrySet},
+ * {@link #equals}, {@link #hashCode}) could potentially take longer than a
+ * regular Map/Tree would to complete, because each key must be recreated
+ * before being used.
  *
  *
  * @author Mark Christopher Duncan

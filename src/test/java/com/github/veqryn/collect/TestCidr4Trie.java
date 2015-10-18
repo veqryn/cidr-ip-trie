@@ -117,7 +117,7 @@ public class TestCidr4Trie {
   @Test
   public void testWhatever() throws ClassNotFoundException, IOException {
 
-    Cidr4Trie<String> trie = new Cidr4Trie<>(false, false);
+    Cidr4Trie<String> trie = new Cidr4Trie<>(false);
 
     for (final Object[] cidr : TestUtil.cidrs) {
       // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1

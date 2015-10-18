@@ -9,8 +9,12 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 /**
- * AbstractKeyCodec implements KeyCodec interface,
- * for encoding, decoding, and analyzing keys in a Trie.
+ * AbstractKeyCodec implements {@link KeyCodec} interface,
+ * for encoding, decoding, and analyzing keys in a {@link Trie}
+ * (specifically for use with {@link AbstractBinaryTrie} and
+ * {@link AbstractNavigableBinaryTrie}).
+ *
+ * <p>
  * Includes a predefined comparator that is based solely on the
  * abstract <code>length</code> and <code>isLeft</code> methods.
  *
@@ -27,6 +31,10 @@ public abstract class AbstractKeyCodec<K> implements KeyCodec<K>, Serializable {
     return comparator;
   }
 
+  /**
+   * Create a comparator using only the <code>length</code> and
+   * <code>isLeft</code> methods.
+   */
   protected final Comparator<? super K> comparator =
       new Comparator<K>() {
         @Override

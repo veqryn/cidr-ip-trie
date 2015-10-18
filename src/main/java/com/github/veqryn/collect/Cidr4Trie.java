@@ -29,16 +29,16 @@ public final class Cidr4Trie<V> extends AbstractNavigableBinaryTrie<Cidr4, V> {
     super(new Cidr4Codec(), false, true);
   }
 
-  public Cidr4Trie(final boolean cacheKeys, final boolean writeKeys) {
-    super(new Cidr4Codec(), cacheKeys, writeKeys);
+  public Cidr4Trie(final boolean cacheKeys) {
+    super(new Cidr4Codec(), cacheKeys, true);
   }
 
   public Cidr4Trie(final Map<Cidr4, V> otherMap) {
     super(new Cidr4Codec(), otherMap, false, true);
   }
 
-  public Cidr4Trie(final Map<Cidr4, V> otherMap, final boolean cacheKeys, final boolean writeKeys) {
-    super(new Cidr4Codec(), otherMap, cacheKeys, writeKeys);
+  public Cidr4Trie(final Map<Cidr4, V> otherMap, final boolean cacheKeys) {
+    super(new Cidr4Codec(), otherMap, cacheKeys, true);
   }
 
   public Cidr4Trie(final Cidr4Trie<V> otherTrie) {

@@ -11,12 +11,32 @@ import java.util.BitSet;
 import java.util.Map;
 
 /**
- * PatriciaTrie
- * (Practical Algorithm To Retrieve Information Coded In Alphanumeric)
+ * Implementation of a PATRICIA Trie (Practical Algorithm To Retrieve
+ * Information Coded In Alphanumeric).
+ * Can handle international characters.
+ *
+ * <p>
+ * A PATRICIA Trie is a {@link Trie} specifically for storing String data.
+ * This allows for quickly finding the values of Strings that are prefixes of
+ * or prefixed by any other given String.
+ *
+ * <p>
+ * This Trie implementation extends {@link AbstractNavigableBinaryTrie},
+ * an uncompressed binary bitwise implementation of a Trie for use with short
+ * binary data such as IP addresses and CIDR ranges, and therefore this
+ * implementation may take up more memory space than a trie implementation
+ * devoted to use only with String data, such as a compressed Ternary Trie.
+ * This PATRICIA Trie implementation mostly exists for use in case a more
+ * specific implementation can not be found, and as a proof of concept that
+ * the {@link AbstractBinaryTrie} this is based on is abstract and extensible
+ * enough for use with any form of data.
+ *
+ * <p>
+ * This implementation returns values in the order of their key's bits.
  *
  * @author Mark Christopher Duncan
  *
- * @param <V>
+ * @param <V> Value
  */
 public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V> {
 
@@ -24,23 +44,31 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
 
 
+  /**
+   * Create an empty {@link PatriciaTrie}.
+   */
   public PatriciaTrie() {
     super(new PatriciaCodec(), false, true);
   }
 
-  public PatriciaTrie(final boolean cacheKeys, final boolean writeKeys) {
-    super(new PatriciaCodec(), cacheKeys, writeKeys);
-  }
-
+  /**
+   * Create a {@link PatriciaTrie}.
+   * The trie will be filled with the keys and values in the provided map.
+   *
+   * @param otherMap Map of strings and values, which will be {@link #putAll}
+   *        into the newly created trie
+   */
   public PatriciaTrie(final Map<String, V> otherMap) {
     super(new PatriciaCodec(), otherMap, false, true);
   }
 
-  public PatriciaTrie(final Map<String, V> otherMap, final boolean cacheKeys,
-      final boolean writeKeys) {
-    super(new PatriciaCodec(), otherMap, cacheKeys, writeKeys);
-  }
-
+  /**
+   * Copy constructor, creates a shallow copy of this
+   * {@link AbstractBinaryTrie} instance.
+   * (The keys and values themselves are not copied.)
+   *
+   * @param otherTrie AbstractBinaryTrie
+   */
   public PatriciaTrie(final PatriciaTrie<V> otherTrie) {
     super(otherTrie);
   }
@@ -48,7 +76,12 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
 
   /**
-   * PatriciaCodec
+   * Implementation of {@link KeyCodec} for use with String data.
+   * Specifically for use with {@link AbstractBinaryTrie} and
+   * {@link AbstractNavigableBinaryTrie}, because it decodes strings by
+   * each bit, instead of each character, as the backing trie is binary
+   * in nature.
+   * Can handle international characters.
    */
   public static final class PatriciaCodec extends AbstractKeyCodec<String>
       implements KeyCodec<String>, Serializable {
