@@ -171,8 +171,8 @@ public class TestCidr4Trie {
     assertEquals(trie, other);
     assertEquals(trie.hashCode(), other.hashCode());
 
-    other.setCacheKeys(true);
-    other.setWriteKeys(true);
+    other.cacheKeys = true;
+    other.writeKeys = true;
     bytes = TestingUtil.pickle(other);
     trie = TestingUtil.unpickle(bytes, Cidr4Trie.class);
     assertEquals(trie, other);

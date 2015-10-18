@@ -10,12 +10,16 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.AbstractCollection;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
+
 
 
 /**
@@ -34,8 +38,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   protected final KeyCodec<K> codec;
 
-  protected transient boolean cacheKeys = false;
-  protected transient boolean writeKeys = true;
+  protected transient boolean cacheKeys;
+  protected transient boolean writeKeys;
 
   // our node's (or their keys and values) actually get serialized by writeObject
   protected transient Node<K, V> root = new Node<K, V>(null);
@@ -43,6 +47,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   protected transient long size = 0;
 
   protected transient int modCount = 0;
+
+  protected transient Set<Map.Entry<K, V>> entrySet = null;
+  protected transient Set<K> keySet = null;
+  protected transient Collection<V> values = null;
 
 
 
@@ -71,24 +79,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   public KeyCodec<K> getCodec() {
     return codec;
-  }
-
-
-  public boolean isCacheKeys() {
-    return cacheKeys;
-  }
-
-  public void setCacheKeys(final boolean cacheKeys) {
-    this.cacheKeys = cacheKeys;
-  }
-
-
-  public boolean isWriteKeys() {
-    return writeKeys;
-  }
-
-  public void setWriteKeys(final boolean writeKeys) {
-    this.writeKeys = writeKeys;
   }
 
 
@@ -279,7 +269,24 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * Return SimpleImmutableEntry for entry, or null if null
+   */
+  protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> entry,
+      final AbstractBinaryTrie<K, V> trie) {
+    // Resolve the Key if missing
+    if (entry == null || entry.getValue() == null) {
+      return null;
+    }
+    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(entry, trie), entry.getValue());
+  }
+
+
+
   protected void clearTransientMemory() {
+    entrySet = null;
+    keySet = null;
+    values = null;
     // clear keys from Nodes
     for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
       node.privateKey = null;
@@ -664,7 +671,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   @Override
-  public Collection<V> valuesPrefixOfOrBy(final K key) {
+  public Collection<V> valuesPrefixesOfOrBy(final K key) {
     return new TriePrefixValues<K, V>(this, key, true, true, true, false);
   }
 
@@ -721,6 +728,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected TriePrefixValues(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
         final boolean includePrefixedByKey, final boolean canBeEmpty) {
+
+      if (key == null) {
+        throw new NullPointerException(getClass().getName()
+            + " does not allow null keys: " + key);
+      }
       this.trie = trie;
       this.key = key;
       this.includePrefixOfKey = includePrefixOfKey;
@@ -951,6 +963,293 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   @Override
+  public boolean containsValue(final Object value) throws ClassCastException, NullPointerException {
+    if (value == null) {
+      throw new NullPointerException(getClass().getName()
+          + " does not allow null values: " + value);
+    }
+    for (Node<K, V> e = firstNode(); e != null; e = successor(e)) {
+      if (eq(value, e.value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+
+  @Override
+  public Set<K> keySet() {
+    if (keySet == null) {
+      keySet = new TrieKeySet<K>(this);
+    }
+    return keySet;
+  }
+
+
+  protected static final class TrieKeySet<E> extends AbstractSet<E>
+      implements Set<E> {
+
+    protected final AbstractBinaryTrie<E, ? extends Object> m;
+
+    protected TrieKeySet(final AbstractBinaryTrie<E, ? extends Object> map) {
+      m = map;
+    }
+
+    @Override
+    public final Iterator<E> iterator() {
+      return m.keyIterator();
+    }
+
+    @Override
+    public final int size() {
+      return m.size();
+    }
+
+    @Override
+    public final boolean isEmpty() {
+      return m.isEmpty();
+    }
+
+    @Override
+    public final boolean contains(final Object o) {
+      return m.containsKey(o);
+    }
+
+    @Override
+    public final void clear() {
+      m.clear();
+    }
+
+    @Override
+    public final boolean remove(final Object o) {
+      return m.remove(o) != null;
+    }
+
+  }
+
+
+
+  @Override
+  public Collection<V> values() {
+    if (values == null) {
+      values = new TrieValues<K, V>(this);
+    }
+    return values;
+  }
+
+  protected static final class TrieValues<K, V> extends AbstractCollection<V> {
+
+    protected final AbstractBinaryTrie<K, V> m; // the backing map
+
+    protected TrieValues(final AbstractBinaryTrie<K, V> map) {
+      this.m = map;
+    }
+
+    @Override
+    public final Iterator<V> iterator() {
+      return new ValueIterator<K, V>(m);
+    }
+
+    @Override
+    public final int size() {
+      return m.size();
+    }
+
+    @Override
+    public final boolean isEmpty() {
+      return m.isEmpty();
+    }
+
+    @Override
+    public final boolean contains(final Object o) {
+      return m.containsValue(o);
+    }
+
+    @Override
+    public final boolean remove(final Object o) {
+      for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
+        if (eq(e.getValue(), o)) {
+          m.deleteNode(e);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public final void clear() {
+      m.clear();
+    }
+  }
+
+
+
+  @Override
+  public Set<Map.Entry<K, V>> entrySet() {
+    final Set<Map.Entry<K, V>> es = entrySet;
+    return (es != null) ? es : (entrySet = new TrieEntrySet());
+  }
+
+  protected final class TrieEntrySet extends AbstractSet<Map.Entry<K, V>> {
+
+    @Override
+    public final Iterator<Map.Entry<K, V>> iterator() {
+      return new EntryIterator<K, V>(AbstractBinaryTrie.this);
+    }
+
+    @Override
+    public final boolean contains(final Object o) {
+      if (!(o instanceof Map.Entry)) {
+        return false;
+      }
+      @SuppressWarnings("unchecked")
+      final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+      final V value = entry.getValue();
+      final Node<K, V> p = getNode(entry.getKey());
+      return p != null && eq(p.getValue(), value);
+    }
+
+    @Override
+    public final boolean remove(final Object o) {
+      if (!(o instanceof Map.Entry)) {
+        return false;
+      }
+      @SuppressWarnings("unchecked")
+      final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
+      final V value = entry.getValue();
+      final Node<K, V> p = getNode(entry.getKey());
+      if (p != null && eq(p.getValue(), value)) {
+        deleteNode(p);
+        return true;
+      }
+      return false;
+    }
+
+    @Override
+    public final int size() {
+      return AbstractBinaryTrie.this.size();
+    }
+
+    @Override
+    public final void clear() {
+      AbstractBinaryTrie.this.clear();
+    }
+  }
+
+
+
+  protected static final class EntryIterator<K, V>
+      extends PrivateEntryIterator<K, V, Map.Entry<K, V>> {
+
+    protected EntryIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.firstNode());
+    }
+
+    @Override
+    public final Map.Entry<K, V> next() {
+      return exportEntry(nextNode(), m);
+    }
+  }
+
+  protected static final class ValueIterator<K, V> extends PrivateEntryIterator<K, V, V> {
+
+    protected ValueIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.firstNode());
+    }
+
+    @Override
+    public final V next() {
+      return nextNode().getValue();
+    }
+  }
+
+  protected final Iterator<K> keyIterator() {
+    return new KeyIterator<K, V>(this);
+  }
+
+  protected static final class KeyIterator<K, V> extends PrivateEntryIterator<K, V, K> {
+
+    protected KeyIterator(final AbstractBinaryTrie<K, V> map) {
+      super(map, map.firstNode());
+    }
+
+    @Override
+    public final K next() {
+      return exportEntry(nextNode(), m).getKey();
+    }
+  }
+
+
+
+  protected abstract static class PrivateEntryIterator<K, V, T> implements Iterator<T> {
+
+    protected final AbstractBinaryTrie<K, V> m; // the backing map
+
+    protected Node<K, V> next;
+    protected Node<K, V> lastReturned;
+    protected int expectedModCount;
+
+    protected PrivateEntryIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
+      this.m = map;
+      expectedModCount = m.modCount;
+      lastReturned = null;
+      next = first;
+    }
+
+    @Override
+    public final boolean hasNext() {
+      return next != null;
+    }
+
+    protected final Node<K, V> nextNode() {
+      final Node<K, V> e = next;
+      if (e == null) {
+        throw new NoSuchElementException();
+      }
+      if (m.modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
+      next = successor(e);
+      lastReturned = e;
+      return e;
+    }
+
+    protected final Node<K, V> prevNode() {
+      final Node<K, V> e = next;
+      if (e == null) {
+        throw new NoSuchElementException();
+      }
+      if (m.modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
+      next = predecessor(e);
+      lastReturned = e;
+      return e;
+    }
+
+    @Override
+    public final void remove() {
+      if (lastReturned == null) {
+        throw new IllegalStateException();
+      }
+      if (m.modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
+      // TODO: Do I need this (from TreeMap)? Very confused by this...
+      // deleted entries are replaced by their successors
+      // if (lastReturned.left != null && lastReturned.right != null) {
+      // next = lastReturned;}
+      m.deleteNode(lastReturned);
+      expectedModCount = m.modCount;
+      lastReturned = null;
+    }
+
+  }
+
+
+
+  @Override
   public int hashCode() {
     // To stay compatible with Map interface, we are equal to any map with the same mappings
     int h = 0;
@@ -983,8 +1282,37 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return compareAllNodes(this.root, t.root);
     }
 
+    if (o instanceof Map) {
+      final Map<K, V> m = (Map<K, V>) o;
+      if (m.size() != size()) {
+        return false;
+      }
+      // To stay compatible with Map interface, we are equal to any map with the same mappings
+      try {
+        for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
+          final V value = node.getValue();
+          final K key = resolveKey(node, this);
+          if (value == null) {
+            if (!(m.get(key) == null && m.containsKey(key))) {
+              return false;
+            }
+          } else {
+            if (!value.equals(m.get(key))) {
+              return false;
+            }
+          }
+        }
+      } catch (final ClassCastException unused) {
+        return false;
+      } catch (final NullPointerException unused) {
+        return false;
+      }
+      return true;
+    }
+
     return false;
   }
+
 
   protected static final <K, V> boolean compareNodeAndExistenceOfChildren(
       final AbstractBinaryTrie.Node<K, V> myNode,
@@ -1144,7 +1472,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
 
   }
-
 
 
 }
