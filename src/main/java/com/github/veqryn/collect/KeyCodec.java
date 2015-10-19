@@ -68,8 +68,8 @@ public interface KeyCodec<K> extends Serializable {
    * @param bits BitSet where the bit at the <code>(numElements - 1)</code>
    *        index in the BitSet represents the first element of this key
    *        (index 0), and each index after that is the next element in this
-   *        key. (Depending on the key being decoded, it may be necessary to
-   *        reverse the BitSet before use.)
+   *        key. (Depending on the key class being decoded, it may be necessary
+   *        to reverse the BitSet before use.)
    * @param numElements the number of elements in this key
    * @return A new key equal to the one originally put in
    */

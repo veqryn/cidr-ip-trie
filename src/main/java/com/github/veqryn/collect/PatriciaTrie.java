@@ -64,10 +64,10 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
   /**
    * Copy constructor, creates a shallow copy of this
-   * {@link AbstractBinaryTrie} instance.
+   * {@link PatriciaTrie} instance.
    * (The keys and values themselves are not copied.)
    *
-   * @param otherTrie AbstractBinaryTrie
+   * @param otherTrie PatriciaTrie
    */
   public PatriciaTrie(final PatriciaTrie<V> otherTrie) {
     super(otherTrie);

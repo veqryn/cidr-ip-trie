@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  *
  * @author Mark Christopher Duncan
  */
-public final class Ips {
+final class Ips {
 
   protected static final String IP_ADDRESS = "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})";
   protected static final Pattern addressPattern = Pattern.compile(IP_ADDRESS);
@@ -151,7 +151,7 @@ public final class Ips {
    * @param end the ending bit position exclusive (0 based)
    * @return 64 or less length byte array containing 0s and 1s
    */
-  public static final byte[] getBits(final long binary, final int start, final int end) {
+  protected static final byte[] getBits(final long binary, final int start, final int end) {
     if (start < 0 ||
         start > 64 ||
         end < 0 ||
@@ -176,7 +176,7 @@ public final class Ips {
    * @param end the ending bit position exclusive (0 based)
    * @return 32 or less length byte array containing 0s and 1s
    */
-  public static final byte[] getBits(final int binary, final int start, final int end) {
+  protected static final byte[] getBits(final int binary, final int start, final int end) {
     if (start < 0 ||
         start > 32 ||
         end < 0 ||
@@ -201,7 +201,7 @@ public final class Ips {
    * @param end the ending bit position exclusive (0 based)
    * @return 16 or less length byte array containing 0s and 1s
    */
-  public static final byte[] getBits(final short binary, final int start, final int end) {
+  protected static final byte[] getBits(final short binary, final int start, final int end) {
     if (start < 0 ||
         start > 16 ||
         end < 0 ||
@@ -226,7 +226,7 @@ public final class Ips {
    * @param end the ending bit position exclusive (0 based)
    * @return 8 or less length byte array containing 0s and 1s
    */
-  public static final byte[] getBits(final byte binary, final int start, final int end) {
+  protected static final byte[] getBits(final byte binary, final int start, final int end) {
     if (start < 0 ||
         start > 8 ||
         end < 0 ||

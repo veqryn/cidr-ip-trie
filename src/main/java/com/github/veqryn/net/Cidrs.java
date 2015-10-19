@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  *
  * @author Mark Christopher Duncan
  */
-public final class Cidrs {
+final class Cidrs {
 
   protected static final String SLASH_FORMAT = IP_ADDRESS + "/(\\d{1,3})";
   protected static final Pattern cidrPattern = Pattern.compile(SLASH_FORMAT);

@@ -117,7 +117,8 @@ public interface Trie<K, V> extends Map<K, V> {
    * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
    * a lookup of 'antecede' with <code>keyInclusive true</code> would
    * return the values of 'antecede', 'anteceded', and 'antecedent',
-   * in that order.
+   * with the key's value first, and the remaining order determined
+   * by the implementation being used.
    *
    * <p>
    * The collection is backed by the trie, so changes to the trie are
@@ -157,7 +158,10 @@ public interface Trie<K, V> extends Map<K, V> {
    * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
    * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
    * a lookup of 'antecede' would return the values of 'ant', 'ante',
-   * 'antecede', 'anteceded', and 'antecedent', in that order.
+   * 'antecede', 'anteceded', and 'antecedent', with the order
+   * guaranteed for the value's whose keys are prefixes of the key, and
+   * the key's value, but order of the values whose's keys are prefixed-by
+   * the key are determined by the implementation of the trie.
    *
    * <p>
    * The collection is backed by the trie, so changes to the trie are
