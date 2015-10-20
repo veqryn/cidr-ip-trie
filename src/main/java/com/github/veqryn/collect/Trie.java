@@ -213,32 +213,6 @@ public interface Trie<K, V> extends Map<K, V> {
 
 
   /**
-   * Returns the value mapped to the shortest key that is prefixed
-   * by the given key.
-   *
-   * <p>
-   * In a Trie with fixed size keys, this is essentially a {@link #get}
-   * operation (but returning nothing if keyInclusive is false).
-   *
-   * <p>
-   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
-   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
-   * a lookup of 'antecede' with <code>keyInclusive true</code> would
-   * return the value of 'antecede'.
-   *
-   * @param key the key used in the search for prefixes
-   * @param keyInclusive true if the search may include the key
-   * @return the value mapped to the shortest key that is prefixed by
-   *         the given key, or {@code null} if there are no prefixes
-   * @throws ClassCastException if the key is of an inappropriate type for this map
-   * @throws NullPointerException if the specified key is null
-   * @throws IllegalArgumentException if the length of the key is
-   *         less than or equal to zero
-   */
-  V valueShortestPrefixedBy(K key, boolean keyInclusive);
-
-
-  /**
    * Returns the value mapped to the longest key that is a prefix
    * of the given key.
    *
@@ -266,32 +240,6 @@ public interface Trie<K, V> extends Map<K, V> {
    *         less than or equal to zero
    */
   V valueLongestPrefixOf(K key, boolean keyInclusive);
-
-
-  /**
-   * Returns the value mapped to the longest key that is prefixed
-   * by the given key.
-   *
-   * <p>
-   * In a Trie with fixed size keys, this is essentially a {@link #get}
-   * operation (but returning nothing if keyInclusive is false).
-   *
-   * <p>
-   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
-   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
-   * a lookup of 'antecede' with <code>keyInclusive true</code> would
-   * return the value of 'antecedent'.
-   *
-   * @param key the key used in the search for prefixes
-   * @param keyInclusive true if the search may include the key
-   * @return the value mapped to the longest key that is prefixed by
-   *         the given key, or {@code null} if there are no prefixes
-   * @throws ClassCastException if the key is of an inappropriate type for this map
-   * @throws NullPointerException if the specified key is null
-   * @throws IllegalArgumentException if the length of the key is
-   *         less than or equal to zero
-   */
-  V valueLongestPrefixedBy(K key, boolean keyInclusive);
 
 
 

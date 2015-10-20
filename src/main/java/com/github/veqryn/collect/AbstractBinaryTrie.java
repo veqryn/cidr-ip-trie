@@ -251,28 +251,50 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * Internal representation of a Node Entry
+   */
   protected static final class Node<K, V> implements Serializable {
-    // Does not implement Map.Entry so that we do not accidentally
+    // Does not implement java.util.Map.Entry so that we do not accidentally
     // return a Node instance from a public method
 
     private static final long serialVersionUID = -5827641765558398662L;
 
     /**
-     * Do not directly reference <code>privateKey</code>.
-     * Instead use <code>resolveKey(node, trie)</code> to first create the key.
+     * Do not directly reference <code>privateKey</code> expecting a non-null
+     * key. Instead use <code>resolveKey(node, trie)</code> to first create
+     * the key if it does not exist, and return the cached key.
      *
      * @return the key (K) if it has been resolved, or null otherwise.
      */
     private transient K privateKey = null;
+
+    /**
+     * @return the value (V) or null if this node does not have a value
+     */
     protected V value = null;
+
     protected Node<K, V> left = null;
     protected Node<K, V> right = null;
-    protected final Node<K, V> parent;
+    protected final Node<K, V> parent; // only root has null parent
 
+    /**
+     * Create a new empty Node, with the given parent
+     *
+     * @param parent Node
+     */
     protected Node(final Node<K, V> parent) {
       this.parent = parent;
     }
 
+    /**
+     * Return the left or right child Node under this Node,
+     * or create and return an empty child if it does not already exist
+     *
+     * @param leftNode true if this should return the left child,
+     *        false if this should return the right child
+     * @return left or right child node
+     */
     protected final Node<K, V> getOrCreateEmpty(final boolean leftNode) {
       if (leftNode) {
         if (left == null) {
@@ -295,13 +317,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
 
     /**
-     * @return the value associated with the key
-     */
-    protected final V getValue() {
-      return value;
-    }
-
-    /**
      * Replaces the value currently associated with the key with the given value.
      *
      * @return the value associated with the key before this method was called
@@ -312,7 +327,13 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return oldValue;
     }
 
+    /**
+     * @return CodecElements instance consisting of {@code levelsDeep} int
+     *         representing how far from the root this Node was found, and
+     *         {@code bits} BitSet representing the elements
+     */
     protected final CodecElements getCodecElements() {
+      // This will ONLY ever be called if cacheKeys or writeKeys is false
 
       if (this.parent == null) {
         return null; // We are the root node
@@ -332,54 +353,69 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return new CodecElements(bits, levelsDeep);
     }
 
+    /**
+     * hashCode should never be called on a Node.
+     * Instead, export the node into a resolved Entry,
+     * or just use the value and resolved key separately.
+     */
     @Override
     public final int hashCode() {
-      throw new IllegalStateException("Nodes should not be hashed or compared for equality");
+      throw new IllegalStateException("Nodes should not be hashed or compared");
     }
 
+    /**
+     * equals should never be called on a Node.
+     * Instead, export the node into a resolved Entry,
+     * or just use the value and resolved key separately.
+     */
     @Override
     public final boolean equals(final Object obj) {
-      throw new IllegalStateException("Nodes should not be hashed or compared for equality");
+      throw new IllegalStateException("Nodes should not be hashed or compared");
     }
 
     @Override
     public final String toString() {
-      return (privateKey != null ? privateKey : getCodecElements())
-          + "=" + value;
+      return (privateKey != null ? privateKey : getCodecElements()) + "=" + value;
     }
   }
 
 
+  /**
+   * First class object to hold the information needed by the {@link KeyCodec}
+   * to recreate a key. Created because Java does not have tuples, and
+   * Node must be able to return the two pieces of information we need to
+   * know in order to recreate the key: {@code levelsDeep} int representing
+   * how far from the root this Node was found, and {@code bits} BitSet
+   * representing the elements.
+   */
   protected static final class CodecElements implements Serializable {
 
     private static final long serialVersionUID = -3206679175141036878L;
 
+    /** int representing how far from the root this Node was found */
     protected final BitSet bits;
+
+    /** BitSet representing the elements */
     protected final int levelsDeep;
 
+    /**
+     *
+     * @param bits
+     * @param levelsDeep
+     */
     protected CodecElements(final BitSet bits, final int levelsDeep) {
       this.bits = bits;
       this.levelsDeep = levelsDeep;
     }
 
-    public final BitSet getBits() {
-      return bits;
-    }
-
-    public final int getLevelsDeep() {
-      return levelsDeep;
-    }
-
     @Override
     public final int hashCode() {
-      throw new IllegalStateException(
-          "CodecElements should not be hashed or compared for equality");
+      throw new IllegalStateException("CodecElements should not be hashed or compared");
     }
 
     @Override
     public final boolean equals(final Object obj) {
-      throw new IllegalStateException(
-          "CodecElements should not be hashed or compared for equality");
+      throw new IllegalStateException("CodecElements should not be hashed or compared");
     }
 
     @Override
@@ -389,12 +425,28 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+  /**
+   * Ensure a Node's key has been resolved (it is non-null), otherwise recreate
+   * it and cache it, before returning the Key.
+   *
+   * @param node The Node to be resolved
+   * @param trie The Trie this node belongs to
+   * @return non-null Key for a Node
+   */
   protected static final <K, V> K resolveKey(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
     final Node<K, V> resolved = resolveNode(node, trie);
     return resolved == null ? null : resolved.privateKey;
   }
 
+  /**
+   * Ensure a Node's key has been resolved (it is non-null), otherwise recreate
+   * it and cache it, before returning the Node.
+   *
+   * @param node The Node to be resolved
+   * @param trie The Trie this node belongs to
+   * @return Node with a non-null Key
+   */
   protected static final <K, V> Node<K, V> resolveNode(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
 
@@ -409,14 +461,13 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     final CodecElements elements = node.getCodecElements();
 
-    final K key = trie.codec.recreateKey(elements.bits, elements.levelsDeep);
+    final KeyCodec<K> codec = trie.codec;
+    final K key = codec.recreateKey(elements.bits, elements.levelsDeep);
 
     if (key == null) {
-      throw new IllegalStateException("Unable to create non-null key with key-codec");
+      throw new IllegalStateException("Unable to create non-null key with key-codec: " + codec);
     }
-    if (getNode(key, trie.root, trie.codec, true) != node) {
-      throw new IllegalStateException("Created key not equal to our original key");
-    }
+    assert getNode(key, trie.root, 0, codec, true) == node : "Created key must equal original key";
 
     node.privateKey = key;
 
@@ -428,6 +479,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   /**
    * Test two values for equality. Differs from o1.equals(o2) only in
    * that it copes with {@code null} o1 properly.
+   *
+   * @param o1 Object or null
+   * @param o2 Object or null
+   * @return true o1 equals o2
    */
   protected static final boolean eq(final Object o1, final Object o2) {
     return (o1 == null ? o2 == null : (o1 == o2 || o1.equals(o2)));
@@ -436,19 +491,28 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   /**
-   * Return SimpleImmutableEntry for entry, or null if null
+   * Resolve the Node's key, then return the node as an immutable Map.Entry
+   * Returns null if the node is null or the node's value is null (meaning it
+   * is an empty intermediate node).
+   *
+   * @param node the Node to export
+   * @param trie the Trie this Node is in
+   * @return AbstractMap.SimpleImmutableEntry Map.Entry
    */
-  protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> entry,
+  protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
-    if (entry == null || entry.getValue() == null) {
+    if (node == null || node.value == null) {
       return null;
     }
     // Resolve the Key if missing
-    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(entry, trie), entry.getValue());
+    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(node, trie), node.value);
   }
 
 
 
+  /**
+   * Clear out transient fields, including the keys of all nodes
+   */
   protected void clearTransientMemory() {
     entrySet = null;
     keySet = null;
@@ -481,9 +545,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) size;
   }
 
+  /**
+   * Counts the size of the Trie under a given node
+   *
+   * @param parentFence starting Node, not included in the count
+   * @param countEmptyNodes true if empty intermediate nodes should be counted
+   * @return the number of nodes that are descendants of the parentFence node
+   */
   protected int size(final Node<K, V> parentFence, final boolean countEmptyNodes) {
     long total = 0L;
-    Node<K, V> subTree = root;
+    Node<K, V> subTree = parentFence;
     while ((subTree = successor(subTree, parentFence, countEmptyNodes)) != null) {
       ++total;
     }
@@ -503,6 +574,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return new AbstractBinaryTrie<K, V>(this);
   }
 
+  /**
+   * Copies the node structure and node values from {@code otherTrie} onto
+   * this Trie. This creates a shallow copy.
+   *
+   * @param otherTrie AbstractBinaryTrie
+   */
   protected void buildFromExisting(final AbstractBinaryTrie<K, V> otherTrie) {
 
     Node<K, V> myNode = this.root;
@@ -515,7 +592,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         otherNode = otherNode.left;
         myNode = myNode.getOrCreateEmpty(true);
         myNode.value = otherNode.value;
-        // myNode.key = otherNode.key;
+        if (cacheKeys && myNode.value != null) {
+          myNode.privateKey = otherNode.privateKey;
+        }
         continue;
       }
 
@@ -523,7 +602,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         otherNode = otherNode.right;
         myNode = myNode.getOrCreateEmpty(false);
         myNode.value = otherNode.value;
-        // myNode.key = otherNode.key;
+        if (cacheKeys && myNode.value != null) {
+          myNode.privateKey = otherNode.privateKey;
+        }
         continue;
       }
 
@@ -534,7 +615,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
           otherNode = otherNode.parent.right;
           myNode = myNode.parent.getOrCreateEmpty(false);
           myNode.value = otherNode.value;
-          // myNode.key = otherNode.key;
+          if (cacheKeys && myNode.value != null) {
+            myNode.privateKey = otherNode.privateKey;
+          }
           continue outer;
         }
         otherNode = otherNode.parent;
@@ -578,7 +661,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         if (subNode.value == null) {
           ++this.size;
         }
-        if (cacheKeys) {
+        if (cacheKeys || subNode.privateKey != null) {
           subNode.privateKey = key;
         }
         ++this.modCount;
@@ -614,6 +697,13 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return oldValue;
   }
 
+  /**
+   * Delete a Node. If a leaf node, this will also delete any empty
+   * intermediate parents of the Node, to maintain the contract that all
+   * leaf nodes must have a value.
+   *
+   * @param node Node to delete
+   */
   protected void deleteNode(Node<K, V> node) {
     if (node == null || node.value == null) {
       return;
@@ -657,12 +747,30 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return node == null ? null : node.value;
   }
 
+  /**
+   * Return the Node for a given key, or null if not found or the key is null
+   *
+   * @param key the Key searched for
+   * @return Node if found, or null
+   */
   protected Node<K, V> getNode(final K key) {
-    return getNode(key, root, codec, false);
+    return getNode(key, root, 0, codec, false);
   }
 
+  /**
+   * Return the Node for a given key, or null if not found or the key is null
+   *
+   * @param key the Key searched for
+   * @param startingNode the node to begin our search underneath (usually root)
+   * @param startingIndex the key element index corresponding to the depth of
+   *        the startingNode (usually zero)
+   * @param codec KeyCodec
+   * @param canBeEmpty true if empty intermediate nodes can be returned, false
+   *        if only nodes with values may be returned
+   * @return Node if found, or null
+   */
   protected static <K, V> Node<K, V> getNode(final K key, final Node<K, V> startingNode,
-      final KeyCodec<K> codec, final boolean canBeEmpty) {
+      int startingIndex, final KeyCodec<K> codec, final boolean canBeEmpty) {
     // While we could technically combine getNode and getNodes, the speed and
     // simplicity of getNode outweighs forcing exact match get's to use getNodes
 
@@ -679,9 +787,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     // Look up a single record
     Node<K, V> subNode = startingNode;
-    int i = 0;
     while (true) {
-      if (codec.isLeft(key, i++)) {
+      if (codec.isLeft(key, startingIndex++)) {
         subNode = subNode.left;
       } else {
         subNode = subNode.right;
@@ -690,10 +797,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       if (subNode == null) {
         return null;
       }
-      if (i == stopDepth && (subNode.value != null || canBeEmpty)) {
+      if (startingIndex == stopDepth && (subNode.value != null || canBeEmpty)) {
         return subNode;
       }
-      if (i >= stopDepth) {
+      if (startingIndex >= stopDepth) {
         return null;
       }
     }
@@ -701,6 +808,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * @return the first Node in the Trie, or null
+   */
   protected Node<K, V> firstNode() {
     return successor(root);
   }
@@ -708,12 +818,21 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   /**
-   * Returns the successor of the specified Node Entry, or null if no such.
+   * @param node Node to find the successor of (the next node)
+   * @return the successor of the specified Node, or null if no such.
    */
   protected static <K, V> Node<K, V> successor(final Node<K, V> node) {
     return successor(node, null, false);
   }
 
+  /**
+   * @param node Node to find the successor of (the next node)
+   * @param parentFence Node to force the search for successors to be under
+   *        (descendants of), or null if no limit
+   * @param canBeEmpty true if empty intermediate nodes can be returned, false
+   *        if only nodes with values may be returned
+   * @return the successor of the specified Node, or null if no such.
+   */
   protected static <K, V> Node<K, V> successor(Node<K, V> node, final Node<K, V> parentFence,
       final boolean canBeEmpty) {
 
@@ -762,6 +881,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * @return the last Node in the Trie, or null if none
+   */
   protected Node<K, V> lastNode() {
     // Rely on the fact that leaf nodes can not be empty
     Node<K, V> parent = root;
@@ -778,12 +900,21 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   /**
-   * Returns the predecessor of the specified Node Entry, or null if no such.
+   * @param node the Node to find the predecessor of (previous)
+   * @return the predecessor of the specified Node Entry, or null if no such.
    */
   protected static <K, V> Node<K, V> predecessor(final Node<K, V> node) {
     return predecessor(node, null, false);
   }
 
+  /**
+   * @param node the Node to find the predecessor of (previous)
+   * @param parentFence Node to force the search for predecessor to be under
+   *        (descendants of), or null if no limit
+   * @param canBeEmpty true if empty intermediate nodes can be returned, false
+   *        if only nodes with values may be returned
+   * @return the predecessor of the specified Node Entry, or null if no such.
+   */
   protected static <K, V> Node<K, V> predecessor(Node<K, V> node, final Node<K, V> parentFence,
       final boolean canBeEmpty) {
 
@@ -850,13 +981,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   @Override
-  public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
-    return iter.hasNext() ? iter.next() : null;
-  }
-
-  @Override
   public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
     final Iterator<V> iter =
         new TriePrefixValues<K, V>(this, key, true, keyInclusive, false, false).iterator();
@@ -867,19 +991,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return value;
   }
 
-  @Override
-  public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, false, keyInclusive, true, false).iterator();
-    V value = null;
-    while (iter.hasNext()) {
-      value = iter.next();
-    }
-    return value;
-  }
 
 
-
+  /**
+   * View class for a Collection of Values that are prefixes of a Key.
+   */
   protected static class TriePrefixValues<K, V> extends AbstractCollection<V> {
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
@@ -891,6 +1007,18 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean canBeEmpty;
 
 
+    /**
+     * Create a new TriePrefixValues View
+     *
+     * @param trie the backing trie
+     * @param key the search key
+     * @param includePrefixOfKey true if the values' keys may include prefixes of the search key
+     * @param keyInclusive true if the values' keys may include the search key
+     * @param includePrefixedByKey true if the values' keys may include keys
+     *        prefixed by the search key
+     * @param canBeEmpty true if empty intermediate nodes can be returned, false
+     *        if only nodes with values may be returned
+     */
     protected TriePrefixValues(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
         final boolean includePrefixedByKey, final boolean canBeEmpty) {
@@ -931,6 +1059,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     @Override
     public final boolean remove(final Object o) {
       Node<K, V> node = null;
+      // only remove values that occur in this sub-trie
       final Iterator<Node<K, V>> iter =
           new NodePrefixIterator<K, V>(trie, key, includePrefixOfKey, keyInclusive,
               includePrefixedByKey, canBeEmpty);
@@ -946,6 +1075,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     @Override
     public final void clear() {
+      // only remove values that occur in this sub-trie
       final Iterator<Node<K, V>> iter =
           new NodePrefixIterator<K, V>(trie, key, includePrefixOfKey, keyInclusive,
               includePrefixedByKey, canBeEmpty);
@@ -957,6 +1087,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /** Iterator for returning only prefix values in ascending order */
   protected static final class ValuePrefixIterator<K, V> extends PrivatePrefixIterator<K, V, V> {
 
     protected ValuePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
@@ -967,10 +1098,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     @Override
     public final V next() {
-      return nextNode().getValue();
+      return nextNode().value;
     }
   }
 
+  /** Iterator for returning prefix Nodes in ascending order (must export before returning them) */
   protected static final class NodePrefixIterator<K, V>
       extends PrivatePrefixIterator<K, V, Node<K, V>> {
 
@@ -987,6 +1119,13 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+  /**
+   * Base Prefix Iterator class for extending
+   *
+   * @param <K> Key
+   * @param <V> Value
+   * @param <T> Iterator object type
+   */
   protected abstract static class PrivatePrefixIterator<K, V, T> implements Iterator<T> {
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
@@ -1003,6 +1142,18 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean includePrefixedByKey;
     protected final boolean canBeEmpty;
 
+    /**
+     * Create a new prefix iterator
+     *
+     * @param trie the backing trie
+     * @param key the search key (may not be null)
+     * @param includePrefixOfKey true if the values' keys may include prefixes of the search key
+     * @param keyInclusive true if the values' keys may include the search key
+     * @param includePrefixedByKey true if the values' keys may include keys
+     *        prefixed by the search key
+     * @param canBeEmpty true if empty intermediate nodes can be returned, false
+     *        if only nodes with values may be returned
+     */
     protected PrivatePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
         final boolean includePrefixedByKey, final boolean canBeEmpty) {
@@ -1035,7 +1186,13 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     // TODO: previous/descending could be done by first getting the last node via nextPrefix,
     // then working your way back with opposite logic to nextPrefix
+    /**
+     * @param node Node to find the next successor node of
+     * @return the successor prefix node, or null if none
+     */
     protected Node<K, V> getNextPrefixNode(Node<K, V> node) {
+      // Prefix-Of = all nodes that are direct parents of the Key's node
+      // Prefix-By = all children nodes of the Key's node
 
       while (node != null) {
 
@@ -1090,6 +1247,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
 
 
+    /**
+     * Overrided for use with sub-maps
+     *
+     * @param node Node to query if in range
+     * @return true if the Node is in range for this trie or submap
+     */
     protected boolean inRange(final Node<K, V> node) {
       return true;
     }
@@ -1100,6 +1263,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return next != null;
     }
 
+    /**
+     * @return the next Node in ascending order
+     */
     protected final Node<K, V> nextNode() {
       final Node<K, V> e = next;
       if (e == null) {
@@ -1155,17 +1321,23 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
-  protected static final class TrieKeySet<E> extends AbstractSet<E>
-      implements Set<E> {
+  /** KeySet View Set of Keys */
+  protected static final class TrieKeySet<K> extends AbstractSet<K>
+      implements Set<K> {
 
-    protected final AbstractBinaryTrie<E, ? extends Object> m;
+    protected final AbstractBinaryTrie<K, ? extends Object> m;
 
-    protected TrieKeySet(final AbstractBinaryTrie<E, ? extends Object> map) {
+    /**
+     * Create a new TrieKeySet view
+     *
+     * @param map the backing AbstractBinaryTrie
+     */
+    protected TrieKeySet(final AbstractBinaryTrie<K, ? extends Object> map) {
       m = map;
     }
 
     @Override
-    public final Iterator<E> iterator() {
+    public final Iterator<K> iterator() {
       return m.keyIterator();
     }
 
@@ -1206,10 +1378,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return values;
   }
 
+  /** TrieValues View Collection of Values */
   protected static final class TrieValues<K, V> extends AbstractCollection<V> {
 
     protected final AbstractBinaryTrie<K, V> m; // the backing map
 
+    /**
+     * Create a new TrieValues view
+     *
+     * @param map the backing AbstractBinaryTrie
+     */
     protected TrieValues(final AbstractBinaryTrie<K, V> map) {
       this.m = map;
     }
@@ -1237,7 +1415,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     @Override
     public final boolean remove(final Object o) {
       for (Node<K, V> e = m.firstNode(); e != null; e = successor(e)) {
-        if (eq(e.getValue(), o)) {
+        if (eq(e.value, o)) {
           m.deleteNode(e);
           return true;
         }
@@ -1259,6 +1437,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return (es != null) ? es : (entrySet = new TrieEntrySet());
   }
 
+  /** TrieEntrySet View Set of Map.Entry key-value pairs */
   protected final class TrieEntrySet extends AbstractSet<Map.Entry<K, V>> {
 
     @Override
@@ -1275,7 +1454,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
       final V value = entry.getValue();
       final Node<K, V> p = getNode(entry.getKey());
-      return p != null && eq(p.getValue(), value);
+      return p != null && eq(p.value, value);
     }
 
     @Override
@@ -1287,7 +1466,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
       final V value = entry.getValue();
       final Node<K, V> p = getNode(entry.getKey());
-      if (p != null && eq(p.getValue(), value)) {
+      if (p != null && eq(p.value, value)) {
         deleteNode(p);
         return true;
       }
@@ -1307,6 +1486,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /** Iterator for returning exported Map.Entry views of Nodes in ascending order */
   protected static final class EntryIterator<K, V>
       extends PrivateEntryIterator<K, V, Map.Entry<K, V>> {
 
@@ -1320,6 +1500,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
   }
 
+  /** Iterator for returning only values in ascending order */
   protected static final class ValueIterator<K, V> extends PrivateEntryIterator<K, V, V> {
 
     protected ValueIterator(final AbstractBinaryTrie<K, V> map) {
@@ -1328,14 +1509,18 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     @Override
     public final V next() {
-      return nextNode().getValue();
+      return nextNode().value;
     }
   }
 
+  /**
+   * @return Iterator returning resolved keys in ascending order
+   */
   protected final Iterator<K> keyIterator() {
     return new KeyIterator<K, V>(this);
   }
 
+  /** Iterator for returning only resolved keys in ascending order */
   protected static final class KeyIterator<K, V> extends PrivateEntryIterator<K, V, K> {
 
     protected KeyIterator(final AbstractBinaryTrie<K, V> map) {
@@ -1350,6 +1535,13 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * Base Entry Iterator for extending
+   *
+   * @param <K> Key
+   * @param <V> Value
+   * @param <T> Iterator object type
+   */
   protected abstract static class PrivateEntryIterator<K, V, T> implements Iterator<T> {
 
     protected final AbstractBinaryTrie<K, V> m; // the backing map
@@ -1358,6 +1550,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected Node<K, V> lastReturned;
     protected int expectedModCount;
 
+    /**
+     * Create a new PrivateEntryIterator
+     *
+     * @param map the backing trie
+     * @param first the first Node returned by nextNode or prevNode
+     */
     protected PrivateEntryIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
       this.m = map;
       expectedModCount = m.modCount;
@@ -1370,6 +1568,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return next != null;
     }
 
+    /**
+     * @return the successor Node (ascending order) or null
+     */
     protected final Node<K, V> nextNode() {
       final Node<K, V> e = next;
       if (e == null) {
@@ -1383,6 +1584,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return e;
     }
 
+    /**
+     * @return the predecessor Node (descending order) or null
+     */
     protected final Node<K, V> prevNode() {
       final Node<K, V> e = next;
       if (e == null) {
@@ -1422,7 +1626,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     // To stay compatible with Map interface, we are equal to any map with the same mappings
     int h = 0;
     for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
-      final V value = node.getValue();
+      final V value = node.value;
       final K key = resolveKey(node, this);
       // Map.hashCode compatibility
       h += (key == null ? 0 : key.hashCode()) ^
@@ -1458,7 +1662,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       // To stay compatible with Map interface, we are equal to any map with the same mappings
       try {
         for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
-          final V value = node.getValue();
+          final V value = node.value;
           final K key = resolveKey(node, this);
           if (value == null) {
             if (!(m.get(key) == null && m.containsKey(key))) {
@@ -1482,9 +1686,28 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+  /**
+   * Compares one Node to another Node. Does not recursively compare children,
+   * only tests the existence of children. Assumes both nodes are in the same
+   * position in the structure (and therefore have equal keys).
+   *
+   * @param myNode Node (or null)
+   * @param otherNode Node (or null)
+   * @return false if either node has children the other lacks, and false
+   *         if the values are not equal
+   */
   protected static final <K, V> boolean compareNodeAndExistenceOfChildren(
       final AbstractBinaryTrie.Node<K, V> myNode,
       final AbstractBinaryTrie.Node<K, V> otherNode) {
+
+    if (myNode == null && otherNode == null) {
+      return true;
+    }
+
+    if (myNode == null && otherNode != null
+        || myNode != null && otherNode == null) {
+      return false;
+    }
 
     if ((myNode.left == null && otherNode.left != null)
         || (myNode.left != null && otherNode.left == null)) {
@@ -1503,6 +1726,17 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return true;
   }
 
+  /**
+   * Compare the node's values and node structure of two tries, starting at
+   * two Node at the same place in their respective structures, and then
+   * walking both trie's.
+   *
+   * @param myNode Node from one trie (usually root)
+   * @param otherNode Node from the other trie (usually root)
+   * @return true if the trie's are equal because the node structures are equal
+   *         and the nodes at the same spot in their respective structures have
+   *         equal values
+   */
   protected static final <K, V> boolean compareAllNodes(Node<K, V> myNode, Node<K, V> otherNode) {
 
     // Pre-Order tree traversal
@@ -1544,7 +1778,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     }
 
-    return true;
+    return compareNodeAndExistenceOfChildren(myNode, otherNode);
   }
 
 
@@ -1560,7 +1794,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     sb.append('{');
 
     for (Node<K, V> node = this.firstNode(); node != null;) {
-      final V value = node.getValue();
+      final V value = node.value;
       final K key = resolveKey(node, this);
       sb.append(key == this ? "(this Map)" : key);
       sb.append('=');
@@ -1575,6 +1809,17 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /**
+   * Write out this trie to the output stream.
+   * First write the default object
+   * Second write out cacheKeys, writeKeys, then size
+   * Third, if writeKeys is true then write out alternating key-value pairs,
+   * and if false then write out the node structure (with values but without
+   * keys)
+   *
+   * @param s ObjectOutputStream
+   * @throws IOException
+   */
   private void writeObject(final ObjectOutputStream s) throws IOException {
     // Write out the codec and any hidden stuff
     s.defaultWriteObject();
@@ -1592,7 +1837,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       // If writeKeys, Write out keys and values (alternating)
       for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
         s.writeObject(resolveKey(node, this));
-        s.writeObject(node.getValue());
+        s.writeObject(node.value);
         if (!cacheKeys) {
           node.privateKey = null; // Clear the key
         }
@@ -1608,6 +1853,18 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
   }
 
+  /**
+   * Read in this trie from the input stream.
+   * First read the default object
+   * Second read in cacheKeys, writeKeys, then size
+   * Third, if writeKeys is true then read in and put alternating key-value
+   * pairs, and if false then read in the node structure (with values but without
+   * keys)
+   *
+   * @param s ObjectInputStream
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
   @SuppressWarnings("unchecked")
   private void readObject(final ObjectInputStream s) throws IOException, ClassNotFoundException {
     // Read in the codec and any hidden stuff

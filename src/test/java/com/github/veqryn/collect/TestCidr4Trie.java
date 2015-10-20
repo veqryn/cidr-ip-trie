@@ -30,6 +30,14 @@ import com.github.veqryn.util.TestingUtil;
  */
 public class TestCidr4Trie {
 
+  static {
+    boolean assertsEnabled = false;
+    assert(assertsEnabled = true); // Intentional side effect!!!
+    if (!assertsEnabled) {
+      throw new RuntimeException("Asserts must be enabled!!!");
+    }
+  }
+
   // TODO: all of these tests will be refactored and simplified,
   // after the AbstractBinaryTree class has itself been refactored.
   // This is just enough to get me through the refactoring phase.
@@ -277,17 +285,17 @@ public class TestCidr4Trie {
         AbstractBinaryTrie.resolveKey(trie.root.right.right.right, trie) + "");
 
 
-    assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.getValue() + "");
+    assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.value + "");
 
-    assertEquals(null, trie.root.left.left.getValue());
+    assertEquals(null, trie.root.left.left.value);
 
-    assertEquals("depth 3 s: 0.0.0.0/3", trie.root.left.left.left.getValue() + "");
+    assertEquals("depth 3 s: 0.0.0.0/3", trie.root.left.left.left.value + "");
 
-    assertEquals("depth 1 t: 128.0.0.0/1", trie.root.right.getValue() + "");
+    assertEquals("depth 1 t: 128.0.0.0/1", trie.root.right.value + "");
 
-    assertEquals(null, trie.root.right.right.getValue());
+    assertEquals(null, trie.root.right.right.value);
 
-    assertEquals("depth 3 t: 224.0.0.0/3", trie.root.right.right.right.getValue() + "");
+    assertEquals("depth 3 t: 224.0.0.0/3", trie.root.right.right.right.value + "");
 
 
     assertEquals("depth 3 t: 224.0.0.0/3", trie.remove(t3));
@@ -321,13 +329,13 @@ public class TestCidr4Trie {
     assertEquals(null, trie.root.right.right);
 
 
-    assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.getValue() + "");
+    assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.value + "");
 
-    assertEquals(null, trie.root.left.left.getValue());
+    assertEquals(null, trie.root.left.left.value);
 
-    assertEquals("depth 3 s: 0.0.0.0/3", trie.root.left.left.left.getValue() + "");
+    assertEquals("depth 3 s: 0.0.0.0/3", trie.root.left.left.left.value + "");
 
-    assertEquals("depth 1 t: 128.0.0.0/1", trie.root.right.getValue() + "");
+    assertEquals("depth 1 t: 128.0.0.0/1", trie.root.right.value + "");
 
     assertEquals(null, trie.root.right.right);
 

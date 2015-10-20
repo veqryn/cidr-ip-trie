@@ -19,11 +19,38 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 
 
 /**
- * AbstractNavigableBinaryTrie class
+ * Implementation of the {@link NavigableTrie} interface ({@link Trie} +
+ * {@link NavigableMap} interfaces), as an
+ * uncompressed binary bitwise trie. For more information, see:
+ * <a href="http://en.wikipedia.org/wiki/Trie">wikipedia entry on tries</a>.
+ *
+ * <p>
+ * Works best with short binary data, such as IP addresses or CIDR ranges.
+ *
+ * Keys will be analyzed as they come in by a {@link KeyCodec}, for the
+ * length of their elements, and for the element at any index belonging in
+ * either the left or right nodes in a tree. A single empty root node is our
+ * starting point, with nodes containing references to their parent, their
+ * left and right children if any, and their value if any. Leaf nodes must
+ * always have a value, but intermediate nodes may or may not have values.
+ *
+ * <p>
+ * Keys and Values may never be {@code null}, and therefore if any node
+ * has a value, it implicitly has a key.
+ *
+ * <p>
+ * Keys and Values are returned in an order according to the order of the
+ * elements in the key, and the number of elements in the key.
+ *
+ * <p>
+ * It is recommended that {@code cacheKeys} be set to true, if NavigableMap
+ * and {@link SortedMap} methods that return, compare, or hash the keys,
+ * will be used.
  *
  * @author Mark Christopher Duncan
  *
@@ -65,7 +92,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
    */
   protected static final <K, V> K keyOrNoSuchElementException(final Node<K, V> entry,
       final AbstractBinaryTrie<K, V> trie) {
-    if (entry == null || entry.getValue() == null) {
+    if (entry == null || entry.value == null) {
       throw new NoSuchElementException();
     }
     // Resolve the Key if missing
@@ -78,7 +105,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
    */
   protected static final <K, V> K keyOrNull(final Node<K, V> entry,
       final AbstractBinaryTrie<K, V> trie) {
-    if (entry == null || entry.getValue() == null) {
+    if (entry == null || entry.value == null) {
       return null;
     }
     // Resolve the Key if missing
@@ -1187,27 +1214,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     }
 
     @Override
-    public V valueShortestPrefixedBy(final K key, final boolean keyInclusive) {
-      final Iterator<V> iter =
-          new TriePrefixSubMapValues(key, false, keyInclusive, true, false).iterator();
-      return iter.hasNext() ? iter.next() : null;
-    }
-
-    @Override
     public V valueLongestPrefixOf(final K key, final boolean keyInclusive) {
       final Iterator<V> iter =
           new TriePrefixSubMapValues(key, true, keyInclusive, false, false).iterator();
-      V value = null;
-      while (iter.hasNext()) {
-        value = iter.next();
-      }
-      return value;
-    }
-
-    @Override
-    public V valueLongestPrefixedBy(final K key, final boolean keyInclusive) {
-      final Iterator<V> iter =
-          new TriePrefixSubMapValues(key, false, keyInclusive, true, false).iterator();
       V value = null;
       while (iter.hasNext()) {
         value = iter.next();
@@ -1293,7 +1302,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       public final V next() {
-        return nextNode().getValue();
+        return nextNode().value;
       }
 
       @Override
@@ -1364,7 +1373,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           return false;
         }
         final Node<K, V> node = m.getNode(key);
-        return node != null && eq(node.getValue(), entry.getValue());
+        return node != null && eq(node.value, entry.getValue());
       }
 
       @Override
@@ -1379,7 +1388,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           return false;
         }
         final Node<K, V> node = m.getNode(key);
-        if (node != null && eq(node.getValue(), entry.getValue())) {
+        if (node != null && eq(node.value, entry.getValue())) {
           m.deleteNode(node);
           return true;
         }
@@ -1484,7 +1493,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       public final V next() {
-        return nextNode().getValue();
+        return nextNode().value;
       }
 
       @Override
@@ -1552,7 +1561,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       public final V next() {
-        return prevNode().getValue();
+        return prevNode().value;
       }
 
       @Override
