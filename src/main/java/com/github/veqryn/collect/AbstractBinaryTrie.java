@@ -44,13 +44,17 @@ import java.util.Set;
  * Keys and Values are returned in an order according to the order of the
  * elements in the key, and the number of elements in the key.
  *
+ * <p>
+ * It is recommended that {@code cacheKeys} be set to true, if methods that
+ * return, compare, or hash the keys, will be used. Otherwise memory usage
+ * can be reduced by not keeping keys instances around.
+ *
  * @author Mark Christopher Duncan
  *
  * @param <K> Key
  * @param <V> Value
  */
 public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Cloneable {
-  // TODO: in new interface, implement more 'value' based methods
 
   private static final long serialVersionUID = 4494549156276631388L;
 
@@ -82,10 +86,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * insertion and writing out or not of keys during serialization.
    *
    * <p>
-   * {@link Trie}s do not necessarily need to store the full values of each
+   * {@link Trie}s do not necessarily need to store the full instances of each
    * key, because a key can be determined and recreated by its position within
    * the trie's structure. Therefore this implementation provides options
-   * on what to do with the keys after their node has been created.
+   * on what to do with the key instances after their node has been created.
    *
    * <p>
    * If {@code cacheKeys} is set to true, keys will be permanently kept after
@@ -160,10 +164,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * with the keys and values in the provided map.
    *
    * <p>
-   * {@link Trie}s do not necessarily need to store the full values of each
+   * {@link Trie}s do not necessarily need to store the full instances of each
    * key, because a key can be determined and recreated by its position within
    * the trie's structure. Therefore this implementation provides options
-   * on what to do with the keys after their node has been created.
+   * on what to do with the key instances after their node has been created.
    *
    * <p>
    * If {@code cacheKeys} is set to true, keys will be permanently kept after
@@ -231,7 +235,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   /**
    * Copy constructor, creates a shallow copy of this
    * {@link AbstractBinaryTrie} instance.
-   * (The keys and values themselves are not copied.)
    *
    * @param otherTrie AbstractBinaryTrie
    */
@@ -261,9 +264,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     private static final long serialVersionUID = -5827641765558398662L;
 
     /**
-     * Do not directly reference <code>privateKey</code> expecting a non-null
-     * key. Instead use <code>resolveKey(node, trie)</code> to first create
-     * the key if it does not exist, and return the cached key.
+     * Do not directly reference <code>privateKey</code> expecting a non-null key.
+     * Instead use {@link AbstractBinaryTrie#resolveKey(Node, AbstractBinaryTrie)}
+     * or {@link AbstractBinaryTrie#resolveNode(Node, AbstractBinaryTrie)} to
+     * first create the key if it does not exist, and return the cached key.
      *
      * @return the key (K) if it has been resolved, or null otherwise.
      */
@@ -993,9 +997,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  /**
-   * View class for a Collection of Values that are prefixes of a Key.
-   */
+  /** View class for a Collection of Values that are prefixes of a Key. */
   protected static class TriePrefixValues<K, V> extends AbstractCollection<V> {
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
@@ -1704,8 +1706,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return true;
     }
 
-    if (myNode == null && otherNode != null
-        || myNode != null && otherNode == null) {
+    if ((myNode == null && otherNode != null)
+        || (myNode != null && otherNode == null)) {
       return false;
     }
 

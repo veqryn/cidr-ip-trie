@@ -50,7 +50,8 @@ import java.util.SortedSet;
  * <p>
  * It is recommended that {@code cacheKeys} be set to true, if NavigableMap
  * and {@link SortedMap} methods that return, compare, or hash the keys,
- * will be used.
+ * will be used. Otherwise memory usage can be reduced by not keeping keys
+ * instances around.
  *
  * @author Mark Christopher Duncan
  *
@@ -69,16 +70,162 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /**
+   * Create an empty {@link AbstractNavigableBinaryTrie}, implementing
+   * {@link NavigableTrie}, using the given {@link KeyCodec}, and settings for
+   * keeping/caching or not of keys after insertion and writing out or not of
+   * keys during serialization.
+   *
+   * <p>
+   * {@link Trie}s do not necessarily need to store the full instances of each
+   * key, because a key can be determined and recreated by its position within
+   * the trie's structure. Therefore this implementation provides options
+   * on what to do with the key instances after their node has been created.
+   *
+   * <p>
+   * If {@code cacheKeys} is set to true, keys will be permanently kept after
+   * being inserted with the {@link #put} operation, and will maintain their
+   * == identity with the original keys. If set to false, keys will be
+   * discarded, allowing for a much smaller memory footprint, at the cost
+   * of increased cpu time should the keys need to be recreated (which would
+   * only occur if the methods {@link #keySet}, {@link #entrySet},
+   * {@link #equals}, and {@link #hashCode} were called, because they either
+   * give up the full key for outside use, or hash or compare full keys).
+   * After being recreated, the keys will be cached so that subsequent lookups
+   * do not need to recreate the key. The recreated keys will be equal
+   * to the original key, but will not be the same reference pointer
+   * (unless the KeyCodec being used is doing some magic).
+   *
+   * <p>
+   * If {@code writeKeys} is set to true, keys will be written out during
+   * serialization (alternating with their respective values, just like a
+   * regular map). If set to false, keys will not be written out, and
+   * instead the node structure (and each node's value) will be written out.
+   * Because each Node has 3 reference pointers to up to 3 other Nodes,
+   * (pointers are usually 32 bits) writing out the nodes like this ends up
+   * saving space when the size of keys > size of 3 pointers, but costs extra
+   * space if size of key < 3 pointers. Even if the size of keys is smaller,
+   * writing the root nodes would be faster than recreating keys if the keys
+   * are not being kept/cached.
+   *
+   * <p>
+   * To summarize, there are really 3 options:
+   *
+   * <p>
+   * 1. cacheKeys = false & writeKeys = false: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, but size of serialized trie will most likely be larger,
+   * but this all depends on the key class.
+   *
+   * <p>
+   * 2. cacheKeys = false & writeKeys = true: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Slightly slower
+   * speed of serialization, but size of serialized trie will most likely be
+   * smaller, but this all depends on the key class.
+   *
+   * <p>
+   * 3. cacheKeys = true & writeKeys = true: More memory used at runtime,
+   * but faster to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, and size of serialized trie will most likely be smaller,
+   * but this all depends on the key class.
+   *
+   *
+   * @param keyCodec KeyCodec for analyzing of keys
+   * @param cacheKeys true if the Trie should store keys after insertion,
+   *        false if the Trie should discard keys after the insertion of their
+   *        value
+   * @param writeKeys true if on serialization of the trie, the keys should
+   *        be written out to the stream, and false if the keys should not be
+   *        (the trie will write out the structure of its nodes instead)
+   */
   public AbstractNavigableBinaryTrie(final KeyCodec<K> keyCodec, final boolean cacheKeys,
       final boolean writeKeys) {
     super(keyCodec, cacheKeys, writeKeys);
   }
 
+
+  /**
+   * Create an empty {@link AbstractNavigableBinaryTrie}, implementing
+   * {@link NavigableTrie}, using the given {@link KeyCodec}, and settings for
+   * keeping/caching or not of keys after insertion and writing out or not of
+   * keys during serialization. The trie will be filled with the keys and
+   * values in the provided map.
+   *
+   * <p>
+   * {@link Trie}s do not necessarily need to store the full instances of each
+   * key, because a key can be determined and recreated by its position within
+   * the trie's structure. Therefore this implementation provides options
+   * on what to do with the key instances after their node has been created.
+   *
+   * <p>
+   * If {@code cacheKeys} is set to true, keys will be permanently kept after
+   * being inserted with the {@link #put} operation, and will maintain their
+   * == identity with the original keys. If set to false, keys will be
+   * discarded, allowing for a much smaller memory footprint, at the cost
+   * of increased cpu time should the keys need to be recreated (which would
+   * only occur if the methods {@link #keySet}, {@link #entrySet},
+   * {@link #equals}, and {@link #hashCode} were called, because they either
+   * give up the full key for outside use, or hash or compare full keys).
+   * After being recreated, the keys will be cached so that subsequent lookups
+   * do not need to recreate the key. The recreated keys will be equal
+   * to the original key, but will not be the same reference pointer
+   * (unless the KeyCodec being used is doing some magic).
+   *
+   * <p>
+   * If {@code writeKeys} is set to true, keys will be written out during
+   * serialization (alternating with their respective values, just like a
+   * regular map). If set to false, keys will not be written out, and
+   * instead the node structure (and each node's value) will be written out.
+   * Because each Node has 3 reference pointers to up to 3 other Nodes,
+   * (pointers are usually 32 bits) writing out the nodes like this ends up
+   * saving space when the size of keys > size of 3 pointers, but costs extra
+   * space if size of key < 3 pointers. Even if the size of keys is smaller,
+   * writing the root nodes would be faster than recreating keys if the keys
+   * are not being kept/cached.
+   *
+   * <p>
+   * To summarize, there are really 3 options:
+   *
+   * <p>
+   * 1. cacheKeys = false & writeKeys = false: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, but size of serialized trie will most likely be larger,
+   * but this all depends on the key class.
+   *
+   * <p>
+   * 2. cacheKeys = false & writeKeys = true: Less memory used at runtime,
+   * but slower to use keySet, entrySet, equals and hashCode. Slightly slower
+   * speed of serialization, but size of serialized trie will most likely be
+   * smaller, but this all depends on the key class.
+   *
+   * <p>
+   * 3. cacheKeys = true & writeKeys = true: More memory used at runtime,
+   * but faster to use keySet, entrySet, equals and hashCode. Fast speed of
+   * serialization, and size of serialized trie will most likely be smaller,
+   * but this all depends on the key class.
+   *
+   * @param keyCodec KeyCodec for analyzing of keys
+   * @param otherMap Map of keys and values, which will be {@link #putAll}
+   *        into the newly created trie
+   * @param cacheKeys true if the Trie should store keys after insertion,
+   *        false if the Trie should discard keys after the insertion of their
+   *        value
+   * @param writeKeys true if on serialization of the trie, the keys should
+   *        be written out to the stream, and false if the keys should not be
+   *        (the trie will write out the structure of its nodes instead)
+   */
   public AbstractNavigableBinaryTrie(final KeyCodec<K> keyCodec, final Map<K, V> otherMap,
       final boolean cacheKeys, final boolean writeKeys) {
     super(keyCodec, otherMap, cacheKeys, writeKeys);
   }
 
+  /**
+   * Copy constructor, creates a shallow copy of this
+   * {@link AbstractNavigableBinaryTrie} instance, implementing
+   * {@link NavigableTrie}.
+   *
+   * @param otherTrie AbstractBinaryTrie
+   */
   public AbstractNavigableBinaryTrie(final AbstractBinaryTrie<K, V> otherTrie) {
     super(otherTrie);
   }
@@ -86,34 +233,40 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
   /**
-   * Returns the key corresponding to the specified Entry.
-   *
+   * @param node the Node to get the key from, or null
+   * @param trie the Trie this Node belongs to
+   * @return the key corresponding to the specified Node
    * @throws NoSuchElementException if the Entry is null
    */
-  protected static final <K, V> K keyOrNoSuchElementException(final Node<K, V> entry,
+  protected static final <K, V> K keyOrNoSuchElementException(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
-    if (entry == null || entry.value == null) {
+    if (node == null || node.value == null) {
       throw new NoSuchElementException();
     }
     // Resolve the Key if missing
-    return resolveKey(entry, trie);
+    return resolveKey(node, trie);
   }
 
   /**
-   * Returns the key corresponding to the specified Entry,
-   * or null if it does not exist
+   * @param node the Node to get the key from, or null
+   * @param trie the Trie this Node belongs to
+   * @return the key corresponding to the specified Node,
+   *         or null if it does not exist
    */
-  protected static final <K, V> K keyOrNull(final Node<K, V> entry,
+  protected static final <K, V> K keyOrNull(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
-    if (entry == null || entry.value == null) {
+    if (node == null || node.value == null) {
       return null;
     }
     // Resolve the Key if missing
-    return resolveKey(entry, trie);
+    return resolveKey(node, trie);
   }
 
 
 
+  /**
+   * Clear out transient fields, including the keys of all nodes
+   */
   @Override
   protected void clearTransientMemory() {
     navigableKeySet = null;
@@ -129,7 +282,12 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
   }
 
   /**
-   * Compares two keys using the correct comparison method for this class.
+   * Compares two keys using the correct comparison method for this class
+   *
+   * @param k1 first Key
+   * @param k2 second Key
+   * @return a negative integer, zero, or a positive integer as the first
+   *         argument is less than, equal to, or greater than the second.
    */
   @SuppressWarnings("unchecked")
   protected final int compare(final K k1, final K k2) {
@@ -139,14 +297,30 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /**
+   * @param key search key
+   * @return the ceiling Node (the Node greater than or equal to the given key,
+   *         or null)
+   */
   protected Node<K, V> ceilingNode(final K key) {
     return ceilingOrHigherNode(key, false);
   }
 
+  /**
+   * @param key search key
+   * @return the higher Node (the Node greater than the given key, or null)
+   */
   protected Node<K, V> higherNode(final K key) {
     return ceilingOrHigherNode(key, true);
   }
 
+  /**
+   * @param key search key
+   * @param higher true if the Node should be higher than the key
+   * @return the ceiling Node (the Node greater than or equal to the given key,
+   *         or null), or the higher Node (the Node greater than the given key,
+   *         or null) if {@code higher} is {@code true}
+   */
   protected Node<K, V> ceilingOrHigherNode(final K key, final boolean higher) {
 
     if (key == null) {
@@ -223,14 +397,30 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /**
+   * @param key search key
+   * @return the floor Node (the Node lower than or equal to the given key,
+   *         or null)
+   */
   protected Node<K, V> floorNode(final K key) {
     return floorOrLowerNode(key, false);
   }
 
+  /**
+   * @param key search key
+   * @return the lower Node (the Node lower than the given key, or null)
+   */
   protected Node<K, V> lowerNode(final K key) {
     return floorOrLowerNode(key, true);
   }
 
+  /**
+   * @param key search key
+   * @param lower true if the Node should be lower than the key
+   * @return the floor Node (the Node lower than or equal to the given key,
+   *         or null), or the lower Node (the Node lower than the given key,
+   *         or null) if {@code lower} is {@code true}
+   */
   protected Node<K, V> floorOrLowerNode(final K key, final boolean lower) {
 
     if (key == null) {
@@ -370,11 +560,17 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     return navigableKeySet;
   }
 
+  /** NavigableTrieKeySet key set view implementing NavigableSet */
   protected static final class NavigableTrieKeySet<E> extends AbstractSet<E>
       implements NavigableSet<E> {
 
     protected final NavigableTrie<E, ? extends Object> m;
 
+    /**
+     * Creates a new NavigableTrieKeySet view
+     *
+     * @param map the backing trie map
+     */
     protected NavigableTrieKeySet(final NavigableTrie<E, ? extends Object> map) {
       m = map;
     }
@@ -512,10 +708,14 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /**
+   * @return Iterator returning resolved keys in descending order
+   */
   protected final Iterator<K> descendingKeyIterator() {
     return new DescendingKeyIterator<K, V>(this);
   }
 
+  /** Iterator for returning only keys in descending order */
   protected static final class DescendingKeyIterator<K, V> extends PrivateEntryIterator<K, V, K> {
 
     protected DescendingKeyIterator(final AbstractBinaryTrie<K, V> map) {
@@ -590,14 +790,36 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /** AscendingSubMap sub map view with ascending order */
   protected static final class AscendingSubMap<K, V> extends NavigableTrieSubMap<K, V> {
 
     private static final long serialVersionUID = 912986545866124060L;
 
-    protected AscendingSubMap(final AbstractNavigableBinaryTrie<K, V> m,
+    /**
+     * Create a new AscendingSubMap sub map view.
+     *
+     * <p>
+     * Endpoints are represented as triples
+     * (fromStart, lo, loInclusive) and (toEnd, hi, hiInclusive).
+     *
+     * If fromStart is true, then the low (absolute) bound is the
+     * start of the backing map, and the other values are ignored.
+     *
+     * Otherwise, if loInclusive is true, lo is the inclusive bound,
+     * else lo is the exclusive bound. Similarly for the upper bound.
+     *
+     * @param map the backing map
+     * @param fromStart
+     * @param lo
+     * @param loInclusive
+     * @param toEnd
+     * @param hi
+     * @param hiInclusive
+     */
+    protected AscendingSubMap(final AbstractNavigableBinaryTrie<K, V> map,
         final boolean fromStart, final K lo, final boolean loInclusive,
         final boolean toEnd, final K hi, final boolean hiInclusive) {
-      super(m, fromStart, lo, loInclusive, toEnd, hi, hiInclusive);
+      super(map, fromStart, lo, loInclusive, toEnd, hi, hiInclusive);
     }
 
     @Override
@@ -717,10 +939,32 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /** DescendingSubMap sub map view with descending order */
   protected static final class DescendingSubMap<K, V> extends NavigableTrieSubMap<K, V> {
 
     private static final long serialVersionUID = 912986545866120460L;
 
+    /**
+     * Create a new DescendingSubMap sub map view.
+     *
+     * <p>
+     * Endpoints are represented as triples
+     * (fromStart, lo, loInclusive) and (toEnd, hi, hiInclusive).
+     *
+     * If fromStart is true, then the low (absolute) bound is the
+     * start of the backing map, and the other values are ignored.
+     *
+     * Otherwise, if loInclusive is true, lo is the inclusive bound,
+     * else lo is the exclusive bound. Similarly for the upper bound.
+     *
+     * @param map the backing map
+     * @param fromStart
+     * @param lo
+     * @param loInclusive
+     * @param toEnd
+     * @param hi
+     * @param hiInclusive
+     */
     protected DescendingSubMap(final AbstractNavigableBinaryTrie<K, V> m,
         final boolean fromStart, final K lo, final boolean loInclusive,
         final boolean toEnd, final K hi, final boolean hiInclusive) {
@@ -790,6 +1034,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       return valuesSubMapView;
     }
 
+    /** Iterator for returning only values in descending order */
     protected final class DescendingTrieSubMapValues extends TrieSubMapValues {
       protected DescendingTrieSubMapValues(final Node<K, V> last, final Node<K, V> fence) {
         super(last, fence);
@@ -811,6 +1056,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       return new SubMapKeyIterator(absLowest(), absHighFence());
     }
 
+    /** Iterator for returning entries (key-value pairs) in descending order */
     protected final class DescendingEntrySetView extends TrieEntrySetSubMapView {
       @Override
       public Iterator<Map.Entry<K, V>> iterator() {
@@ -858,6 +1104,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /** Base NavigableTrieSubMap sub-map view class for extending */
   protected abstract static class NavigableTrieSubMap<K, V> extends AbstractMap<K, V>
       implements NavigableTrie<K, V>, NavigableMap<K, V>, Serializable {
 
@@ -1225,6 +1472,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     }
 
 
+    /** TriePrefixSubMapValues values collection view */
     protected class TriePrefixSubMapValues extends AbstractCollection<V> {
 
       protected final K key;
@@ -1234,6 +1482,17 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       protected final boolean canBeEmpty;
 
 
+      /**
+       * Create a new TriePrefixSubMapValues View
+       *
+       * @param key the search key
+       * @param includePrefixOfKey true if the values' keys may include prefixes of the search key
+       * @param keyInclusive true if the values' keys may include the search key
+       * @param includePrefixedByKey true if the values' keys may include keys
+       *        prefixed by the search key
+       * @param canBeEmpty true if empty intermediate nodes can be returned, false
+       *        if only nodes with values may be returned
+       */
       protected TriePrefixSubMapValues(final K key,
           final boolean includePrefixOfKey, final boolean keyInclusive,
           final boolean includePrefixedByKey, final boolean canBeEmpty) {
@@ -1292,6 +1551,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning only prefix values in ascending order from a sub map */
     protected final class ValuePrefixSubMapIterator extends PrivatePrefixIterator<K, V, V> {
 
       protected ValuePrefixSubMapIterator(final K key,
@@ -1311,6 +1571,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning only prefix nodes in ascending order from a sub map */
     protected final class NodePrefixSubMapIterator extends PrivatePrefixIterator<K, V, Node<K, V>> {
 
       protected NodePrefixSubMapIterator(final K key,
@@ -1334,6 +1595,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     // View classes
 
+    /** TrieEntrySetSubMapView entry set sub map view */
     protected abstract class TrieEntrySetSubMapView extends AbstractSet<Map.Entry<K, V>> {
 
       private transient int size = -1, sizeModCount = -1;
@@ -1396,11 +1658,18 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** TrieSubMapValues value collection sub map view */
     protected class TrieSubMapValues extends AbstractCollection<V> {
 
       protected final Node<K, V> first;
       protected final Node<K, V> fence;
 
+      /**
+       * Create a new TrieSubMapValues value collection sub map view
+       *
+       * @param first the first Node to start with
+       * @param fence the Node we must stop before
+       */
       protected TrieSubMapValues(final Node<K, V> first, final Node<K, V> fence) {
         this.first = first;
         this.fence = fence;
@@ -1451,6 +1720,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+    /** Iterator for returning entries (key-value pairs) in ascending order from a sub map */
     protected final class SubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
 
       protected SubMapEntryIterator(final Node<K, V> first, final Node<K, V> fence) {
@@ -1468,6 +1738,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning only keys in ascending order from a sub map */
     protected final class SubMapKeyIterator extends SubMapIterator<K> {
 
       protected SubMapKeyIterator(final Node<K, V> first, final Node<K, V> fence) {
@@ -1485,6 +1756,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning only values in ascending order from a sub map */
     protected final class SubMapValueIterator extends SubMapIterator<V> {
 
       protected SubMapValueIterator(final Node<K, V> first, final Node<K, V> fence) {
@@ -1502,6 +1774,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning nodes in ascending order from a sub map */
     protected final class SubMapNodeIterator extends SubMapIterator<Node<K, V>> {
 
       protected SubMapNodeIterator(final Node<K, V> first, final Node<K, V> fence) {
@@ -1519,6 +1792,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning entries (key-value pairs) in descending order from a sub map */
     protected final class DescendingSubMapEntryIterator extends SubMapIterator<Map.Entry<K, V>> {
 
       protected DescendingSubMapEntryIterator(final Node<K, V> last, final Node<K, V> fence) {
@@ -1536,6 +1810,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning only keys in descending order from a sub map */
     protected final class DescendingSubMapKeyIterator extends SubMapIterator<K> {
 
       protected DescendingSubMapKeyIterator(final Node<K, V> last, final Node<K, V> fence) {
@@ -1553,6 +1828,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning only values in descending order from a sub map */
     protected final class DescendingSubMapValueIterator extends SubMapIterator<V> {
 
       protected DescendingSubMapValueIterator(final Node<K, V> last, final Node<K, V> fence) {
@@ -1571,9 +1847,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     }
 
 
-    /**
-     * Iterators for SubMaps
-     */
+    /** SubMapIterator for extending by Iterators for SubMaps */
     protected abstract class SubMapIterator<T> implements Iterator<T> {
 
       protected Node<K, V> lastReturned;
@@ -1581,6 +1855,12 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       protected final Object fenceKey;
       protected int expectedModCount;
 
+      /**
+       * Create a new SubMapIterator sub map iterator
+       * 
+       * @param first the first Node to start with
+       * @param fence the Node we must stop before
+       */
       protected SubMapIterator(final Node<K, V> first, final Node<K, V> fence) {
         expectedModCount = m.modCount;
         lastReturned = null;
@@ -1590,12 +1870,15 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       public final boolean hasNext() {
-        return next != null && (fenceKey == null || resolveKey(next, m) != fenceKey);
+        return next != null && (fenceKey == null || !fenceKey.equals(resolveKey(next, m)));
       }
 
+      /**
+       * @return the successor Node (ascending order) or null
+       */
       protected final Node<K, V> nextNode() {
         final Node<K, V> e = next;
-        if (e == null || (fenceKey != null && resolveKey(e, m) == fenceKey)) {
+        if (e == null || (fenceKey != null && fenceKey.equals(resolveKey(e, m)))) {
           throw new NoSuchElementException();
         }
         if (m.modCount != expectedModCount) {
@@ -1606,9 +1889,12 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         return e;
       }
 
+      /**
+       * @return the predecessor Node (descending order) or null
+       */
       protected final Node<K, V> prevNode() {
         final Node<K, V> e = next;
-        if (e == null || (fenceKey != null && resolveKey(e, m) == fenceKey)) {
+        if (e == null || (fenceKey != null && fenceKey.equals(resolveKey(e, m)))) {
           throw new NoSuchElementException();
         }
         if (m.modCount != expectedModCount) {
@@ -1619,6 +1905,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         return e;
       }
 
+      /**
+       * Remove the last ascending node
+       */
       protected final void removeAscending() {
         if (lastReturned == null) {
           throw new IllegalStateException();
@@ -1636,6 +1925,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         expectedModCount = m.modCount;
       }
 
+      /**
+       * Remove the last descending node
+       */
       protected final void removeDescending() {
         if (lastReturned == null) {
           throw new IllegalStateException();

@@ -34,7 +34,7 @@ public class TestCidr4Trie {
     boolean assertsEnabled = false;
     assert(assertsEnabled = true); // Intentional side effect!!!
     if (!assertsEnabled) {
-      throw new RuntimeException("Asserts must be enabled!!!");
+      throw new RuntimeException("Asserts must be enabled (use '-ea')!!!");
     }
   }
 

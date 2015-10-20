@@ -17,8 +17,8 @@ import java.util.Set;
  * <p>
  * Tries have an advantage over regular Tree's in that the time to lookup
  * any given key's node is constant, based on the length of that key.
- * Looking up a given key also gives all nodes that are prefixes of that
- * key for free, and all nodes that are prefixed by that key are children
+ * Looking up a given key also finds all nodes that are prefixes of that key
+ * at the same time, and all nodes that are prefixed by that key are children
  * of the found node. This makes a trie ideal for prefix searching.
  *
  * <p>
@@ -38,7 +38,7 @@ import java.util.Set;
  * The Trie will return values in an order determined by a combination of
  * the length and elements in a key, specific to the implementation and
  * purpose of the concrete Trie being used.
- * However it is guaranteed that <code>prefix of</code> methods will return
+ * However it is guaranteed that <code>Prefix-Of</code> methods will return
  * values in the order of their key's length, from smallest to largest.
  *
  * <p>
@@ -54,6 +54,12 @@ import java.util.Set;
  * {@link #equals}, {@link #hashCode}) could potentially take longer than a
  * regular Map/Tree would to complete, because each key must be recreated
  * before being used.
+ *
+ * <p>
+ * For these reasons, it is recommended that the concrete implementation of
+ * NavigableTrie be configured to keep or cache the key instances, if methods
+ * that return, compare, or hash the keys, will be used. Otherwise memory
+ * usage can be reduced by not keeping keys instances around.
  *
  *
  * @author Mark Christopher Duncan
@@ -403,6 +409,8 @@ public interface Trie<K, V> extends Map<K, V> {
 
   /**
    * Returns a {@link Collection} view of the values contained in this map.
+   * The collection's iterator returns the values in ascending order
+   * of the corresponding keys.
    * The collection is backed by the map, so changes to the map are
    * reflected in the collection, and vice-versa. If the map is
    * modified while an iteration over the collection is in progress
@@ -414,7 +422,8 @@ public interface Trie<K, V> extends Map<K, V> {
    * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
    * support the <tt>add</tt> or <tt>addAll</tt> operations.
    *
-   * @return a collection view of the values contained in this map
+   * @return a collection view of the values contained in this map,
+   *         sorted in ascending key order
    */
   @Override
   Collection<V> values();
@@ -422,6 +431,7 @@ public interface Trie<K, V> extends Map<K, V> {
 
   /**
    * Returns a {@link Set} view of the keys contained in this map.
+   * The set's iterator returns the keys in ascending order.
    * The set is backed by the map, so changes to the map are
    * reflected in the set, and vice-versa. If the map is modified
    * while an iteration over the set is in progress (except through
@@ -453,7 +463,8 @@ public interface Trie<K, V> extends Map<K, V> {
    * original keys put in this map, assuming the implementation
    * being used recreates they appropriately.
    *
-   * @return a set view of the keys contained in this map
+   * @return a set view of the keys contained in this map, sorted in
+   *         ascending order
    */
   @Override
   Set<K> keySet();
@@ -461,6 +472,7 @@ public interface Trie<K, V> extends Map<K, V> {
 
   /**
    * Returns a {@link Set} view of the mappings contained in this map.
+   * The set's iterator returns the entries in ascending key order.
    * The set is backed by the map, so changes to the map are
    * reflected in the set, and vice-versa. If the map is modified
    * while an iteration over the set is in progress (except through
@@ -493,7 +505,8 @@ public interface Trie<K, V> extends Map<K, V> {
    * original keys put in this map, assuming the implementation
    * being used recreates they appropriately.
    *
-   * @return a set view of the mappings contained in this map
+   * @return a set view of the mappings contained in this map,
+   *         sorted in ascending key order
    */
   @Override
   Set<Map.Entry<K, V>> entrySet();
