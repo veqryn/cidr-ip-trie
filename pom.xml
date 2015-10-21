@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   
@@ -12,6 +14,24 @@
   
   <packaging>jar</packaging>
   
+  
+  <developers>
+    <developer>
+      <name>Mark Christopher Duncan</name>
+      <id>veqryn</id>
+	  <email>veqryn@hotmail.com</email>
+    </developer>
+  </developers>
+  
+  
+  <repositories>
+    <repository>
+	  <id>project.local</id>
+	  <name>project.local</name>
+	  <url>file://${basedir}/repo</url>
+	</repository>
+  </repositories>
+  
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -19,6 +39,21 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
+	
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+	  <artifactId>commons-collections4</artifactId>
+	  <version>[4.0,)</version>
+	  <scope>test</scope>
+    </dependency>
+	
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+	  <artifactId>commons-collections4-tests</artifactId>
+	  <version>[4.0,)</version>
+	  <scope>test</scope>
+    </dependency>
+
     <!--
     <dependency>
       <groupId>org.mockito</groupId>

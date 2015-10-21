@@ -669,7 +669,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
           subNode.privateKey = key;
         }
         ++this.modCount;
-        return subNode.value = value;
+        final V oldValue = subNode.value;
+        subNode.value = value;
+        return oldValue;
       }
     }
   }
@@ -1055,7 +1057,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     @Override
     public final boolean isEmpty() {
-      return iterator().hasNext();
+      return !iterator().hasNext();
     }
 
     @Override
@@ -1068,7 +1070,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       while (iter.hasNext()) {
         node = iter.next();
         if (eq(node.value, o)) {
-          trie.deleteNode(node);
+          iter.remove();
           return true;
         }
       }
@@ -1082,7 +1084,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
           new NodePrefixIterator<K, V>(trie, key, includePrefixOfKey, keyInclusive,
               includePrefixedByKey, canBeEmpty);
       while (iter.hasNext()) {
-        trie.deleteNode(iter.next());
+        iter.next();
+        iter.remove();
       }
     }
   }
@@ -1090,7 +1093,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   /** Iterator for returning only prefix values in ascending order */
-  protected static final class ValuePrefixIterator<K, V> extends PrivatePrefixIterator<K, V, V> {
+  protected static final class ValuePrefixIterator<K, V> extends AbstractPrefixIterator<K, V, V> {
 
     protected ValuePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
@@ -1106,7 +1109,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   /** Iterator for returning prefix Nodes in ascending order (must export before returning them) */
   protected static final class NodePrefixIterator<K, V>
-      extends PrivatePrefixIterator<K, V, Node<K, V>> {
+      extends AbstractPrefixIterator<K, V, Node<K, V>> {
 
     protected NodePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
@@ -1128,7 +1131,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @param <V> Value
    * @param <T> Iterator object type
    */
-  protected abstract static class PrivatePrefixIterator<K, V, T> implements Iterator<T> {
+  protected abstract static class AbstractPrefixIterator<K, V, T> implements Iterator<T> {
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
 
@@ -1156,7 +1159,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param canBeEmpty true if empty intermediate nodes can be returned, false
      *        if only nodes with values may be returned
      */
-    protected PrivatePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
+    protected AbstractPrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
         final boolean includePrefixedByKey, final boolean canBeEmpty) {
 
@@ -1490,7 +1493,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   /** Iterator for returning exported Map.Entry views of Nodes in ascending order */
   protected static final class EntryIterator<K, V>
-      extends PrivateEntryIterator<K, V, Map.Entry<K, V>> {
+      extends AbstractEntryIterator<K, V, Map.Entry<K, V>> {
 
     protected EntryIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.firstNode());
@@ -1503,7 +1506,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   /** Iterator for returning only values in ascending order */
-  protected static final class ValueIterator<K, V> extends PrivateEntryIterator<K, V, V> {
+  protected static final class ValueIterator<K, V> extends AbstractEntryIterator<K, V, V> {
 
     protected ValueIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.firstNode());
@@ -1523,7 +1526,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   /** Iterator for returning only resolved keys in ascending order */
-  protected static final class KeyIterator<K, V> extends PrivateEntryIterator<K, V, K> {
+  protected static final class KeyIterator<K, V> extends AbstractEntryIterator<K, V, K> {
 
     protected KeyIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.firstNode());
@@ -1544,7 +1547,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @param <V> Value
    * @param <T> Iterator object type
    */
-  protected abstract static class PrivateEntryIterator<K, V, T> implements Iterator<T> {
+  protected abstract static class AbstractEntryIterator<K, V, T> implements Iterator<T> {
 
     protected final AbstractBinaryTrie<K, V> m; // the backing map
 
@@ -1553,12 +1556,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected int expectedModCount;
 
     /**
-     * Create a new PrivateEntryIterator
+     * Create a new AbstractEntryIterator
      *
      * @param map the backing trie
      * @param first the first Node returned by nextNode or prevNode
      */
-    protected PrivateEntryIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
+    protected AbstractEntryIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
       this.m = map;
       expectedModCount = m.modCount;
       lastReturned = null;
@@ -1822,7 +1825,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @param s ObjectOutputStream
    * @throws IOException
    */
-  private void writeObject(final ObjectOutputStream s) throws IOException {
+  private final void writeObject(final ObjectOutputStream s) throws IOException {
     // Write out the codec and any hidden stuff
     s.defaultWriteObject();
 
@@ -1868,7 +1871,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @throws ClassNotFoundException
    */
   @SuppressWarnings("unchecked")
-  private void readObject(final ObjectInputStream s) throws IOException, ClassNotFoundException {
+  private final void readObject(final ObjectInputStream s)
+      throws IOException, ClassNotFoundException {
     // Read in the codec and any hidden stuff
     s.defaultReadObject();
 
