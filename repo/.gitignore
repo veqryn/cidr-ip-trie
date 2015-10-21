@@ -1,0 +1,5 @@
+
+# Local maven repository
+!*.jar
+!*.war
+!*.ear
