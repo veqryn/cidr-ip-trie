@@ -1639,7 +1639,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     /** TrieEntrySetSubMapView entry set sub map view */
     protected abstract class TrieEntrySetSubMapView extends AbstractSet<Map.Entry<K, V>> {
 
-      private transient long size = -1L, sizeModCount = -1;
+      private transient long size = -1L;
+      private transient int sizeModCount = -1;
 
       @Override
       public final int size() {
@@ -1702,7 +1703,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     /** TrieSubMapValues value collection sub map view */
     protected abstract class TrieSubMapValues extends AbstractCollection<V> {
 
-      private transient long size = -1L, sizeModCount = -1;
+      private transient long size = -1L;
+      private transient int sizeModCount = -1;
 
       @Override
       public final int size() {

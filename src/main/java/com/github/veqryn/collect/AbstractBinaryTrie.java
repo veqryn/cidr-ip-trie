@@ -1004,6 +1004,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
 
+    private transient long size = -1L;
+    private transient int sizeModCount = -1;
+
     protected final K key;
     protected final boolean includePrefixOfKey;
     protected final boolean keyInclusive;
@@ -1045,14 +1048,18 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
           includePrefixedByKey, canBeEmpty);
     }
 
-    @SuppressWarnings("unused")
     @Override
     public final int size() {
-      long total = 0L;
-      for (final V value : this) {
-        ++total;
+      if (size == -1L || sizeModCount != trie.modCount) {
+        sizeModCount = trie.modCount;
+        size = 0L;
+        final Iterator<V> i = iterator();
+        while (i.hasNext()) {
+          ++size;
+          i.next();
+        }
       }
-      return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
+      return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) size;
     }
 
     @Override
