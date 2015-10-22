@@ -29,7 +29,9 @@ import java.util.Map;
  * This PATRICIA Trie implementation mostly exists for use in case a more
  * specific implementation can not be found, and as a proof of concept that
  * the {@link AbstractBinaryTrie} this is based on is abstract and extensible
- * enough for use with any form of data.
+ * enough for use with any form of data. Also exists so that the Trie classes
+ * can be tested using Apache Commons Collections 4 test suite for String
+ * Maps and SortedMaps (we can not use this test on the Cidr Trie).
  *
  * <p>
  * This implementation returns values in the order of their key's bits.

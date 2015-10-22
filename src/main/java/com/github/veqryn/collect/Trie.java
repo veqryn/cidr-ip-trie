@@ -107,7 +107,7 @@ public interface Trie<K, V> extends Map<K, V> {
    * @throws IllegalArgumentException if the length of the key is
    *         less than or equal to zero
    */
-  Collection<V> valuesPrefixOf(K key, boolean keyInclusive);
+  Collection<V> prefixOfValues(K key, boolean keyInclusive);
 
 
   /**
@@ -148,7 +148,7 @@ public interface Trie<K, V> extends Map<K, V> {
    * @throws IllegalArgumentException if the length of the key is
    *         less than or equal to zero
    */
-  Collection<V> valuesPrefixedBy(K key, boolean keyInclusive);
+  Collection<V> prefixedByValues(K key, boolean keyInclusive);
 
 
   /**
@@ -189,7 +189,45 @@ public interface Trie<K, V> extends Map<K, V> {
    * @throws IllegalArgumentException if the length of the key is
    *         less than or equal to zero
    */
-  Collection<V> valuesPrefixesOfOrBy(K key);
+  Collection<V> prefixesOfOrByValues(K key);
+
+  /**
+   * Returns a view of the portion of this map whose keys are Prefixed By (or
+   * equal to, if {@code inclusive} is true) {@code fromKey}. The returned
+   * trie map is backed by this trie map, so changes in the returned map are
+   * reflected in this map, and vice-versa. The returned map supports all
+   * operations that this map supports.
+   *
+   * <p>
+   * In a Trie with fixed size keys, this map will be empty (or have at most
+   * one entry if {@code keyInclusive} is true).
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with <code>keyInclusive true</code> would
+   * return a map with keys 'antecede', 'anteceded', and 'antecedent',
+   * with the key's value first, and the remaining order determined
+   * by the implementation being used.
+   *
+   * <p>
+   * The returned map will throw an {@code IllegalArgumentException}
+   * on an attempt to insert a key outside its range.
+   *
+   * @param key the key used in the search for prefixes, the head (inclusive or
+   *        exclusive) of the returned map
+   * @param keyInclusive true if the returned view should include the
+   *        key associated with the search key, if it exists
+   * @return a view of the portion of this map whose keys are prefixed by
+   *         (or equal to, if {@code inclusive} is true) {@code fromKey}
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if this map itself has a
+   *         restricted range, and {@code fromKey} lies outside the
+   *         bounds of the range; or if the length of fromKey
+   *         is less than or equal to zero
+   */
+  Map<K, V> prefixedByMap(K key, boolean keyInclusive);
 
 
   /**
@@ -215,7 +253,7 @@ public interface Trie<K, V> extends Map<K, V> {
    * @throws IllegalArgumentException if the length of the key is
    *         less than or equal to zero
    */
-  V valueShortestPrefixOf(K key, boolean keyInclusive);
+  V shortestPrefixOfValue(K key, boolean keyInclusive);
 
 
   /**
@@ -245,7 +283,7 @@ public interface Trie<K, V> extends Map<K, V> {
    * @throws IllegalArgumentException if the length of the key is
    *         less than or equal to zero
    */
-  V valueLongestPrefixOf(K key, boolean keyInclusive);
+  V longestPrefixOfValue(K key, boolean keyInclusive);
 
 
 

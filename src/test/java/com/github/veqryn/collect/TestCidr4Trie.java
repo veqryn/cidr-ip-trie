@@ -142,17 +142,17 @@ public class TestCidr4Trie {
     System.out.println(entries.size());
     System.out.println();
     final Collection<String> values = trie.values();
-    System.out.println(trie.valueLongestPrefixOf(new Cidr4("128.0.0.0/10"), true));
+    System.out.println(trie.longestPrefixOfValue(new Cidr4("128.0.0.0/10"), true));
     System.out.println();
     for (final String value : values) {
       System.out.println(value);
     }
     System.out.println();
-    for (final String value : trie.valuesPrefixOf(new Cidr4("128.0.0.4/32"), true)) {
+    for (final String value : trie.prefixOfValues(new Cidr4("128.0.0.4/32"), true)) {
       System.out.println(value);
     }
     System.out.println();
-    for (final String value : trie.valuesPrefixedBy(new Cidr4("128.0.0.0/24"), true)) {
+    for (final String value : trie.prefixedByValues(new Cidr4("128.0.0.0/24"), true)) {
       System.out.println(value);
     }
     System.out.println();
@@ -163,7 +163,7 @@ public class TestCidr4Trie {
     System.out.println(reversedEntries.size());
     System.out.println();
     final Collection<String> reversedValues = reversed.values();
-    System.out.println(reversed.valueLongestPrefixOf(new Cidr4("128.0.0.0/10"), true));
+    System.out.println(reversed.longestPrefixOfValue(new Cidr4("128.0.0.0/10"), true));
     System.out.println();
     for (final String value : reversedValues) {
       System.out.println(value);
@@ -263,10 +263,10 @@ public class TestCidr4Trie {
 
     // assertEquals("[depth 1 s: 0.0.0.0/1]", trie.getAll(s1) + "");
     assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3]",
-        trie.valuesPrefixOf(s3, true) + "");
+        trie.prefixOfValues(s3, true) + "");
     // assertEquals("[depth 1 t: 128.0.0.0/1]", trie.getAll(t1) + "");
     assertEquals("[depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
-        trie.valuesPrefixOf(t3, true) + "");
+        trie.prefixOfValues(t3, true) + "");
 
     assertEquals("null=null", trie.root + "");
 

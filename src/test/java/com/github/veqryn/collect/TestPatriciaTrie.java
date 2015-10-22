@@ -17,7 +17,10 @@ import junit.framework.Test;
 
 
 /**
- * Tests for the PatriciaTrie class
+ * Tests for the PatriciaTrie class.
+ * Runs some 500+ tests from the Apache Commons Collections (4) project,
+ * specifically tests SortedMap's and Map's and their various views.
+ * Tests with String data.
  *
  * @author Mark Christopher Duncan
  */
@@ -27,6 +30,8 @@ public class TestPatriciaTrie<V> extends AbstractSortedMapTest<String, V> {
   // hello, tmp, blah, bar, baz, foo, nonnullkey, all, again,
   // you, see, key, key2, gee, golly, gosh, goodbye, we'll
 
+
+  // Set up our Test:
 
   public TestPatriciaTrie(final String testName) {
     super(testName);
@@ -43,6 +48,8 @@ public class TestPatriciaTrie<V> extends AbstractSortedMapTest<String, V> {
 
   @Override
   public SortedMap<String, V> makeConfirmedMap() {
+    // TODO: apparently the only thing apache does not test
+    // for is the order keys and values are returned in
     return new TreeMap<String, V>(new PatriciaTrie<String>().comparator());
   }
 
@@ -62,6 +69,8 @@ public class TestPatriciaTrie<V> extends AbstractSortedMapTest<String, V> {
   }
 
 
+
+  // Configure our sub-map views:
 
   @Override
   public BulkTest bulkTestHeadMap() {
@@ -130,6 +139,7 @@ public class TestPatriciaTrie<V> extends AbstractSortedMapTest<String, V> {
 
 
 
+  // TODO: Test Descending Map view
   // TODO: This should work, but I keep getting AbstractMethodError on makeObject
   // public BulkTest bulkTestDescendingMap() {
   // return new TestTrieDescendingMap<V>(this);
@@ -179,6 +189,7 @@ public class TestPatriciaTrie<V> extends AbstractSortedMapTest<String, V> {
   }
 
 
+  // Use this to write out new .obj files for compatibility tracking
   // public static void main(final String[] args) throws IOException {
   // final TestPatriciaTrie<String> test = new TestPatriciaTrie<>("");
   // {

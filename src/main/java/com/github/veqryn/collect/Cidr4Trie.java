@@ -31,12 +31,12 @@ import com.github.veqryn.net.Cidr4;
  * that contain our IP, but the most specific one is 192.168.20.16/28 because
  * it is the longest. This can be accomplished with
  * {@link Trie#valueLongestPrefixOf}, while a list of all prefixes can be
- * found with {@link Trie#valuesPrefixOf}. For more information, see:
+ * found with {@link Trie#prefixOfValues}. For more information, see:
  * <a href="http://en.wikipedia.org/wiki/Longest_prefix_match">wikipedia entry
  * on maximum prefix length match</a>.
  *
  * <p>
- * Additionally, {@link Trie#valuesPrefixedBy} can be used to find all of the
+ * Additionally, {@link Trie#prefixedByValues} can be used to find all of the
  * CIDR's & IP that are prefixed by a given CIDR. For example, if given
  * 192.168.0.0/16 then 192.168.20.16/28 and 192.168.20.19/32 could be returned.
  *
