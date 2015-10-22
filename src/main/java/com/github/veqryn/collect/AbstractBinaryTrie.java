@@ -77,7 +77,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   protected transient Set<Map.Entry<K, V>> entrySet = null;
   protected transient Set<K> keySet = null;
   protected transient Collection<V> values = null;
-  protected transient Map<K, V> prefixedByMap = null;
 
 
 
@@ -522,7 +521,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     entrySet = null;
     keySet = null;
     values = null;
-    prefixedByMap = null;
     // clear keys from Nodes
     for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
       node.privateKey = null;
@@ -976,8 +974,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   @Override
-  public Collection<V> prefixesOfOrByValues(final K key) {
-    return new TriePrefixValues<K, V>(this, key, true, true, true);
+  public Collection<V> prefixValues(final K key, final boolean includePrefixOfKey,
+      final boolean keyInclusive, final boolean includePrefixedByKey) {
+    return new TriePrefixValues<K, V>(this, key, includePrefixOfKey, keyInclusive,
+        includePrefixedByKey);
   }
 
 
@@ -1088,7 +1088,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
 
     @Override
-    public final Iterator<Map.Entry<K, V>> iterator() {
+    public Iterator<Map.Entry<K, V>> iterator() {
       return new EntryPrefixIterator<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
           includePrefixedByKey);
     }
@@ -1162,7 +1162,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   /** View class for a Set of Keys that are prefixes of a Key. */
-  protected static final class TriePrefixKeySet<K, V> extends AbstractSet<K>
+  protected static class TriePrefixKeySet<K, V> extends AbstractSet<K>
       implements Set<K> {
 
     protected final AbstractBinaryTrie<K, V> trie; // the backing trie
@@ -1203,7 +1203,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
 
     @Override
-    public final Iterator<K> iterator() {
+    public Iterator<K> iterator() {
       return new KeyPrefixIterator<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
           includePrefixedByKey);
     }
@@ -1351,9 +1351,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  /**
-   * Iterator for returning prefix entries in ascending order (must export before returning them)
-   */
+  /** Iterator for returning prefix entries in ascending order (export before returning them) */
   protected static final class EntryPrefixIterator<K, V>
       extends AbstractPrefixIterator<K, V, Map.Entry<K, V>> {
 
@@ -1369,7 +1367,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
   }
 
-  /** Iterator for returning prefix keys in ascending order (must export before returning them) */
+  /** Iterator for returning prefix keys in ascending order (export before returning them) */
   protected static final class KeyPrefixIterator<K, V>
       extends AbstractPrefixIterator<K, V, K> {
 
@@ -1400,7 +1398,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
   }
 
-  /** Iterator for returning prefix Nodes in ascending order (must export before returning them) */
+  /** Iterator for returning prefix Nodes in ascending order (export before returning them) */
   protected static final class NodePrefixIterator<K, V>
       extends AbstractPrefixIterator<K, V, Node<K, V>> {
 
@@ -1594,10 +1592,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
   @Override
-  public Map<K, V> prefixedByMap(final K key, final boolean keyInclusive) {
-    final Map<K, V> pmap = prefixedByMap;
-    return (pmap != null) ? pmap : (prefixedByMap =
-        new TriePrefixMap<K, V>(this, key, false, keyInclusive, true));
+  public Map<K, V> prefixMap(final K key, final boolean includePrefixOfKey,
+      final boolean keyInclusive, final boolean includePrefixedByKey) {
+    return new TriePrefixMap<K, V>(this, key, includePrefixOfKey, keyInclusive,
+        includePrefixedByKey);
   }
 
   /** TriePrefixMap prefix map view */

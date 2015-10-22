@@ -71,164 +71,6 @@ public interface Trie<K, V> extends Map<K, V> {
 
   // Methods specific only to Trie:
 
-  /**
-   * Returns a {@link Collection} <b>view</b> of this {@link Trie}
-   * of the values whose mapped keys are prefixes of the given key.
-   *
-   * <p>
-   * In a Trie with fixed size keys, this is essentially a {@link #get}
-   * operation (but returning nothing if keyInclusive is false).
-   *
-   * <p>
-   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
-   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
-   * a lookup of 'antecede' with <code>keyInclusive true</code> would
-   * return the values of 'ant', 'ante', and 'antecede', in that order.
-   *
-   * <p>
-   * The collection is backed by the trie, so changes to the trie are
-   * reflected in the collection, and vice-versa. If the trie is
-   * modified while an iteration over the collection is in progress
-   * (except through the iterator's own <tt>remove</tt> operation),
-   * the results of the iteration are undefined. The collection
-   * supports element removal, which removes the corresponding
-   * mapping from the trie, via the <tt>Iterator.remove</tt>,
-   * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
-   * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
-   * support the <tt>add</tt> or <tt>addAll</tt> operations.
-   *
-   * @param key the key used in the search for prefixes
-   * @param keyInclusive true if the returned view should include the
-   *        value associated with the search key, if it exists
-   * @return a collection view of the values contained in this trie,
-   *         whose keys are prefixes of the given key
-   * @throws ClassCastException if the key is of an inappropriate type for this map
-   * @throws NullPointerException if the specified key is null
-   * @throws IllegalArgumentException if the length of the key is
-   *         less than or equal to zero
-   */
-  Collection<V> prefixOfValues(K key, boolean keyInclusive);
-
-
-  /**
-   * Returns a {@link Collection} <b>view</b> of this {@link Trie}
-   * of the values whose mapped keys are prefixed by the given key.
-   *
-   * <p>
-   * In a Trie with fixed size keys, this is essentially a {@link #get}
-   * operation (but returning nothing if keyInclusive is false).
-   *
-   * <p>
-   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
-   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
-   * a lookup of 'antecede' with <code>keyInclusive true</code> would
-   * return the values of 'antecede', 'anteceded', and 'antecedent',
-   * with the key's value first, and the remaining order determined
-   * by the implementation being used.
-   *
-   * <p>
-   * The collection is backed by the trie, so changes to the trie are
-   * reflected in the collection, and vice-versa. If the trie is
-   * modified while an iteration over the collection is in progress
-   * (except through the iterator's own <tt>remove</tt> operation),
-   * the results of the iteration are undefined. The collection
-   * supports element removal, which removes the corresponding
-   * mapping from the trie, via the <tt>Iterator.remove</tt>,
-   * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
-   * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
-   * support the <tt>add</tt> or <tt>addAll</tt> operations.
-   *
-   * @param key the key used in the search for prefixes
-   * @param keyInclusive true if the returned view should include the
-   *        value associated with the search key, if it exists
-   * @return a collection view of the values contained in this trie,
-   *         whose keys are prefixed by the given key
-   * @throws ClassCastException if the key is of an inappropriate type for this map
-   * @throws NullPointerException if the specified key is null
-   * @throws IllegalArgumentException if the length of the key is
-   *         less than or equal to zero
-   */
-  Collection<V> prefixedByValues(K key, boolean keyInclusive);
-
-
-  /**
-   * Returns a {@link Collection} <b>view</b> of this {@link Trie}
-   * of the values whose mapped keys are prefixes of the given key,
-   * are mapped directly to the key, or are prefixed by the key.
-   *
-   * <p>
-   * In a Trie with fixed size keys, this is essentially a {@link #get}
-   * operation.
-   *
-   * <p>
-   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
-   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
-   * a lookup of 'antecede' would return the values of 'ant', 'ante',
-   * 'antecede', 'anteceded', and 'antecedent', with the order
-   * guaranteed for the value's whose keys are prefixes of the key, and
-   * the key's value, but order of the values whose's keys are prefixed-by
-   * the key are determined by the implementation of the trie.
-   *
-   * <p>
-   * The collection is backed by the trie, so changes to the trie are
-   * reflected in the collection, and vice-versa. If the trie is
-   * modified while an iteration over the collection is in progress
-   * (except through the iterator's own <tt>remove</tt> operation),
-   * the results of the iteration are undefined. The collection
-   * supports element removal, which removes the corresponding
-   * mapping from the trie, via the <tt>Iterator.remove</tt>,
-   * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
-   * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
-   * support the <tt>add</tt> or <tt>addAll</tt> operations.
-   *
-   * @param key the key used in the search for prefixes
-   * @return a collection view of the values contained in this trie, whose
-   *         keys are prefixes of, mapped to, or prefixed by the given key
-   * @throws ClassCastException if the key is of an inappropriate type for this map
-   * @throws NullPointerException if the specified key is null
-   * @throws IllegalArgumentException if the length of the key is
-   *         less than or equal to zero
-   */
-  Collection<V> prefixesOfOrByValues(K key);
-
-  /**
-   * Returns a view of the portion of this map whose keys are Prefixed By (or
-   * equal to, if {@code inclusive} is true) {@code fromKey}. The returned
-   * trie map is backed by this trie map, so changes in the returned map are
-   * reflected in this map, and vice-versa. The returned map supports all
-   * operations that this map supports.
-   *
-   * <p>
-   * In a Trie with fixed size keys, this map will be empty (or have at most
-   * one entry if {@code keyInclusive} is true).
-   *
-   * <p>
-   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
-   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
-   * a lookup of 'antecede' with <code>keyInclusive true</code> would
-   * return a map with keys 'antecede', 'anteceded', and 'antecedent',
-   * with the key's value first, and the remaining order determined
-   * by the implementation being used.
-   *
-   * <p>
-   * The returned map will throw an {@code IllegalArgumentException}
-   * on an attempt to insert a key outside its range.
-   *
-   * @param key the key used in the search for prefixes, the head (inclusive or
-   *        exclusive) of the returned map
-   * @param keyInclusive true if the returned view should include the
-   *        key associated with the search key, if it exists
-   * @return a view of the portion of this map whose keys are prefixed by
-   *         (or equal to, if {@code inclusive} is true) {@code fromKey}
-   * @throws ClassCastException if the key is of an inappropriate type for this map
-   * @throws NullPointerException if the specified key is null
-   * @throws IllegalArgumentException if this map itself has a
-   *         restricted range, and {@code fromKey} lies outside the
-   *         bounds of the range; or if the length of fromKey
-   *         is less than or equal to zero
-   */
-  Map<K, V> prefixedByMap(K key, boolean keyInclusive);
-
 
   /**
    * Returns the value mapped to the shortest key that is a prefix
@@ -284,6 +126,187 @@ public interface Trie<K, V> extends Map<K, V> {
    *         less than or equal to zero
    */
   V longestPrefixOfValue(K key, boolean keyInclusive);
+
+  /**
+   * Returns a {@link Collection} <b>view</b> of this {@link Trie}
+   * of the values whose mapped keys are prefixes of the given key.
+   *
+   * <p>
+   * In a Trie with fixed size keys, this is essentially a {@link #get}
+   * operation (but returning nothing if keyInclusive is false).
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with <code>keyInclusive true</code> would
+   * return the values of 'ant', 'ante', and 'antecede', in that order.
+   *
+   * <p>
+   * The collection is backed by the trie, so changes to the trie are
+   * reflected in the collection, and vice-versa. If the trie is
+   * modified while an iteration over the collection is in progress
+   * (except through the iterator's own <tt>remove</tt> operation),
+   * the results of the iteration are undefined. The collection
+   * supports element removal, which removes the corresponding
+   * mapping from the trie, via the <tt>Iterator.remove</tt>,
+   * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
+   * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
+   * support the <tt>add</tt> or <tt>addAll</tt> operations.
+   *
+   * <p>
+   * Equivalent to {@code prefixValues(key, true, keyInclusive, false)}.
+   *
+   * @param key the key used in the search for prefixes
+   * @param keyInclusive true if the returned view should include the
+   *        value associated with the search key, if it exists
+   * @return a collection view of the values contained in this trie,
+   *         whose keys are prefixes of the given key
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if the length of the key is
+   *         less than or equal to zero
+   */
+  Collection<V> prefixOfValues(K key, boolean keyInclusive);
+
+
+  /**
+   * Returns a {@link Collection} <b>view</b> of this {@link Trie}
+   * of the values whose mapped keys are prefixed by the given key.
+   *
+   * <p>
+   * In a Trie with fixed size keys, this is essentially a {@link #get}
+   * operation (but returning nothing if keyInclusive is false).
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with <code>keyInclusive true</code> would
+   * return the values of 'antecede', 'anteceded', and 'antecedent',
+   * with the key's value first, and the remaining order determined
+   * by the implementation being used.
+   *
+   * <p>
+   * The collection is backed by the trie, so changes to the trie are
+   * reflected in the collection, and vice-versa. If the trie is
+   * modified while an iteration over the collection is in progress
+   * (except through the iterator's own <tt>remove</tt> operation),
+   * the results of the iteration are undefined. The collection
+   * supports element removal, which removes the corresponding
+   * mapping from the trie, via the <tt>Iterator.remove</tt>,
+   * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
+   * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
+   * support the <tt>add</tt> or <tt>addAll</tt> operations.
+   *
+   * <p>
+   * Equivalent to {@code prefixValues(key, false, keyInclusive, true)}.
+   *
+   * @param key the key used in the search for prefixes
+   * @param keyInclusive true if the returned view should include the
+   *        value associated with the search key, if it exists
+   * @return a collection view of the values contained in this trie,
+   *         whose keys are prefixed by the given key
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if the length of the key is
+   *         less than or equal to zero
+   */
+  Collection<V> prefixedByValues(K key, boolean keyInclusive);
+
+
+  /**
+   * Returns a {@link Collection} <b>view</b> of this {@link Trie}
+   * of the values whose mapped keys are prefixes of the given key
+   * (if {@code includePrefixOfKey} is true), are mapped directly to the key
+   * (if {@code keyInclusive} is true), or are prefixed by the key
+   * (if {@code includePrefixedByKey} is true).
+   *
+   * <p>
+   * In a Trie with fixed size keys, this is essentially a {@link #get}
+   * operation.
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with all arguments true would return the values
+   * of 'ant', 'ante', 'antecede', 'anteceded', and 'antecedent', with the
+   * order guaranteed for the value's whose keys are prefixes of the key, and
+   * the key's value, but order of the values whose's keys are prefixed-by
+   * the key are determined by the implementation of the trie.
+   *
+   * <p>
+   * The collection is backed by the trie, so changes to the trie are
+   * reflected in the collection, and vice-versa. If the trie is
+   * modified while an iteration over the collection is in progress
+   * (except through the iterator's own <tt>remove</tt> operation),
+   * the results of the iteration are undefined. The collection
+   * supports element removal, which removes the corresponding
+   * mapping from the trie, via the <tt>Iterator.remove</tt>,
+   * <tt>Collection.remove</tt>, <tt>removeAll</tt>,
+   * <tt>retainAll</tt> and <tt>clear</tt> operations. It does not
+   * support the <tt>add</tt> or <tt>addAll</tt> operations.
+   *
+   * @param key the key used in the search for prefixes
+   * @param includePrefixOfKey true if the values' keys may include prefixes
+   *        of the search key
+   * @param keyInclusive true if the returned view should include the
+   *        value associated with the search key, if it exists
+   * @param includePrefixedByKey true if the values' keys may include keys
+   *        prefixed by the search key
+   * @return a collection view of the values contained in this trie, whose
+   *         keys are prefixes of, mapped to, or prefixed by the given key,
+   *         depending on the options selected
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if the length of the key is
+   *         less than or equal to zero
+   */
+  Collection<V> prefixValues(K key, boolean includePrefixOfKey,
+      boolean keyInclusive, boolean includePrefixedByKey);
+
+  /**
+   * Returns a {@link Trie} Sub-Map view of this map whose keys are prefixes
+   * of the given key (if {@code includePrefixOfKey} is true), are mapped
+   * directly to the key (if {@code keyInclusive} is true), or are prefixed by
+   * the key (if {@code includePrefixedByKey} is true). The returned
+   * trie map is backed by this trie map, so changes in the returned map are
+   * reflected in this map, and vice-versa. The returned map supports all
+   * operations that this map supports.
+   *
+   * <p>
+   * In a Trie with fixed size keys, this map will be empty (or have at most
+   * one entry if {@code keyInclusive} is true).
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with all arguments true would return a map
+   * of 'ant', 'ante', 'antecede', 'anteceded', and 'antecedent', with the
+   * order guaranteed for the value's whose keys are prefixes of the key, and
+   * the key's value, but order of the values whose's keys are prefixed-by
+   * the key are determined by the implementation of the trie.
+   *
+   * <p>
+   * The returned map will throw an {@code IllegalArgumentException}
+   * on an attempt to insert a key outside its range.
+   *
+   * @param key the key used in the search for prefixes
+   * @param includePrefixOfKey true if the view's keys may include prefixes
+   *        of the search key
+   * @param keyInclusive true if the returned view should include the
+   *        key associated with the search key, if it exists
+   * @param includePrefixedByKey true if the view's keys may include keys
+   *        prefixed by the search key
+   * @return a view of the portion of this map whose keys are prefixes of, mapped
+   *         to, or prefixed by the given key, depending on the options selected
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if this map itself has a
+   *         restricted range, and {@code fromKey} lies outside the
+   *         bounds of the range; or if the length of fromKey
+   *         is less than or equal to zero
+   */
+  Map<K, V> prefixMap(K key, boolean includePrefixOfKey,
+      boolean keyInclusive, boolean includePrefixedByKey);
 
 
 

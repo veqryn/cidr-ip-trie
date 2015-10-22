@@ -1170,7 +1170,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     protected transient TrieEntrySetSubMapView entrySetSubMapView = null;
     protected transient NavigableTrieKeySet<K> navigableKeySetSubMapView = null;
     protected transient Collection<V> valuesSubMapView = null;
-    protected transient Map<K, V> prefixedByMap = null;
 
 
     protected NavigableTrieSubMap(final AbstractNavigableBinaryTrie<K, V> m,
@@ -1488,8 +1487,10 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     }
 
     @Override
-    public Collection<V> prefixesOfOrByValues(final K key) {
-      return new TriePrefixSubMapValues(key, true, true, true);
+    public Collection<V> prefixValues(final K key, final boolean includePrefixOfKey,
+        final boolean keyInclusive, final boolean includePrefixedByKey) {
+      return new TriePrefixSubMapValues(key, includePrefixOfKey, keyInclusive,
+          includePrefixedByKey);
     }
 
 
@@ -1509,6 +1510,73 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         value = iter.next();
       }
       return value;
+    }
+
+
+
+    /** TriePrefixSubMapEntrySet prefix entry set sub map view */
+    protected class TriePrefixSubMapEntrySet extends TriePrefixEntrySet<K, V> {
+
+      /**
+       * Create a new TriePrefixSubMapEntrySet View
+       *
+       * @param prefixKey the search key
+       * @param includePrefixOfKey true if the keys may include prefixes of the search key
+       * @param keyInclusive true if the keys may include the search key
+       * @param includePrefixedByKey true if the keys may include keys prefixed by the search key
+       * @param canBeEmpty true if empty intermediate nodes can be returned, false
+       *        if only nodes with values may be returned
+       */
+      protected TriePrefixSubMapEntrySet(final K prefixKey,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey) {
+        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+      }
+
+      @Override
+      public final Iterator<Map.Entry<K, V>> iterator() {
+        return new EntryPrefixSubMapIterator(prefixKey, includePrefixOfKey, keyInclusive,
+            includePrefixedByKey);
+      }
+
+      @Override
+      protected boolean inRange(final K key) {
+        return super.inRange(key) && NavigableTrieSubMap.this.inRange(key, true);
+      }
+
+    }
+
+
+    /** Sub Map View class for a Set of Keys that are prefixes of a Key. */
+    protected class TriePrefixSubMapKeySet extends TriePrefixKeySet<K, V> {
+
+      /**
+       * Create a new TriePrefixSubMapKeySet View
+       *
+       * @param prefixKey the search key
+       * @param includePrefixOfKey true if the keys may include prefixes of the search key
+       * @param keyInclusive true if the keys may include the search key
+       * @param includePrefixedByKey true if the keys may include keys prefixed by the search key
+       * @param canBeEmpty true if empty intermediate nodes can be returned, false
+       *        if only nodes with values may be returned
+       */
+      protected TriePrefixSubMapKeySet(final K prefixKey,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey) {
+        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+      }
+
+      @Override
+      public Iterator<K> iterator() {
+        return new KeyPrefixSubMapIterator(prefixKey, includePrefixOfKey, keyInclusive,
+            includePrefixedByKey);
+      }
+
+      @Override
+      protected boolean inRange(final K key) {
+        return super.inRange(key) && NavigableTrieSubMap.this.inRange(key, true);
+      }
+
     }
 
 
@@ -1556,6 +1624,48 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+    /** Iterator for returning prefix entries in ascending order from a sub map */
+    protected final class EntryPrefixSubMapIterator
+        extends AbstractPrefixIterator<K, V, Map.Entry<K, V>> {
+
+      protected EntryPrefixSubMapIterator(final K key,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey) {
+        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+      }
+
+      @Override
+      public final Map.Entry<K, V> next() {
+        return exportEntry(nextNode(), trie);
+      }
+
+      @Override
+      protected boolean inRange(final Node<K, V> node) {
+        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true) && super.inRange(node);
+      }
+    }
+
+    /** Iterator for returning prefix keys in ascending order from a sub map */
+    protected final class KeyPrefixSubMapIterator
+        extends AbstractPrefixIterator<K, V, K> {
+
+      protected KeyPrefixSubMapIterator(final K key,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey) {
+        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+      }
+
+      @Override
+      public final K next() {
+        return exportEntry(nextNode(), trie).getKey();
+      }
+
+      @Override
+      protected boolean inRange(final Node<K, V> node) {
+        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true) && super.inRange(node);
+      }
+    }
+
     /** Iterator for returning only prefix values in ascending order from a sub map */
     protected final class ValuePrefixSubMapIterator extends AbstractPrefixIterator<K, V, V> {
 
@@ -1572,7 +1682,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       protected boolean inRange(final Node<K, V> node) {
-        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true) && super.inRange(node);
       }
     }
 
@@ -1593,16 +1703,58 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       @Override
       protected boolean inRange(final Node<K, V> node) {
-        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+        return NavigableTrieSubMap.this.inRange(resolveKey(node, m), true) && super.inRange(node);
       }
     }
 
 
 
     @Override
-    public Map<K, V> prefixedByMap(final K key, final boolean keyInclusive) {
-      Map<K, V> pmap = prefixedByMap;
-      return (pmap != null) ? pmap : (pmap = null);
+    public Map<K, V> prefixMap(final K key, final boolean includePrefixOfKey,
+        final boolean keyInclusive, final boolean includePrefixedByKey) {
+      return new TriePrefixSubMap(key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+    }
+
+    protected class TriePrefixSubMap extends TriePrefixMap<K, V> {
+
+      private static final long serialVersionUID = -3408129333725624796L;
+
+      protected TriePrefixSubMap(final K prefixKey,
+          final boolean includePrefixOfKey, final boolean keyInclusive,
+          final boolean includePrefixedByKey) {
+        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+      }
+
+      @Override
+      protected boolean inRange(final K key) {
+        return super.inRange(key) && NavigableTrieSubMap.this.inRange(key, true);
+      }
+
+
+      @Override
+      public Set<Map.Entry<K, V>> entrySet() {
+        final Set<Map.Entry<K, V>> es = entrySet;
+        return (es != null) ? es : (entrySet =
+            new TriePrefixSubMapEntrySet(prefixKey, includePrefixOfKey, keyInclusive,
+                includePrefixedByKey));
+      }
+
+      @Override
+      public Set<K> keySet() {
+        final Set<K> ks = keySet;
+        return (ks != null) ? ks : (keySet =
+            new TriePrefixSubMapKeySet(prefixKey, includePrefixOfKey, keyInclusive,
+                includePrefixedByKey));
+      }
+
+      @Override
+      public Collection<V> values() {
+        final Collection<V> vs = values;
+        return (vs != null) ? vs : (values =
+            new TriePrefixSubMapValues(prefixKey, includePrefixOfKey, keyInclusive,
+                includePrefixedByKey));
+      }
+
     }
 
 
@@ -1638,12 +1790,12 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         return n == null || tooHigh(resolveKey(n, NavigableTrieSubMap.this.m));
       }
 
+      @SuppressWarnings("unchecked")
       @Override
       public final boolean contains(final Object o) {
         if (!(o instanceof Map.Entry)) {
           return false;
         }
-        @SuppressWarnings("unchecked")
         final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
         final K key = entry.getKey();
         if (!inRange(key)) {
@@ -1653,12 +1805,12 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         return node != null && eq(node.value, entry.getValue());
       }
 
+      @SuppressWarnings("unchecked")
       @Override
       public final boolean remove(final Object o) {
         if (!(o instanceof Map.Entry)) {
           return false;
         }
-        @SuppressWarnings("unchecked")
         final Map.Entry<K, V> entry = (Map.Entry<K, V>) o;
         final K key = entry.getKey();
         if (!inRange(key)) {
@@ -1715,15 +1867,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           }
         }
         return false;
-      }
-
-      @Override
-      public final void clear() {
-        final Iterator<Node<K, V>> iter = getSubMapNodeIterator();
-        while (iter.hasNext()) {
-          iter.next();
-          iter.remove();
-        }
       }
     }
 
@@ -1942,11 +2085,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         if (m.modCount != expectedModCount) {
           throw new ConcurrentModificationException();
         }
-        // TODO: Do I need this (from TreeMap)? Very confused by this...
-        // Why would the next ever become the last?
-        // deleted entries are replaced by their successors
-        // if (lastReturned.left != null && lastReturned.right != null) {
-        // next = lastReturned; }
         m.deleteNode(lastReturned);
         lastReturned = null;
         expectedModCount = m.modCount;
