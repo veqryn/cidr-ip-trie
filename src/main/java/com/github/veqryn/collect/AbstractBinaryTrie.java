@@ -80,6 +80,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  // Constructors:
+
   /**
    * Create an empty {@link AbstractBinaryTrie} using the given
    * {@link KeyCodec}, and settings for keeping/caching or not of keys after
@@ -245,14 +247,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  /**
-   * @return {@link KeyCodec} used by this {@link Trie}
-   */
-  public KeyCodec<K> getCodec() {
-    return codec;
-  }
-
-
+  // Nodes:
 
   /**
    * Internal representation of a Node Entry
@@ -338,6 +333,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      */
     protected final CodecElements getCodecElements() {
       // This will ONLY ever be called if cacheKeys or writeKeys is false
+      // or if we are calling prefix methods on a prefix map
 
       if (this.parent == null) {
         return null; // We are the root node
@@ -383,6 +379,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
   }
 
+
+  // Key resolution/recreation methods:
 
   /**
    * First class object to hold the information needed by the {@link KeyCodec}
@@ -480,6 +478,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  // Utility methods:
+
   /**
    * Test two values for equality. Differs from o1.equals(o2) only in
    * that it copes with {@code null} o1 properly.
@@ -510,6 +510,15 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     }
     // Resolve the Key if missing
     return new AbstractMap.SimpleImmutableEntry<>(resolveKey(node, trie), node.value);
+  }
+
+
+
+  /**
+   * @return {@link KeyCodec} used by this {@link Trie}
+   */
+  public KeyCodec<K> getCodec() {
+    return codec;
   }
 
 
@@ -566,6 +575,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+
+  // Modification methods:
 
   /**
    * Returns a shallow copy of this {@link AbstractBinaryTrie} instance.
@@ -728,6 +739,24 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       }
       node = node.parent;
     }
+  }
+
+
+
+  // Search methods:
+
+  @Override
+  public boolean containsValue(final Object value) throws ClassCastException, NullPointerException {
+    if (value == null) {
+      throw new NullPointerException(getClass().getName()
+          + " does not allow null values: " + value);
+    }
+    for (Node<K, V> e = firstNode(); e != null; e = successor(e)) {
+      if (eq(value, e.value)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 
@@ -963,35 +992,17 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  @Override
-  public Collection<V> prefixOfValues(final K key, final boolean keyInclusive) {
-    return new TriePrefixValues<K, V>(this, key, true, keyInclusive, false);
-  }
-
-  @Override
-  public Collection<V> prefixedByValues(final K key, final boolean keyInclusive) {
-    return new TriePrefixValues<K, V>(this, key, false, keyInclusive, true);
-  }
-
-  @Override
-  public Collection<V> prefixValues(final K key, final boolean includePrefixOfKey,
-      final boolean keyInclusive, final boolean includePrefixedByKey) {
-    return new TriePrefixValues<K, V>(this, key, includePrefixOfKey, keyInclusive,
-        includePrefixedByKey);
-  }
-
+  // Trie methods:
 
   @Override
   public V shortestPrefixOfValue(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false).iterator();
+    final Iterator<V> iter = prefixOfValues(key, keyInclusive).iterator();
     return iter.hasNext() ? iter.next() : null;
   }
 
   @Override
   public V longestPrefixOfValue(final K key, final boolean keyInclusive) {
-    final Iterator<V> iter =
-        new TriePrefixValues<K, V>(this, key, true, keyInclusive, false).iterator();
+    final Iterator<V> iter = prefixOfValues(key, keyInclusive).iterator();
     V value = null;
     while (iter.hasNext()) {
       value = iter.next();
@@ -999,21 +1010,45 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return value;
   }
 
+  @Override
+  public Collection<V> prefixOfValues(final K key, final boolean keyInclusive) {
+    return new TriePrefixValues<K, V>(this, key, true, keyInclusive, false,
+        null, false, null, false);
+  }
+
+  @Override
+  public Collection<V> prefixedByValues(final K key, final boolean keyInclusive) {
+    return new TriePrefixValues<K, V>(this, key, false, keyInclusive, true,
+        null, false, null, false);
+  }
+
+  @Override
+  public Trie<K, V> prefixOfMap(final K key, final boolean keyInclusive) {
+    return new TriePrefixMap<K, V>(this, key, true, keyInclusive, false,
+        null, false, null, false);
+  }
+
+  @Override
+  public Trie<K, V> prefixedByMap(final K key, final boolean keyInclusive) {
+    return new TriePrefixMap<K, V>(this, key, false, keyInclusive, true,
+        null, false, null, false);
+  }
+
 
 
   /**
    * @param prefix the prefix
    * @param key the key (that we are testing against the prefix)
-   * @param includePrefixOfKey if prefix starts with the key and {@code includePrefixOfKey}
-   *        is true, this will return true
-   * @param keyInclusive if prefix and key are equal, and {@code keyInclusive}
-   *        is true, this will return true
-   * @param includePrefixedByKey if the key starts with prefix and {@code includePrefixedByKey}
-   *        is true, this will return true
+   * @param includePrefixOfKey if prefix starts with the key and
+   *        {@code includePrefixOfKey} is true, this will return true
+   * @param keyInclusive if prefix and key are equal, and
+   *        {@code keyInclusive} is true, this will return true
+   * @param includePrefixedByKey if the key starts with prefix and
+   *        {@code includePrefixedByKey} is true, this will return true
    * @param codec KeyCodec
    * @return true if {@code key} is prefixed by {@code prefix}
    */
-  protected static <K, V> boolean isPrefix(final K prefix, final K key,
+  protected static <K> boolean isPrefix(final K prefix, final K key,
       final boolean includePrefixOfKey, final boolean keyInclusive,
       final boolean includePrefixedByKey, final KeyCodec<K> codec) {
 
@@ -1047,6 +1082,59 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+  /**
+   * @param prefix the prefix
+   * @param node the node (that we are testing against the prefix)
+   * @param includePrefixOfKey if prefix starts with the node's key and
+   *        {@code includePrefixOfKey} is true, this will return true
+   * @param keyInclusive if prefix and node's key are equal, and
+   *        {@code keyInclusive} is true, this will return true
+   * @param includePrefixedByKey if the node's key starts with prefix and
+   *        {@code includePrefixedByKey} is true, this will return true
+   * @param codec KeyCodec
+   * @return true if {@code node} is prefixed by {@code prefix}
+   */
+  protected static <K, V> boolean isPrefix(final K prefix, final Node<K, V> node,
+      final boolean includePrefixOfKey, final boolean keyInclusive,
+      final boolean includePrefixedByKey, final KeyCodec<K> codec) {
+
+    if (prefix == null || node == null) {
+      return false;
+    }
+
+    if (keyInclusive && node.privateKey != null) {
+      // Do NOT resolve the key because we do not need to.
+      // But if it already is resolved, we can check for == identity and equality checking quickly
+      if (prefix == node.privateKey || prefix.equals(node.privateKey)) {
+        return true;
+      }
+    }
+
+    final int prefixDepth = codec.length(prefix);
+    final CodecElements nodeElements = node.getCodecElements();
+    final int nodeDepth = nodeElements.levelsDeep;
+
+    if ((!includePrefixOfKey && nodeDepth < prefixDepth)
+        || (!keyInclusive && nodeDepth == prefixDepth)
+        || (!includePrefixedByKey && nodeDepth > prefixDepth)) {
+      return false;
+    }
+
+    final int minDepth = Math.min(prefixDepth, nodeDepth);
+    for (int i = 0, j = nodeDepth - 1; i < minDepth; ++i, --j) {
+      // CodecElements.bits.get() returns false if it is the 'left' node (zero)
+      // CodecElements.bits elements are in reverse order for this comparison
+      if (codec.isLeft(prefix, i) == nodeElements.bits.get(j)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+
+
+  // Trie views:
 
   /** TriePrefixEntrySet prefix entry set view */
   protected static class TriePrefixEntrySet<K, V> extends AbstractSet<Map.Entry<K, V>> {
@@ -1060,6 +1148,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean includePrefixOfKey;
     protected final boolean keyInclusive;
     protected final boolean includePrefixedByKey;
+    // Sub-Trie range keys
+    protected final K mustBePrefixedBy; // head/low
+    protected final boolean mustBePrefixedByInclusive;
+    protected final K mustBePrefixOf; // leaf/high
+    protected final boolean mustBePrefixOfInclusive;
 
     /**
      * Create a new TriePrefixEntrySet View
@@ -1069,28 +1162,46 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param includePrefixOfKey true if the keys may include prefixes of the search key
      * @param keyInclusive true if the keys may include the search key
      * @param includePrefixedByKey true if the keys may include keys prefixed by the search key
-     * @param canBeEmpty true if empty intermediate nodes can be returned, false
-     *        if only nodes with values may be returned
+     * @param mustBePrefixedBy null or the key that all must be prefixed by (sub-trie's)
+     * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+     * @param mustBePrefixOf null or the key that all must be prefixes of (sub-trie's)
+     * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
      */
     protected TriePrefixEntrySet(final AbstractBinaryTrie<K, V> trie, final K prefixKey,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
 
       if (prefixKey == null) {
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + prefixKey);
+      }
+      if (trie.codec.length(prefixKey) <= 0) {
+        throw new IllegalArgumentException(AbstractBinaryTrie.class.getClass().getName()
+            + " does not accept keys of length <= 0: " + prefixKey);
+      }
+      if ((includePrefixOfKey && includePrefixedByKey)
+          || (!includePrefixOfKey && !includePrefixedByKey)) {
+        throw new IllegalArgumentException(
+            "Can not have both or neither prefixes of and prefixes by");
       }
       this.trie = trie;
       this.prefixKey = prefixKey;
       this.includePrefixOfKey = includePrefixOfKey;
       this.keyInclusive = keyInclusive;
       this.includePrefixedByKey = includePrefixedByKey;
+      this.mustBePrefixedBy = mustBePrefixedBy;
+      this.mustBePrefixedByInclusive = mustBePrefixedByInclusive;
+      this.mustBePrefixOf = mustBePrefixOf;
+      this.mustBePrefixOfInclusive = mustBePrefixOfInclusive;
     }
 
     @Override
     public Iterator<Map.Entry<K, V>> iterator() {
       return new EntryPrefixIterator<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-          includePrefixedByKey);
+          includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+          mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1112,9 +1223,26 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return !iterator().hasNext();
     }
 
+    /**
+     * Can be overrided for use with sub-maps, but make sure to call {@code super.inRange(key)}
+     *
+     * @param key key to query if in range
+     * @return true if the key is in range for this trie or submap
+     */
     protected boolean inRange(final K key) {
-      return isPrefix(this.prefixKey, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-          trie.codec);
+      if (!isPrefix(prefixKey, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
+          trie.codec)) {
+        return false;
+      }
+      if (mustBePrefixedBy != null &&
+          !isPrefix(mustBePrefixedBy, key, false, mustBePrefixedByInclusive, true, trie.codec)) {
+        return false;
+      }
+      if (mustBePrefixOf != null &&
+          !isPrefix(mustBePrefixOf, key, true, mustBePrefixOfInclusive, false, trie.codec)) {
+        return false;
+      }
+      return true;
     }
 
     @Override
@@ -1174,6 +1302,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean includePrefixOfKey;
     protected final boolean keyInclusive;
     protected final boolean includePrefixedByKey;
+    // Sub-Trie range keys
+    protected final K mustBePrefixedBy; // head/low
+    protected final boolean mustBePrefixedByInclusive;
+    protected final K mustBePrefixOf; // leaf/high
+    protected final boolean mustBePrefixOfInclusive;
 
 
     /**
@@ -1184,28 +1317,46 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param includePrefixOfKey true if the keys may include prefixes of the search key
      * @param keyInclusive true if the keys may include the search key
      * @param includePrefixedByKey true if the keys may include keys prefixed by the search key
-     * @param canBeEmpty true if empty intermediate nodes can be returned, false
-     *        if only nodes with values may be returned
+     * @param mustBePrefixedBy null or the key that all must be prefixed by (sub-trie's)
+     * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+     * @param mustBePrefixOf null or the key that all must be prefixes of (sub-trie's)
+     * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
      */
     protected TriePrefixKeySet(final AbstractBinaryTrie<K, V> trie, final K prefixKey,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
 
       if (prefixKey == null) {
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + prefixKey);
+      }
+      if (trie.codec.length(prefixKey) <= 0) {
+        throw new IllegalArgumentException(AbstractBinaryTrie.class.getClass().getName()
+            + " does not accept keys of length <= 0: " + prefixKey);
+      }
+      if ((includePrefixOfKey && includePrefixedByKey)
+          || (!includePrefixOfKey && !includePrefixedByKey)) {
+        throw new IllegalArgumentException(
+            "Can not have both or neither prefixes of and prefixes by");
       }
       this.trie = trie;
       this.prefixKey = prefixKey;
       this.includePrefixOfKey = includePrefixOfKey;
       this.keyInclusive = keyInclusive;
       this.includePrefixedByKey = includePrefixedByKey;
+      this.mustBePrefixedBy = mustBePrefixedBy;
+      this.mustBePrefixedByInclusive = mustBePrefixedByInclusive;
+      this.mustBePrefixOf = mustBePrefixOf;
+      this.mustBePrefixOfInclusive = mustBePrefixOfInclusive;
     }
 
     @Override
     public Iterator<K> iterator() {
       return new KeyPrefixIterator<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-          includePrefixedByKey);
+          includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+          mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1227,9 +1378,26 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return !iterator().hasNext();
     }
 
+    /**
+     * Can be overrided for use with sub-maps, but make sure to call {@code super.inRange(key)}
+     *
+     * @param key key to query if in range
+     * @return true if the key is in range for this trie or submap
+     */
     protected boolean inRange(final K key) {
-      return isPrefix(this.prefixKey, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-          trie.codec);
+      if (!isPrefix(prefixKey, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
+          trie.codec)) {
+        return false;
+      }
+      if (mustBePrefixedBy != null &&
+          !isPrefix(mustBePrefixedBy, key, false, mustBePrefixedByInclusive, true, trie.codec)) {
+        return false;
+      }
+      if (mustBePrefixOf != null &&
+          !isPrefix(mustBePrefixOf, key, true, mustBePrefixOfInclusive, false, trie.codec)) {
+        return false;
+      }
+      return true;
     }
 
     @SuppressWarnings("unchecked")
@@ -1277,6 +1445,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean includePrefixOfKey;
     protected final boolean keyInclusive;
     protected final boolean includePrefixedByKey;
+    // Sub-Trie range keys
+    protected final K mustBePrefixedBy; // head/low
+    protected final boolean mustBePrefixedByInclusive;
+    protected final K mustBePrefixOf; // leaf/high
+    protected final boolean mustBePrefixOfInclusive;
 
 
     /**
@@ -1288,28 +1461,46 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param keyInclusive true if the values' keys may include the search key
      * @param includePrefixedByKey true if the values' keys may include keys
      *        prefixed by the search key
-     * @param canBeEmpty true if empty intermediate nodes can be returned, false
-     *        if only nodes with values may be returned
+     * @param mustBePrefixedBy null or the key that all must be prefixed by (sub-trie's)
+     * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+     * @param mustBePrefixOf null or the key that all must be prefixes of (sub-trie's)
+     * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
      */
     protected TriePrefixValues(final AbstractBinaryTrie<K, V> trie, final K prefixKey,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
 
       if (prefixKey == null) {
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + prefixKey);
+      }
+      if (trie.codec.length(prefixKey) <= 0) {
+        throw new IllegalArgumentException(AbstractBinaryTrie.class.getClass().getName()
+            + " does not accept keys of length <= 0: " + prefixKey);
+      }
+      if ((includePrefixOfKey && includePrefixedByKey)
+          || (!includePrefixOfKey && !includePrefixedByKey)) {
+        throw new IllegalArgumentException(
+            "Can not have both or neither prefixes of and prefixes by");
       }
       this.trie = trie;
       this.prefixKey = prefixKey;
       this.includePrefixOfKey = includePrefixOfKey;
       this.keyInclusive = keyInclusive;
       this.includePrefixedByKey = includePrefixedByKey;
+      this.mustBePrefixedBy = mustBePrefixedBy;
+      this.mustBePrefixedByInclusive = mustBePrefixedByInclusive;
+      this.mustBePrefixOf = mustBePrefixOf;
+      this.mustBePrefixOfInclusive = mustBePrefixOfInclusive;
     }
 
     @Override
     public Iterator<V> iterator() {
       return new ValuePrefixIterator<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-          includePrefixedByKey);
+          includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+          mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1337,7 +1528,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       // only remove values that occur in this sub-trie
       final Iterator<Node<K, V>> iter =
           new NodePrefixIterator<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-              includePrefixedByKey);
+              includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+              mustBePrefixOf, mustBePrefixOfInclusive);
       while (iter.hasNext()) {
         node = iter.next();
         if (eq(node.value, o)) {
@@ -1357,8 +1549,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected EntryPrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
-      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
+      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
+          mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1373,8 +1568,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected KeyPrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
-      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
+      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
+          mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1388,8 +1586,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected ValuePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
-      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
+      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
+          mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1404,8 +1605,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected NodePrefixIterator(final AbstractBinaryTrie<K, V> trie, final K key,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
-      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey);
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
+      super(trie, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
+          mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
     }
 
     @Override
@@ -1436,6 +1640,14 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean includePrefixOfKey;
     protected final boolean keyInclusive;
     protected final boolean includePrefixedByKey;
+    // Sub-Trie range keys
+    protected final K mustBePrefixedBy; // head/low
+    protected final boolean mustBePrefixedByInclusive;
+    protected final K mustBePrefixOf; // leaf/high
+    protected final boolean mustBePrefixOfInclusive;
+    protected boolean passedMustBePrefixedBy = false;
+    protected boolean failedMustBePrefixOfInclusive = false;
+
     protected static final boolean canBeEmpty = false;
 
     /**
@@ -1447,16 +1659,25 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param keyInclusive true if the values' keys may include the search key
      * @param includePrefixedByKey true if the values' keys may include keys
      *        prefixed by the search key
-     * @param canBeEmpty true if empty intermediate nodes can be returned, false
-     *        if only nodes with values may be returned
+     * @param mustBePrefixedBy null or the key that all must be prefixed by (sub-trie's)
+     * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+     * @param mustBePrefixOf null or the key that all must be prefixes of (sub-trie's)
+     * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
      */
     protected AbstractPrefixIterator(final AbstractBinaryTrie<K, V> trie, final K prefixKey,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
 
       if (prefixKey == null) {
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + prefixKey);
+      }
+      if ((includePrefixOfKey && includePrefixedByKey)
+          || (!includePrefixOfKey && !includePrefixedByKey)) {
+        throw new IllegalArgumentException(
+            "Can not have both or neither prefixes of and prefixes by");
       }
 
       this.trie = trie;
@@ -1466,6 +1687,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       this.includePrefixOfKey = includePrefixOfKey;
       this.keyInclusive = keyInclusive;
       this.includePrefixedByKey = includePrefixedByKey;
+      this.mustBePrefixedBy = mustBePrefixedBy;
+      this.mustBePrefixedByInclusive = mustBePrefixedByInclusive;
+      this.mustBePrefixOf = mustBePrefixOf;
+      this.mustBePrefixOfInclusive = mustBePrefixOfInclusive;
 
       this.stopDepth = trie.codec.length(prefixKey);
 
@@ -1532,7 +1757,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
           // Exit early if all further conditions are false
           if ((index + 1 == stopDepth && (!keyInclusive && !includePrefixedByKey))
-              || (index >= stopDepth && !includePrefixedByKey)) {
+              || (index >= stopDepth && !includePrefixedByKey)
+              || failedMustBePrefixOfInclusive) {
             return null;
           }
         }
@@ -1543,12 +1769,25 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
     /**
-     * Overrided for use with sub-maps
+     * Can be overrided for use with sub-maps, but make sure to call {@code super.inRange(node)}
      *
      * @param node Node to query if in range
      * @return true if the Node is in range for this trie or submap
      */
     protected boolean inRange(final Node<K, V> node) {
+      if (!passedMustBePrefixedBy && mustBePrefixedBy != null) {
+        if (!isPrefix(mustBePrefixedBy, node, false, mustBePrefixedByInclusive, true, trie.codec)) {
+          return false;
+        } else {
+          passedMustBePrefixedBy = true;
+        }
+      }
+      if (mustBePrefixOf != null) {
+        if (!isPrefix(mustBePrefixOf, node, true, mustBePrefixOfInclusive, false, trie.codec)) {
+          failedMustBePrefixOfInclusive = true;
+          return false;
+        }
+      }
       return true;
     }
 
@@ -1591,16 +1830,9 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  @Override
-  public Map<K, V> prefixMap(final K key, final boolean includePrefixOfKey,
-      final boolean keyInclusive, final boolean includePrefixedByKey) {
-    return new TriePrefixMap<K, V>(this, key, includePrefixOfKey, keyInclusive,
-        includePrefixedByKey);
-  }
-
   /** TriePrefixMap prefix map view */
   protected static class TriePrefixMap<K, V> extends AbstractMap<K, V>
-      implements Serializable {
+      implements Trie<K, V>, Serializable {
 
     private static final long serialVersionUID = 4341296639310353282L;
 
@@ -1611,6 +1843,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final boolean includePrefixOfKey;
     protected final boolean keyInclusive;
     protected final boolean includePrefixedByKey;
+    protected final K mustBePrefixedBy;
+    protected final boolean mustBePrefixedByInclusive;
+    protected final K mustBePrefixOf;
+    protected final boolean mustBePrefixOfInclusive;
 
     private transient long size = -1L;
     private transient int sizeModCount = -1;
@@ -1633,17 +1869,32 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      */
     protected TriePrefixMap(final AbstractBinaryTrie<K, V> trie, final K prefixKey,
         final boolean includePrefixOfKey, final boolean keyInclusive,
-        final boolean includePrefixedByKey) {
+        final boolean includePrefixedByKey, final K mustBePrefixedBy,
+        final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+        final boolean mustBePrefixOfInclusive) {
 
       if (prefixKey == null) {
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + prefixKey);
+      }
+      if (trie.codec.length(prefixKey) <= 0) {
+        throw new IllegalArgumentException(AbstractBinaryTrie.class.getClass().getName()
+            + " does not accept keys of length <= 0: " + prefixKey);
+      }
+      if ((includePrefixOfKey && includePrefixedByKey)
+          || (!includePrefixOfKey && !includePrefixedByKey)) {
+        throw new IllegalArgumentException(
+            "Can not have both or neither prefixes of and prefixes by");
       }
       this.trie = trie;
       this.prefixKey = prefixKey;
       this.includePrefixOfKey = includePrefixOfKey;
       this.keyInclusive = keyInclusive;
       this.includePrefixedByKey = includePrefixedByKey;
+      this.mustBePrefixedBy = mustBePrefixedBy;
+      this.mustBePrefixedByInclusive = mustBePrefixedByInclusive;
+      this.mustBePrefixOf = mustBePrefixOf;
+      this.mustBePrefixOfInclusive = mustBePrefixOfInclusive;
     }
 
     @Override
@@ -1665,11 +1916,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return !entrySet().iterator().hasNext();
     }
 
-    protected boolean inRange(final K key) {
-      return isPrefix(prefixKey, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-          trie.codec);
-    }
-
     @Override
     public V put(final K key, final V value)
         throws ClassCastException, NullPointerException, IllegalArgumentException {
@@ -1677,7 +1923,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         throw new NullPointerException(getClass().getName()
             + " does not accept null keys: " + key);
       }
-      if (!inRange(key)) {
+      if (!inRange(key, keyInclusive)) {
         throw new IllegalArgumentException("key out of range: " + key);
       }
       return trie.put(key, value);
@@ -1690,7 +1936,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         throw new NullPointerException(getClass().getName()
             + " does not accept null keys: " + key);
       }
-      if (!inRange((K) key)) {
+      if (!inRange((K) key, keyInclusive)) {
         return null;
       }
       return trie.remove(key);
@@ -1708,10 +1954,167 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         throw new NullPointerException(getClass().getName()
             + " does not allow null keys: " + key);
       }
-      if (!inRange((K) key)) {
+      if (!inRange((K) key, keyInclusive)) {
         return null;
       }
       return trie.get(key);
+    }
+
+
+    @Override
+    public V shortestPrefixOfValue(final K key, final boolean keyInclusive) {
+      final Iterator<V> iter = prefixOfValues(key, keyInclusive).iterator();
+      return iter.hasNext() ? iter.next() : null;
+    }
+
+    @Override
+    public V longestPrefixOfValue(final K key, final boolean keyInclusive) {
+      final Iterator<V> iter = prefixOfValues(key, keyInclusive).iterator();
+      V value = null;
+      while (iter.hasNext()) {
+        value = iter.next();
+      }
+      return value;
+    }
+
+    @Override
+    public Collection<V> prefixOfValues(final K key, final boolean keyInclusive) {
+      return prefixValues(key, true, keyInclusive, false);
+    }
+
+    @Override
+    public Collection<V> prefixedByValues(final K key, final boolean keyInclusive) {
+      return prefixValues(key, false, keyInclusive, true);
+    }
+
+    protected Collection<V> prefixValues(final K key, final boolean includePrefixOf,
+        final boolean inclusive, final boolean includePrefixedBy) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName()
+            + " does not accept null keys: " + key);
+      }
+      if (!inRange(key, this.keyInclusive || !inclusive)) {
+        throw new IllegalArgumentException("key out of range: " + key);
+      }
+
+      if (this.includePrefixOfKey) {
+
+        if (includePrefixOf) {
+
+          // We are prefix of, and we want prefix of, so create a new map
+          // with the new prefix of key, and pass along our current mustBePrefixedBy
+          return new TriePrefixValues<K, V>(trie, key, true, inclusive, false,
+              this.mustBePrefixedBy, this.mustBePrefixedByInclusive, null, false);
+
+        } else {
+
+          // We are prefix of, and we want prefixed by, so create a new map with the
+          // new prefixed by key, and pass our current prefix of key as the mustBePrefixOf
+          return new TriePrefixValues<K, V>(trie, key, false, inclusive, true, null,
+              false, this.prefixKey, this.keyInclusive);
+
+        }
+
+      } else { // this.includePrefixedByKey == true
+
+        if (includePrefixOf) {
+
+          // We are prefixed by, and we want prefix of, so create a new map with the
+          // new prefix of key, and pass our current prefix by key as the mustBePrefixedBy
+          return new TriePrefixValues<K, V>(trie, key, true, inclusive, false,
+              this.prefixKey, this.keyInclusive, null, false);
+
+        } else {
+
+          // We are prefixed by, and we want prefixed by, so create a new map
+          // with the new prefixed by key, and pass along our current mustBePrefixOf
+          return new TriePrefixValues<K, V>(trie, key, false, inclusive, true, null,
+              false, this.mustBePrefixOf, this.mustBePrefixOfInclusive);
+
+        }
+      }
+    }
+
+    @Override
+    public Trie<K, V> prefixOfMap(final K key, final boolean keyInclusive) {
+      return prefixMap(key, true, keyInclusive, false);
+    }
+
+    @Override
+    public Trie<K, V> prefixedByMap(final K key, final boolean keyInclusive) {
+      return prefixMap(key, false, keyInclusive, true);
+    }
+
+    protected Trie<K, V> prefixMap(final K key, final boolean includePrefixOf,
+        final boolean inclusive, final boolean includePrefixedBy) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName()
+            + " does not accept null keys: " + key);
+      }
+      if (!inRange(key, this.keyInclusive || !inclusive)) {
+        throw new IllegalArgumentException("key out of range: " + key);
+      }
+
+      if (this.includePrefixOfKey) {
+
+        if (includePrefixOf) {
+
+          // We are prefix of, and we want prefix of, so create a new map
+          // with the new prefix of key, and pass along our current mustBePrefixedBy
+          return new TriePrefixMap<K, V>(trie, key, true, inclusive, false,
+              this.mustBePrefixedBy, this.mustBePrefixedByInclusive, null, false);
+
+        } else {
+
+          // We are prefix of, and we want prefixed by, so create a new map with the
+          // new prefixed by key, and pass our current prefix of key as the mustBePrefixOf
+          return new TriePrefixMap<K, V>(trie, key, false, inclusive, true, null,
+              false, this.prefixKey, this.keyInclusive);
+
+        }
+
+      } else { // this.includePrefixedByKey == true
+
+        if (includePrefixOf) {
+
+          // We are prefixed by, and we want prefix of, so create a new map with the
+          // new prefix of key, and pass our current prefix by key as the mustBePrefixedBy
+          return new TriePrefixMap<K, V>(trie, key, true, inclusive, false,
+              this.prefixKey, this.keyInclusive, null, false);
+
+        } else {
+
+          // We are prefixed by, and we want prefixed by, so create a new map
+          // with the new prefixed by key, and pass along our current mustBePrefixOf
+          return new TriePrefixMap<K, V>(trie, key, false, inclusive, true, null,
+              false, this.mustBePrefixOf, this.mustBePrefixOfInclusive);
+
+        }
+      }
+    }
+
+
+    /**
+     * Can be overrided for use with sub-maps, but make sure to call {@code super.inRange(key)}
+     *
+     * @param key key to query if in range
+     * @param inclusive true if the prefixKey and key may be equal
+     * @return true if the key is in range for this trie or submap
+     */
+    protected boolean inRange(final K key, final boolean inclusive) {
+      if (!isPrefix(prefixKey, key, includePrefixOfKey, inclusive, includePrefixedByKey,
+          trie.codec)) {
+        return false;
+      }
+      if (mustBePrefixedBy != null &&
+          !isPrefix(mustBePrefixedBy, key, false, mustBePrefixedByInclusive, true, trie.codec)) {
+        return false;
+      }
+      if (mustBePrefixOf != null &&
+          !isPrefix(mustBePrefixOf, key, true, mustBePrefixOfInclusive, false, trie.codec)) {
+        return false;
+      }
+      return true;
     }
 
 
@@ -1720,7 +2123,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       final Set<Map.Entry<K, V>> es = entrySet;
       return (es != null) ? es : (entrySet =
           new TriePrefixEntrySet<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-              includePrefixedByKey));
+              includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+              mustBePrefixOf, mustBePrefixOfInclusive));
     }
 
     @Override
@@ -1728,7 +2132,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       final Set<K> ks = keySet;
       return (ks != null) ? ks : (keySet =
           new TriePrefixKeySet<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-              includePrefixedByKey));
+              includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+              mustBePrefixOf, mustBePrefixOfInclusive));
     }
 
     @Override
@@ -1736,27 +2141,14 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       final Collection<V> vs = values;
       return (vs != null) ? vs : (values =
           new TriePrefixValues<K, V>(trie, prefixKey, includePrefixOfKey, keyInclusive,
-              includePrefixedByKey));
+              includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive,
+              mustBePrefixOf, mustBePrefixOfInclusive));
     }
   }
 
 
 
-  @Override
-  public boolean containsValue(final Object value) throws ClassCastException, NullPointerException {
-    if (value == null) {
-      throw new NullPointerException(getClass().getName()
-          + " does not allow null values: " + value);
-    }
-    for (Node<K, V> e = firstNode(); e != null; e = successor(e)) {
-      if (eq(value, e.value)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-
+  // Map views:
 
   @Override
   public Set<K> keySet() {
@@ -2058,6 +2450,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
 
+
+  // Object methods:
 
   @Override
   public int hashCode() {

@@ -7,6 +7,7 @@ package com.github.veqryn.collect;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
 import java.util.Map;
 
@@ -33,9 +34,6 @@ import java.util.Map;
  * can be tested using Apache Commons Collections 4 test suite for String
  * Maps and SortedMaps (we can not use this test on the Cidr Trie).
  *
- * <p>
- * This implementation returns values in the order of their key's bits.
- *
  * @author Mark Christopher Duncan
  *
  * @param <V> Value
@@ -43,7 +41,6 @@ import java.util.Map;
 public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V> {
 
   private static final long serialVersionUID = -6067883352977753038L;
-
 
 
   /**
@@ -90,42 +87,41 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
     private static final long serialVersionUID = -3361216681617901600L;
 
-    protected static final int BITS_IN_BYTE = 8;
-    protected static final Charset CHARSET = Charset.forName("UTF-16BE");
-    protected static final int BIT_LENGTH = 16;
+    protected static final Charset CHARSET = StandardCharsets.UTF_16BE;
+    protected static final int CHARSET_BIT_LENGTH = 16;
 
     @Override
     public final int length(final String key) {
-      return key.length() * BIT_LENGTH;
+      return key.length() * CHARSET_BIT_LENGTH;
+    }
+
+    public static String toBinary(final byte[] bytes) {
+      final StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
+      for (int i = 0; i < Byte.SIZE * bytes.length; i++) {
+        sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
+      }
+      return sb.toString();
     }
 
     @Override
     public final boolean isLeft(final String key, final int index) {
       final byte[] bytes = key.getBytes(CHARSET);
       // Get the index of the array for the byte with this bit
-      final int bitIndex = index / BITS_IN_BYTE;
+      final int bitIndex = index / 8;
       // Position of this bit in a byte
-      final int bitPosition = index % BITS_IN_BYTE;
+      final int bitPosition = index % 8 + 1;
       if (bitIndex >= bytes.length) {
         return true;
       }
-      return (bytes[bitIndex] >> bitPosition & 1) == 0;
+      return (bytes[bitIndex] >> (8 - bitPosition) & 1) == 0;
     }
 
     @Override
     public final String recreateKey(final BitSet bits, final int numElements) {
-
       if (bits.length() == 0) {
         return "";
       }
-      // Bits come in the reverse order for what we are doing
-      final BitSet reversed = new BitSet();
-      for (int i = 0, j = numElements - 1; i < numElements; ++i, --j) {
-        reversed.set(j, bits.get(i));
-      }
-
-      final byte[] bytes = reversed.toByteArray();
-      return new String(bytes, CHARSET);
+      return new String(toByteArray(bits, numElements), CHARSET);
     }
 
   }
