@@ -6,6 +6,7 @@
 package com.github.veqryn.collect;
 
 import java.io.Serializable;
+import java.util.BitSet;
 import java.util.Comparator;
 
 /**
@@ -69,6 +70,32 @@ public abstract class AbstractKeyCodec<K> implements KeyCodec<K>, Serializable {
       return l1 - l2;
     }
 
+  }
+
+  /**
+   * {@link BitSet#toByteArray()} will generate bytes, but probably not in
+   * the order you expect because it is using a different encoding scheme.
+   *
+   * <p>
+   * This utility method, {@link toByteArray} will generate them in the order
+   * you expect, where the bit at bits.get(0) becomes the first bit in the
+   * first byte (index 0), and bits.get(31) becomes the last bit in the forth
+   * byte (index 3).
+   *
+   * @param bits BitSet
+   * @param numBits number of bits total (in order to pad the bits set length)
+   * @return byte[] with proper bit order
+   */
+  public static final byte[] toByteArray(final BitSet bits, final int numBits) {
+    final int bitsLength = numBits; // bits.length();
+    final int maxByteIndex = ((bitsLength + 7) / 8) - 1;
+    final byte[] bytes = new byte[maxByteIndex + 1];
+    for (int i = 0; i < bitsLength; ++i) {
+      if (bits.get(i)) {
+        bytes[maxByteIndex - (i / 8)] |= 1 << (i % 8);
+      }
+    }
+    return bytes;
   }
 
 
