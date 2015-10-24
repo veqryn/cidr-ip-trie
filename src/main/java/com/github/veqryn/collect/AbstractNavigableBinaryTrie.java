@@ -1503,26 +1503,53 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
     @Override
     public Collection<V> prefixOfValues(final K key, final boolean keyInclusive) {
-      return new TriePrefixSubMapValues(key, true, keyInclusive, false,
-          null, false, null, false);
+      return prefixValues(key, true, keyInclusive, false);
     }
 
     @Override
     public Collection<V> prefixedByValues(final K key, final boolean keyInclusive) {
-      return new TriePrefixSubMapValues(key, false, keyInclusive, true,
-          null, false, null, false);
+      return prefixValues(key, false, keyInclusive, true);
+    }
+
+    protected Collection<V> prefixValues(final K key, final boolean includePrefixOf,
+        final boolean keyInclusive, final boolean includePrefixedBy) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
+      }
+      if (m.codec.length(key) <= 0) {
+        throw new IllegalArgumentException(getClass().getName()
+            + " does not accept keys of length <= 0: " + key);
+      }
+      if (includePrefixOf) {
+        return new TriePrefixSubMapValues(null, false, key, keyInclusive);
+      }
+      return new TriePrefixSubMapValues(key, keyInclusive, null, false);
     }
 
     @Override
     public Trie<K, V> prefixOfMap(final K key, final boolean keyInclusive) {
-      return new TriePrefixSubMap(key, true, keyInclusive, false,
-          null, false, null, false);
+      return prefixMap(key, true, keyInclusive, false);
     }
 
     @Override
     public Trie<K, V> prefixedByMap(final K key, final boolean keyInclusive) {
-      return new TriePrefixSubMap(key, false, keyInclusive, true,
-          null, false, null, false);
+      return prefixMap(key, false, keyInclusive, true);
+    }
+
+    protected Trie<K, V> prefixMap(final K key, final boolean includePrefixOf,
+        final boolean keyInclusive, final boolean includePrefixedBy) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
+      }
+      if (m.codec.length(key) <= 0) {
+        throw new IllegalArgumentException(getClass().getName()
+            + " does not accept keys of length <= 0: " + key);
+      }
+
+      if (includePrefixOf) {
+        return new TriePrefixSubMap(null, false, key, keyInclusive);
+      }
+      return new TriePrefixSubMap(key, keyInclusive, null, false);
     }
 
 
@@ -1533,34 +1560,28 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       /**
        * Create a new TriePrefixSubMapEntrySet View
        *
-       * @param prefixKey the search key
-       * @param includePrefixOfKey true if the keys may include prefixes of the search key
-       * @param keyInclusive true if the keys may include the search key
-       * @param includePrefixedByKey true if the keys may include keys prefixed by the search key
-       * @param canBeEmpty true if empty intermediate nodes can be returned, false
-       *        if only nodes with values may be returned
+       * @param mustBePrefixedBy null or the key that all must be prefixed by
+       * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+       * @param mustBePrefixOf null or the key that all must be prefixes of
+       * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
        */
-      protected TriePrefixSubMapEntrySet(final K prefixKey,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected TriePrefixSubMapEntrySet(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
       public final Iterator<Map.Entry<K, V>> iterator() {
-        return new EntryPrefixSubMapIterator(prefixKey, includePrefixOfKey, keyInclusive,
-            includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+        return new EntryPrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+            mustBePrefixOf, mustBePrefixOfInclusive);
       }
 
       @Override
       protected boolean inRange(final K key) {
         return super.inRange(key) && NavigableTrieSubMap.this.inRange(key, true);
       }
-
     }
 
 
@@ -1570,34 +1591,28 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       /**
        * Create a new TriePrefixSubMapKeySet View
        *
-       * @param prefixKey the search key
-       * @param includePrefixOfKey true if the keys may include prefixes of the search key
-       * @param keyInclusive true if the keys may include the search key
-       * @param includePrefixedByKey true if the keys may include keys prefixed by the search key
-       * @param canBeEmpty true if empty intermediate nodes can be returned, false
-       *        if only nodes with values may be returned
+       * @param mustBePrefixedBy null or the key that all must be prefixed by
+       * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+       * @param mustBePrefixOf null or the key that all must be prefixes of
+       * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
        */
-      protected TriePrefixSubMapKeySet(final K prefixKey,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected TriePrefixSubMapKeySet(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
       public Iterator<K> iterator() {
-        return new KeyPrefixSubMapIterator(prefixKey, includePrefixOfKey, keyInclusive,
-            includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+        return new KeyPrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+            mustBePrefixOf, mustBePrefixOfInclusive);
       }
 
       @Override
       protected boolean inRange(final K key) {
         return super.inRange(key) && NavigableTrieSubMap.this.inRange(key, true);
       }
-
     }
 
 
@@ -1607,28 +1622,22 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       /**
        * Create a new TriePrefixSubMapValues View
        *
-       * @param prefixKey the search key
-       * @param includePrefixOfKey true if the values' keys may include prefixes of the search key
-       * @param keyInclusive true if the values' keys may include the search key
-       * @param includePrefixedByKey true if the values' keys may include keys
-       *        prefixed by the search key
-       * @param canBeEmpty true if empty intermediate nodes can be returned, false
-       *        if only nodes with values may be returned
+       * @param mustBePrefixedBy null or the key that all must be prefixed by
+       * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+       * @param mustBePrefixOf null or the key that all must be prefixes of
+       * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
        */
-      protected TriePrefixSubMapValues(final K prefixKey,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected TriePrefixSubMapValues(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
       public Iterator<V> iterator() {
-        return new ValuePrefixSubMapIterator(prefixKey, includePrefixOfKey, keyInclusive,
-            includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+        return new ValuePrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+            mustBePrefixOf, mustBePrefixOfInclusive);
       }
 
       @Override
@@ -1636,9 +1645,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         Node<K, V> node = null;
         // only remove values that occur in this sub-trie
         final Iterator<Node<K, V>> iter =
-            new NodePrefixSubMapIterator(prefixKey, includePrefixOfKey, keyInclusive,
-                includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-                mustBePrefixOfInclusive);
+            new NodePrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+                mustBePrefixOf, mustBePrefixOfInclusive);
         while (iter.hasNext()) {
           node = iter.next();
           if (eq(node.value, o)) {
@@ -1656,13 +1664,11 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     protected final class EntryPrefixSubMapIterator
         extends AbstractPrefixIterator<K, V, Map.Entry<K, V>> {
 
-      protected EntryPrefixSubMapIterator(final K key,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected EntryPrefixSubMapIterator(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
@@ -1671,8 +1677,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
 
       @Override
-      protected boolean inRange(final Node<K, V> node) {
-        return super.inRange(node) && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
       }
     }
 
@@ -1680,13 +1687,11 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     protected final class KeyPrefixSubMapIterator
         extends AbstractPrefixIterator<K, V, K> {
 
-      protected KeyPrefixSubMapIterator(final K key,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected KeyPrefixSubMapIterator(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
@@ -1695,21 +1700,20 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
 
       @Override
-      protected boolean inRange(final Node<K, V> node) {
-        return super.inRange(node) && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
       }
     }
 
     /** Iterator for returning only prefix values in ascending order from a sub map */
     protected final class ValuePrefixSubMapIterator extends AbstractPrefixIterator<K, V, V> {
 
-      protected ValuePrefixSubMapIterator(final K key,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected ValuePrefixSubMapIterator(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
@@ -1718,8 +1722,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
 
       @Override
-      protected boolean inRange(final Node<K, V> node) {
-        return super.inRange(node) && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
       }
     }
 
@@ -1727,13 +1732,11 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     protected final class NodePrefixSubMapIterator
         extends AbstractPrefixIterator<K, V, Node<K, V>> {
 
-      protected NodePrefixSubMapIterator(final K key,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
+      protected NodePrefixSubMapIterator(final K mustBePrefixedBy,
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
-        super(m, key, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
       }
 
       @Override
@@ -1742,8 +1745,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
 
       @Override
-      protected boolean inRange(final Node<K, V> node) {
-        return super.inRange(node) && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
       }
     }
 
@@ -1754,18 +1758,83 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
       private static final long serialVersionUID = -3408129333725624796L;
 
-      protected TriePrefixSubMap(final K prefixKey,
-          final boolean includePrefixOfKey, final boolean keyInclusive,
-          final boolean includePrefixedByKey, final K mustBePrefixedBy,
-          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
-          final boolean mustBePrefixOfInclusive) {
-        super(m, prefixKey, includePrefixOfKey, keyInclusive, includePrefixedByKey,
-            mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+      /**
+       * Create a new TriePrefixSubMap prefix sub map view
+       *
+       * @param mustBePrefixedBy null or the key that all must be prefixed by
+       * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
+       * @param mustBePrefixOf null or the key that all must be prefixes of
+       * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
+       */
+      protected TriePrefixSubMap(final K mustBePrefixedBy, final boolean mustBePrefixedByInclusive,
+          final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
+      }
+
+
+      @Override
+      protected Collection<V> prefixValues(final K key, final boolean includePrefixOf,
+          final boolean keyInclusive, final boolean includePrefixedBy) {
+        if (key == null) {
+          throw new NullPointerException(
+              getClass().getName() + " does not accept null keys: " + key);
+        }
+        if (trie.codec.length(key) <= 0) {
+          throw new IllegalArgumentException(getClass().getName()
+              + " does not accept keys of length <= 0: " + key);
+        }
+        // !keyInclusive because if we want to make a non-inclusive map,
+        // the range check should allow the key to match a non-inclusive prefix
+        if (!inRange(key, !keyInclusive)) {
+          throw new IllegalArgumentException("key out of range: " + key);
+        }
+
+        if (includePrefixOf) {
+          // Wants prefix of, create with new prefix of key, pass along current mustBePrefixedBy
+          return new TriePrefixSubMapValues(mustBePrefixedBy, mustBePrefixedByInclusive, key,
+              keyInclusive);
+
+        } else {
+          // Wants prefixed by, create with new prefixed by key, pass current mustBePrefixOf
+          return new TriePrefixSubMapValues(key, keyInclusive, mustBePrefixOf,
+              mustBePrefixOfInclusive);
+        }
       }
 
       @Override
-      protected boolean inRange(final K key, final boolean inclusive) {
-        return super.inRange(key, inclusive) && NavigableTrieSubMap.this.inRange(key, true);
+      protected Trie<K, V> prefixMap(final K key, final boolean includePrefixOf,
+          final boolean keyInclusive, final boolean includePrefixedBy) {
+        if (key == null) {
+          throw new NullPointerException(
+              getClass().getName() + " does not accept null keys: " + key);
+        }
+        if (trie.codec.length(key) <= 0) {
+          throw new IllegalArgumentException(getClass().getName()
+              + " does not accept keys of length <= 0: " + key);
+        }
+        // !keyInclusive because if we want to make a non-inclusive map,
+        // the range check should allow the key to match a non-inclusive prefix
+        if (!inRange(key, !keyInclusive)) {
+          throw new IllegalArgumentException("key out of range: " + key);
+        }
+
+        if (includePrefixOf) {
+          // Wants prefix of, create with new prefix of key, pass along current mustBePrefixedBy
+          return new TriePrefixSubMap(mustBePrefixedBy, mustBePrefixedByInclusive, key,
+              keyInclusive);
+
+        } else {
+          // Wants prefixed by, create with new prefixed by key, pass current mustBePrefixOf
+          return new TriePrefixSubMap(key, keyInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+        }
+      }
+
+
+      @Override
+      protected boolean inRange(final K key, final boolean forceInclusive) {
+        return super.inRange(key, forceInclusive)
+            && NavigableTrieSubMap.this.inRange(key, !forceInclusive);
       }
 
 
@@ -1773,17 +1842,15 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       public Set<Map.Entry<K, V>> entrySet() {
         final Set<Map.Entry<K, V>> es = entrySet;
         return (es != null) ? es : (entrySet =
-            new TriePrefixSubMapEntrySet(prefixKey, includePrefixOfKey, keyInclusive,
-                includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-                mustBePrefixOfInclusive));
+            new TriePrefixSubMapEntrySet(mustBePrefixedBy, mustBePrefixedByInclusive,
+                mustBePrefixOf, mustBePrefixOfInclusive));
       }
 
       @Override
       public Set<K> keySet() {
         final Set<K> ks = keySet;
         return (ks != null) ? ks : (keySet =
-            new TriePrefixSubMapKeySet(prefixKey, includePrefixOfKey, keyInclusive,
-                includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            new TriePrefixSubMapKeySet(mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
                 mustBePrefixOfInclusive));
       }
 
@@ -1791,11 +1858,9 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       public Collection<V> values() {
         final Collection<V> vs = values;
         return (vs != null) ? vs : (values =
-            new TriePrefixSubMapValues(prefixKey, includePrefixOfKey, keyInclusive,
-                includePrefixedByKey, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            new TriePrefixSubMapValues(mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
                 mustBePrefixOfInclusive));
       }
-
     }
 
 

@@ -73,17 +73,17 @@ public abstract class AbstractKeyCodec<K> implements KeyCodec<K>, Serializable {
   }
 
   /**
-   * {@link BitSet#toByteArray()} will generate bytes, but probably not in
-   * the order you expect because it is using a different encoding scheme.
+   * This utility method, {@link toByteArray} will generate a byte array with
+   * bits in the expected order, where the bit at bits.get(0) becomes the first
+   * bit in the first byte (index 0), and bits.get(31) becomes the last bit in
+   * the forth byte (index 3).
    *
    * <p>
-   * This utility method, {@link toByteArray} will generate them in the order
-   * you expect, where the bit at bits.get(0) becomes the first bit in the
-   * first byte (index 0), and bits.get(31) becomes the last bit in the forth
-   * byte (index 3).
+   * {@link BitSet#toByteArray()} will also generate bytes, but probably not in
+   * the order expected because it is using a different encoding scheme.
    *
    * @param bits BitSet
-   * @param numBits number of bits total (in order to pad the bits set length)
+   * @param numBits number of bits total (in order to pad the length)
    * @return byte[] with proper bit order
    */
   public static final byte[] toByteArray(final BitSet bits, final int numBits) {
