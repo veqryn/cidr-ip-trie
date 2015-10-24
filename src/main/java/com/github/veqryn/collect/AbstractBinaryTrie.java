@@ -249,9 +249,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   // Nodes:
 
-  /**
-   * Internal representation of a Node Entry
-   */
+  /** Internal representation of a Node Entry */
   protected static final class Node<K, V> implements Serializable {
     // Does not implement java.util.Map.Entry so that we do not accidentally
     // return a Node instance from a public method
@@ -333,7 +331,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      */
     protected final CodecElements getCodecElements() {
       // This will ONLY ever be called if cacheKeys or writeKeys is false
-      // or if we are calling prefix methods on a prefix map
+      // or if we are calling prefix comparison methods on a prefix map
 
       if (this.parent == null) {
         return null; // We are the root node
@@ -383,7 +381,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   // Key resolution/recreation methods:
 
   /**
-   * First class object to hold the information needed by the {@link KeyCodec}
+   * Object to hold the information needed by the {@link KeyCodec}
    * to recreate a key. Created because Java does not have tuples, and
    * Node must be able to return the two pieces of information we need to
    * know in order to recreate the key: {@code levelsDeep} int representing
@@ -469,7 +467,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     if (key == null) {
       throw new IllegalStateException("Unable to create non-null key with key-codec: " + codec);
     }
-    assert getNode(key, trie.root, 0, codec, true) == node : "Created key must equal original key";
+    assert getNode(key, trie.root, 0, codec) == node : "Created key must equal original key";
 
     node.privateKey = key;
 
@@ -523,20 +521,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
-  /**
-   * Clear out transient fields, including the keys of all nodes
-   */
-  protected void clearTransientMemory() {
-    entrySet = null;
-    keySet = null;
-    values = null;
-    // clear keys from Nodes
-    for (Node<K, V> node = this.firstNode(); node != null; node = successor(node)) {
-      node.privateKey = null;
-    }
-  }
-
-
   @Override
   public void clear() {
     this.root.value = null;
@@ -556,22 +540,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   @Override
   public int size() {
     return size > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) size;
-  }
-
-  /**
-   * Counts the size of the Trie under a given node
-   *
-   * @param parentFence starting Node, not included in the count
-   * @param countEmptyNodes true if empty intermediate nodes should be counted
-   * @return the number of nodes that are descendants of the parentFence node
-   */
-  protected int size(final Node<K, V> parentFence, final boolean countEmptyNodes) {
-    long total = 0L;
-    Node<K, V> subTree = parentFence;
-    while ((subTree = successor(subTree, parentFence, countEmptyNodes)) != null) {
-      ++total;
-    }
-    return total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
   }
 
 
@@ -789,7 +757,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @return Node if found, or null
    */
   protected Node<K, V> getNode(final K key) {
-    return getNode(key, root, 0, codec, false);
+    return getNode(key, root, 0, codec);
   }
 
   /**
@@ -800,12 +768,10 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @param startingIndex the key element index corresponding to the depth of
    *        the startingNode (usually zero)
    * @param codec KeyCodec
-   * @param canBeEmpty true if empty intermediate nodes can be returned, false
-   *        if only nodes with values may be returned
    * @return Node if found, or null
    */
   protected static <K, V> Node<K, V> getNode(final K key, final Node<K, V> startingNode,
-      int startingIndex, final KeyCodec<K> codec, final boolean canBeEmpty) {
+      int startingIndex, final KeyCodec<K> codec) {
     // While we could technically combine getNode and getNodes, the speed and
     // simplicity of getNode outweighs forcing exact match get's to use getNodes
 
@@ -832,7 +798,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       if (subNode == null) {
         return null;
       }
-      if (startingIndex == stopDepth && (subNode.value != null || canBeEmpty)) {
+      if (startingIndex == stopDepth && subNode.value != null) {
         return subNode;
       }
       if (startingIndex >= stopDepth) {
@@ -857,19 +823,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @return the successor of the specified Node, or null if no such.
    */
   protected static <K, V> Node<K, V> successor(final Node<K, V> node) {
-    return successor(node, null, false);
+    return successor(node, null);
   }
 
   /**
    * @param node Node to find the successor of (the next node)
    * @param parentFence Node to force the search for successors to be under
    *        (descendants of), or null if no limit
-   * @param canBeEmpty true if empty intermediate nodes can be returned, false
-   *        if only nodes with values may be returned
    * @return the successor of the specified Node, or null if no such.
    */
-  protected static <K, V> Node<K, V> successor(Node<K, V> node, final Node<K, V> parentFence,
-      final boolean canBeEmpty) {
+  protected static <K, V> Node<K, V> successor(Node<K, V> node, final Node<K, V> parentFence) {
 
     // The fact that nodes do not always have values complicates an otherwise simple
     // Pre-Order parent linkage (stackless, flag-less) tree traversal
@@ -880,7 +843,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     outer: while (node != null) {
 
       if (node.left != null) {
-        if (node.left.value == null && !canBeEmpty) {
+        if (node.left.value == null) {
           node = node.left;
           continue;
         }
@@ -888,7 +851,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       }
 
       if (node.right != null) {
-        if (node.right.value == null && !canBeEmpty) {
+        if (node.right.value == null) {
           node = node.right;
           continue;
         }
@@ -900,7 +863,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
         if (node == node.parent.left && node.parent.right != null) {
 
-          if (node.parent.right.value == null && !canBeEmpty) {
+          if (node.parent.right.value == null) {
             node = node.parent.right;
             continue outer;
           }
@@ -939,19 +902,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    * @return the predecessor of the specified Node Entry, or null if no such.
    */
   protected static <K, V> Node<K, V> predecessor(final Node<K, V> node) {
-    return predecessor(node, null, false);
+    return predecessor(node, null);
   }
 
   /**
    * @param node the Node to find the predecessor of (previous)
    * @param parentFence Node to force the search for predecessor to be under
    *        (descendants of), or null if no limit
-   * @param canBeEmpty true if empty intermediate nodes can be returned, false
-   *        if only nodes with values may be returned
    * @return the predecessor of the specified Node Entry, or null if no such.
    */
-  protected static <K, V> Node<K, V> predecessor(Node<K, V> node, final Node<K, V> parentFence,
-      final boolean canBeEmpty) {
+  protected static <K, V> Node<K, V> predecessor(Node<K, V> node, final Node<K, V> parentFence) {
 
     // The fact that nodes do not always have values complicates an otherwise simple
     // Reverse Post-Order parent linkage (stackless, flag-less) tree traversal
@@ -963,7 +923,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       // we are on the left, or we have no left sibling, so go up
       if (node == node.parent.left || node.parent.left == null) {
 
-        if (node.parent.value == null && !canBeEmpty) {
+        if (node.parent.value == null) {
           node = node.parent;
           continue;
         }
@@ -1101,57 +1061,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     final int minDepth = Math.min(prefixDepth, keyDepth);
     for (int i = 0; i < minDepth; ++i) {
       if (codec.isLeft(prefix, i) != codec.isLeft(key, i)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-
-  /**
-   * @param prefix the prefix
-   * @param node the node (that we are testing against the prefix)
-   * @param includePrefixOfKey if prefix starts with the node's key and
-   *        {@code includePrefixOfKey} is true, this will return true
-   * @param keyInclusive if prefix and node's key are equal, and
-   *        {@code keyInclusive} is true, this will return true
-   * @param includePrefixedByKey if the node's key starts with prefix and
-   *        {@code includePrefixedByKey} is true, this will return true
-   * @param codec KeyCodec
-   * @return true if {@code node} is prefixed by {@code prefix}
-   */
-  protected static <K, V> boolean isPrefix(final K prefix, final Node<K, V> node,
-      final boolean includePrefixOfKey, final boolean keyInclusive,
-      final boolean includePrefixedByKey, final KeyCodec<K> codec) {
-
-    if (prefix == null || node == null) {
-      return false;
-    }
-
-    if (keyInclusive && node.privateKey != null) {
-      // Do NOT resolve the key because we do not need to.
-      // But if it already is resolved, we can check for == identity and equality checking quickly
-      if (prefix == node.privateKey || prefix.equals(node.privateKey)) {
-        return true;
-      }
-    }
-
-    final int prefixDepth = codec.length(prefix);
-    final CodecElements nodeElements = node.getCodecElements();
-    final int nodeDepth = nodeElements.levelsDeep;
-
-    if ((!includePrefixOfKey && nodeDepth < prefixDepth)
-        || (!keyInclusive && nodeDepth == prefixDepth)
-        || (!includePrefixedByKey && nodeDepth > prefixDepth)) {
-      return false;
-    }
-
-    final int minDepth = Math.min(prefixDepth, nodeDepth);
-    for (int i = 0, j = nodeDepth - 1; i < minDepth; ++i, --j) {
-      // CodecElements.bits.get() returns false if it is the 'left' node (zero)
-      // CodecElements.bits elements are in reverse order for this comparison
-      if (codec.isLeft(prefix, i) == nodeElements.bits.get(j)) {
         return false;
       }
     }
@@ -1633,7 +1542,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
         if (index > prefixDepth) {
           // Traverse all nodes under the Key (and under upperLimitNode)
-          node = successor(node, upperLimitNode, false);
+          node = successor(node, upperLimitNode);
 
         } else {
           // Traverse only the path that matches our Key

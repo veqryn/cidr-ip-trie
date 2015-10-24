@@ -268,18 +268,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
-  /**
-   * Clear out transient fields, including the keys of all nodes
-   */
-  @Override
-  protected void clearTransientMemory() {
-    navigableKeySet = null;
-    descendingMap = null;
-    super.clearTransientMemory();
-  }
-
-
-
   @Override
   public final Comparator<? super K> comparator() {
     return codec.comparator();
@@ -1931,6 +1919,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
     }
 
+
     /** TrieSubMapValues value collection sub map view */
     protected abstract class TrieSubMapValues extends AbstractCollection<V> {
 
@@ -1989,11 +1978,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       public final Map.Entry<K, V> next() {
         return exportEntry(nextNode(), NavigableTrieSubMap.this.m);
       }
-
-      @Override
-      public final void remove() {
-        removeAscending();
-      }
     }
 
     /** Iterator for returning only keys in ascending order from a sub map */
@@ -2006,11 +1990,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       @Override
       public final K next() {
         return exportEntry(nextNode(), NavigableTrieSubMap.this.m).getKey();
-      }
-
-      @Override
-      public final void remove() {
-        removeAscending();
       }
     }
 
@@ -2025,11 +2004,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       public final V next() {
         return nextNode().value;
       }
-
-      @Override
-      public void remove() {
-        removeAscending();
-      }
     }
 
     /** Iterator for returning nodes in ascending order from a sub map */
@@ -2042,11 +2016,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       @Override
       public final Node<K, V> next() {
         return nextNode();
-      }
-
-      @Override
-      public void remove() {
-        removeAscending();
       }
     }
 
@@ -2061,11 +2030,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       public final Map.Entry<K, V> next() {
         return exportEntry(prevNode(), NavigableTrieSubMap.this.m);
       }
-
-      @Override
-      public final void remove() {
-        removeDescending();
-      }
     }
 
     /** Iterator for returning only keys in descending order from a sub map */
@@ -2078,11 +2042,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       @Override
       public final K next() {
         return exportEntry(prevNode(), NavigableTrieSubMap.this.m).getKey();
-      }
-
-      @Override
-      public final void remove() {
-        removeDescending();
       }
     }
 
@@ -2097,11 +2056,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       public final V next() {
         return prevNode().value;
       }
-
-      @Override
-      public void remove() {
-        removeDescending();
-      }
     }
 
     /** Iterator for returning nodes in descending order from a sub map */
@@ -2114,11 +2068,6 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       @Override
       public final Node<K, V> next() {
         return prevNode();
-      }
-
-      @Override
-      public void remove() {
-        removeDescending();
       }
     }
 
@@ -2181,10 +2130,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         return e;
       }
 
-      /**
-       * Remove the last ascending node
-       */
-      protected final void removeAscending() {
+      @Override
+      public final void remove() {
         if (lastReturned == null) {
           throw new IllegalStateException();
         }
@@ -2195,24 +2142,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
         lastReturned = null;
         expectedModCount = m.modCount;
       }
-
-      /**
-       * Remove the last descending node
-       */
-      protected final void removeDescending() {
-        if (lastReturned == null) {
-          throw new IllegalStateException();
-        }
-        if (m.modCount != expectedModCount) {
-          throw new ConcurrentModificationException();
-        }
-        m.deleteNode(lastReturned);
-        lastReturned = null;
-        expectedModCount = m.modCount;
-      }
-
     }
-
   }
 
 
