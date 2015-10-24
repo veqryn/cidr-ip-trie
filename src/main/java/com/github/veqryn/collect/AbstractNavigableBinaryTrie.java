@@ -1656,7 +1656,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
         super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+            mustBePrefixOfInclusive, false);
       }
 
       @Override
@@ -1679,7 +1679,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
         super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+            mustBePrefixOfInclusive, false);
       }
 
       @Override
@@ -1701,7 +1701,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
         super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+            mustBePrefixOfInclusive, false);
       }
 
       @Override
@@ -1724,7 +1724,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
           final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
           final boolean mustBePrefixOfInclusive) {
         super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-            mustBePrefixOfInclusive);
+            mustBePrefixOfInclusive, false);
       }
 
       @Override

@@ -1390,7 +1390,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         final K mustBePrefixedBy, final boolean mustBePrefixedByInclusive,
         final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
       super(trie, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-          mustBePrefixOfInclusive);
+          mustBePrefixOfInclusive, false);
     }
 
     @Override
@@ -1407,7 +1407,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         final K mustBePrefixedBy, final boolean mustBePrefixedByInclusive,
         final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
       super(trie, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-          mustBePrefixOfInclusive);
+          mustBePrefixOfInclusive, false);
     }
 
     @Override
@@ -1423,7 +1423,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         final K mustBePrefixedBy, final boolean mustBePrefixedByInclusive,
         final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
       super(trie, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-          mustBePrefixOfInclusive);
+          mustBePrefixOfInclusive, false);
     }
 
     @Override
@@ -1440,7 +1440,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         final K mustBePrefixedBy, final boolean mustBePrefixedByInclusive,
         final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
       super(trie, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
-          mustBePrefixOfInclusive);
+          mustBePrefixOfInclusive, false);
     }
 
     @Override
@@ -1491,10 +1491,11 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param mustBePrefixedByInclusive true if the mustBePrefixedBy is inclusive
      * @param mustBePrefixOf null or the key that all must be prefixes of
      * @param mustBePrefixOfInclusive true if the mustBePrefixOf is inclusive
+     * @param descending false if ascending, true if descending
      */
     protected AbstractPrefixIterator(final AbstractBinaryTrie<K, V> trie,
         final K mustBePrefixedBy, final boolean mustBePrefixedByInclusive,
-        final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
+        final K mustBePrefixOf, final boolean mustBePrefixOfInclusive, final boolean descending) {
 
       this.trie = trie;
       this.expectedModCount = trie.modCount;
@@ -1522,11 +1523,18 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
       this.lastReturned = null;
       this.next = getNextPrefixNode(trie.root); // must always start at root
+
+      // If descending, lookup the last node so we can start there
+      if (descending) {
+        while (hasNext()) {
+          nextNode();
+        }
+        this.next = this.lastReturned;
+        this.lastReturned = null;
+      }
     }
 
 
-    // TODO: previous/descending could be done by first getting the last node via nextPrefix,
-    // then working your way back with opposite logic to nextPrefix
     /**
      * @param node Node to find the next successor node of
      * @return the successor prefix node, or null if none
@@ -1540,9 +1548,16 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
       while (node != null) {
 
-        if (index > prefixDepth) {
+        // Exit early if all further conditions are false
+        if ((index + 1 == prefixDepth && prefixOf && !mustBePrefixOfInclusive)
+            || (index >= prefixDepth && prefixOf)) {
+          return null;
+        }
+
+        if (index >= prefixDepth) {
           // Traverse all nodes under the Key (and under upperLimitNode)
           node = successor(node, upperLimitNode);
+          ++index;
 
         } else {
           // Traverse only the path that matches our Key
@@ -1570,11 +1585,41 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
           // confirm that we are past the depth level of mustBePrefixedBy (minDepth).
           return node;
         }
+      }
+
+      return null;
+    }
+
+    /**
+     * @param node Node to find the previous predecessor node of
+     * @return the predecessor prefix node, or null if none
+     */
+    protected Node<K, V> getPrevPrefixNode(Node<K, V> node) {
+      // Prefix-Of = all nodes that are direct parents of the mustBePrefixOf Key's node
+      // Prefix-By = all children nodes of the mustBePrefixedBy Key's node
+
+      while (node != null) {
 
         // Exit early if all further conditions are false
-        if ((index + 1 == prefixDepth && prefixOf && !mustBePrefixOfInclusive)
-            || (index >= prefixDepth && prefixOf)) {
+        if (index <= minDepth) {
           return null;
+        }
+
+        if (--index > prefixDepth) {
+          // Traverse all nodes under the Key
+          node = predecessor(node);
+        } else {
+          // Else follow our parent up
+          node = node.parent;
+        }
+
+        if (node == null || node.parent == null) {
+          return null;
+        }
+
+        // If node has a value, and conditions match, return the node
+        if (node.value != null && subInRange(node)) {
+          return node;
         }
       }
 
@@ -1611,6 +1656,22 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         throw new ConcurrentModificationException();
       }
       next = getNextPrefixNode(e);
+      lastReturned = e;
+      return e;
+    }
+
+    /**
+     * @return the previous Node in descending order
+     */
+    protected final Node<K, V> prevNode() {
+      final Node<K, V> e = next;
+      if (e == null) {
+        throw new NoSuchElementException();
+      }
+      if (trie.modCount != expectedModCount) {
+        throw new ConcurrentModificationException();
+      }
+      next = getPrevPrefixNode(e);
       lastReturned = e;
       return e;
     }
