@@ -77,6 +77,81 @@ public interface NavigableTrie<K, V> extends Trie<K, V>, NavigableMap<K, V> {
 
   // Methods specific only to NavigableTrie:
 
+  /**
+   * Returns a {@link NavigableTrie} Sub-Map view of this map whose keys are
+   * prefixes of the given key (or are mapped directly to the search key (if
+   * {@code keyInclusive} is true). The returned trie map is backed by this
+   * trie map, so changes in the returned map are reflected in this map, and
+   * vice-versa. The returned map supports all operations that this map supports.
+   *
+   * <p>
+   * In a {@link Trie} with fixed size keys, this map will be empty (or have at
+   * most one entry if {@code keyInclusive} is true).
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with <code>keyInclusive true</code> would
+   * return the keys 'ant', 'ante', and 'antecede', in that order.
+   *
+   * <p>
+   * The returned map will throw an {@code IllegalArgumentException}
+   * on an attempt to insert a key outside its range.
+   *
+   * @param key the key used in the search for prefixes
+   * @param keyInclusive true if the returned view should include the
+   *        key associated with the search key, if it exists
+   * @return a view of the portion of this map whose keys are prefixes of, mapped
+   *         to, or prefixed by the given key, depending on the options selected
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if this map itself has a
+   *         restricted range, and {@code fromKey} lies outside the
+   *         bounds of the range; or if the length of fromKey
+   *         is less than or equal to zero
+   */
+  @Override
+  NavigableTrie<K, V> prefixOfMap(K key, boolean keyInclusive);
+
+
+  /**
+   * Returns a {@link NavigableTrie} Sub-Map view of this map whose keys are
+   * prefixed by the given key (or are mapped directly to the search key (if
+   * {@code keyInclusive} is true). The returned trie map is backed by this
+   * trie map, so changes in the returned map are reflected in this map, and
+   * vice-versa. The returned map supports all operations that this map supports.
+   *
+   * <p>
+   * In a {@link Trie} with fixed size keys, this map will be empty (or have at
+   * most one entry if {@code keyInclusive} is true).
+   *
+   * <p>
+   * For example, if the Trie contains 'and', 'ant', 'antacid', 'ante',
+   * 'antecede', 'anteceded', 'antecedent', 'antelope', 'ape'; then
+   * a lookup of 'antecede' with <code>keyInclusive true</code> would
+   * return the keys 'antecede', 'anteceded', and 'antecedent',
+   * with the search key first, and the remaining order determined
+   * by the implementation being used.
+   *
+   * <p>
+   * The returned map will throw an {@code IllegalArgumentException}
+   * on an attempt to insert a key outside its range.
+   *
+   * @param key the key used in the search for prefixes
+   * @param keyInclusive true if the returned view should include the
+   *        key associated with the search key, if it exists
+   * @return a view of the portion of this map whose keys are prefixes of, mapped
+   *         to, or prefixed by the given key, depending on the options selected
+   * @throws ClassCastException if the key is of an inappropriate type for this map
+   * @throws NullPointerException if the specified key is null
+   * @throws IllegalArgumentException if this map itself has a
+   *         restricted range, and {@code fromKey} lies outside the
+   *         bounds of the range; or if the length of fromKey
+   *         is less than or equal to zero
+   */
+  @Override
+  NavigableTrie<K, V> prefixedByMap(K key, boolean keyInclusive);
+
 
 
   // Methods inherited from SortedMap or NavigableMap:

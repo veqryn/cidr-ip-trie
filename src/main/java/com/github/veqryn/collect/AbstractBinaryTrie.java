@@ -1825,18 +1825,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected Collection<V> prefixValues(final K key, final boolean includePrefixOf,
         final boolean keyInclusive, final boolean includePrefixedBy) {
-      if (key == null) {
-        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
-      }
-      if (trie.codec.length(key) <= 0) {
-        throw new IllegalArgumentException(getClass().getName()
-            + " does not accept keys of length <= 0: " + key);
-      }
-      // !keyInclusive because if we want to make a non-inclusive map,
-      // the range check should allow the key to match a non-inclusive prefix
-      if (!inRange(key, !keyInclusive)) {
-        throw new IllegalArgumentException("key out of range: " + key);
-      }
+      checkKeyValidAndInRange(key, !keyInclusive);
 
       if (includePrefixOf) {
         // Wants prefix of, create with new prefix of key, pass along current mustBePrefixedBy
@@ -1862,18 +1851,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     protected Trie<K, V> prefixMap(final K key, final boolean includePrefixOf,
         final boolean keyInclusive, final boolean includePrefixedBy) {
-      if (key == null) {
-        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
-      }
-      if (trie.codec.length(key) <= 0) {
-        throw new IllegalArgumentException(getClass().getName()
-            + " does not accept keys of length <= 0: " + key);
-      }
-      // !keyInclusive because if we want to make a non-inclusive map,
-      // the range check should allow the key to match a non-inclusive prefix
-      if (!inRange(key, !keyInclusive)) {
-        throw new IllegalArgumentException("key out of range: " + key);
-      }
+      checkKeyValidAndInRange(key, !keyInclusive);
 
       if (includePrefixOf) {
         // Wants prefix of, create with new prefix of key, pass along current mustBePrefixedBy
@@ -1907,6 +1885,27 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         return false;
       }
       return true;
+    }
+
+    /**
+     * Check if key is valid and throw an exception if not valid
+     *
+     * @param key key to query if valid and in range
+     * @param forceInclusive true if the prefixKey and key may be equal
+     */
+    protected void checkKeyValidAndInRange(final K key, final boolean forceInclusive) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
+      }
+      if (trie.codec.length(key) <= 0) {
+        throw new IllegalArgumentException(getClass().getName()
+            + " does not accept keys of length <= 0: " + key);
+      }
+      // !keyInclusive because if we want to make a non-inclusive map,
+      // the range check should allow the key to match a non-inclusive prefix
+      if (!inRange(key, forceInclusive)) {
+        throw new IllegalArgumentException("key out of range: " + key);
+      }
     }
 
 

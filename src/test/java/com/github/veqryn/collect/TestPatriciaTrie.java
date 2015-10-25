@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.SortedMap;
@@ -190,23 +189,12 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
   // -----------------------------------------------------------------------
 
 
-  public static <K, V> K getFirstKey(final Map<K, V> map) {
-    final Iterator<Entry<K, V>> iter = map.entrySet().iterator();
-    if (iter.hasNext()) {
-      return iter.next().getKey();
-    }
-    throw new NoSuchElementException("no first key");
+  public static <K, V> K getFirstKey(final NavigableMap<K, V> map) {
+    return map.firstKey();
   }
 
-  public static <K, V> K getLastKey(final Map<K, V> map) {
-    K key = null;
-    for (final Entry<K, V> entry : map.entrySet()) {
-      key = entry.getKey();
-    }
-    if (key != null) {
-      return key;
-    }
-    throw new NoSuchElementException("no last key");
+  public static <K, V> K getLastKey(final NavigableMap<K, V> map) {
+    return map.lastKey();
   }
 
   public static String toBinary(final byte[] bytes) {
@@ -256,7 +244,7 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
       trie.put(key, key);
     }
 
-    Map<String, String> map;
+    NavigableMap<String, String> map;
     Iterator<String> iterator;
     Iterator<Map.Entry<String, String>> entryIterator;
     Map.Entry<String, String> entry;
