@@ -77,8 +77,6 @@ public interface NavigableTrie<K, V> extends Trie<K, V>, NavigableMap<K, V> {
 
   // Methods specific only to NavigableTrie:
 
-  // TODO: keySet and entrySet for prefixes, and maybe sub-Trie prefix map view
-
 
 
   // Methods inherited from SortedMap or NavigableMap:

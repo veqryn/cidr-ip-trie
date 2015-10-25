@@ -1136,6 +1136,206 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       return absHigher(key);
     }
 
+
+    // Descending Prefix Views:
+
+    @Override
+    protected Collection<V> prefixValues(final K key, final boolean includePrefixOf,
+        final boolean keyInclusive, final boolean includePrefixedBy) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
+      }
+      if (m.codec.length(key) <= 0) {
+        throw new IllegalArgumentException(getClass().getName()
+            + " does not accept keys of length <= 0: " + key);
+      }
+      if (includePrefixOf) {
+        return new DescendingTriePrefixSubMapValues(null, false, key, keyInclusive);
+      }
+      return new DescendingTriePrefixSubMapValues(key, keyInclusive, null, false);
+    }
+
+    @Override
+    protected Trie<K, V> prefixMap(final K key, final boolean includePrefixOf,
+        final boolean keyInclusive, final boolean includePrefixedBy) {
+      if (key == null) {
+        throw new NullPointerException(getClass().getName() + " does not accept null keys: " + key);
+      }
+      if (m.codec.length(key) <= 0) {
+        throw new IllegalArgumentException(getClass().getName()
+            + " does not accept keys of length <= 0: " + key);
+      }
+
+      if (includePrefixOf) {
+        return new DescendingTriePrefixSubMap(null, false, key, keyInclusive);
+      }
+      return new DescendingTriePrefixSubMap(key, keyInclusive, null, false);
+    }
+
+
+    /** DescendingTriePrefixSubMapEntrySet prefix entry set sub map view */
+    protected class DescendingTriePrefixSubMapEntrySet extends TriePrefixSubMapEntrySet {
+
+      protected DescendingTriePrefixSubMapEntrySet(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+      }
+
+      @Override
+      public Iterator<Map.Entry<K, V>> iterator() {
+        return new DescendingEntryPrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+            mustBePrefixOf, mustBePrefixOfInclusive);
+      }
+    }
+
+
+    /** Descending Sub Map View class for a Set of Keys that are prefixes of a Key. */
+    protected class DescendingTriePrefixSubMapKeySet extends TriePrefixSubMapKeySet {
+
+      protected DescendingTriePrefixSubMapKeySet(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+      }
+
+      @Override
+      public Iterator<K> iterator() {
+        return new DescendingKeyPrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+            mustBePrefixOf, mustBePrefixOfInclusive);
+      }
+    }
+
+
+    /** DescendingTriePrefixSubMapValues values collection view */
+    protected class DescendingTriePrefixSubMapValues extends TriePrefixSubMapValues {
+
+      protected DescendingTriePrefixSubMapValues(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf, mustBePrefixOfInclusive);
+      }
+
+      @Override
+      public Iterator<V> iterator() {
+        return new DescendingValuePrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+            mustBePrefixOf, mustBePrefixOfInclusive);
+      }
+
+      @Override
+      public boolean remove(final Object o) {
+        Node<K, V> node = null;
+        // only remove values that occur in this sub-trie
+        final Iterator<Node<K, V>> iter =
+            new DescendingNodePrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
+                mustBePrefixOf, mustBePrefixOfInclusive);
+        while (iter.hasNext()) {
+          node = iter.next();
+          if (eq(node.value, o)) {
+            iter.remove();
+            return true;
+          }
+        }
+        return false;
+      }
+    }
+
+
+
+    /** DescendingTriePrefixSubMap prefix sub map view */
+    protected class DescendingTriePrefixSubMap extends TriePrefixSubMap {
+
+      private static final long serialVersionUID = -3408129333725624796L;
+
+      protected DescendingTriePrefixSubMap(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive,
+          final K mustBePrefixOf, final boolean mustBePrefixOfInclusive) {
+        super(mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive);
+      }
+
+      @Override
+      protected Collection<V> prefixValues(final K key, final boolean includePrefixOf,
+          final boolean keyInclusive, final boolean includePrefixedBy) {
+        if (key == null) {
+          throw new NullPointerException(
+              getClass().getName() + " does not accept null keys: " + key);
+        }
+        if (trie.codec.length(key) <= 0) {
+          throw new IllegalArgumentException(getClass().getName()
+              + " does not accept keys of length <= 0: " + key);
+        }
+        // !keyInclusive because if we want to make a non-inclusive map,
+        // the range check should allow the key to match a non-inclusive prefix
+        if (!inRange(key, !keyInclusive)) {
+          throw new IllegalArgumentException("key out of range: " + key);
+        }
+
+        if (includePrefixOf) {
+          // Wants prefix of, create with new prefix of key, pass along current mustBePrefixedBy
+          return new DescendingTriePrefixSubMapValues(mustBePrefixedBy, mustBePrefixedByInclusive,
+              key, keyInclusive);
+
+        } else {
+          // Wants prefixed by, create with new prefixed by key, pass current mustBePrefixOf
+          return new DescendingTriePrefixSubMapValues(key, keyInclusive, mustBePrefixOf,
+              mustBePrefixOfInclusive);
+        }
+      }
+
+      @Override
+      protected Trie<K, V> prefixMap(final K key, final boolean includePrefixOf,
+          final boolean keyInclusive, final boolean includePrefixedBy) {
+        if (key == null) {
+          throw new NullPointerException(
+              getClass().getName() + " does not accept null keys: " + key);
+        }
+        if (trie.codec.length(key) <= 0) {
+          throw new IllegalArgumentException(getClass().getName()
+              + " does not accept keys of length <= 0: " + key);
+        }
+        // !keyInclusive because if we want to make a non-inclusive map,
+        // the range check should allow the key to match a non-inclusive prefix
+        if (!inRange(key, !keyInclusive)) {
+          throw new IllegalArgumentException("key out of range: " + key);
+        }
+
+        if (includePrefixOf) {
+          // Wants prefix of, create with new prefix of key, pass along current mustBePrefixedBy
+          return new DescendingTriePrefixSubMap(mustBePrefixedBy, mustBePrefixedByInclusive, key,
+              keyInclusive);
+
+        } else {
+          // Wants prefixed by, create with new prefixed by key, pass current mustBePrefixOf
+          return new DescendingTriePrefixSubMap(key, keyInclusive, mustBePrefixOf,
+              mustBePrefixOfInclusive);
+        }
+      }
+
+      @Override
+      public Set<Map.Entry<K, V>> entrySet() {
+        final Set<Map.Entry<K, V>> es = entrySet;
+        return (es != null) ? es : (entrySet =
+            new DescendingTriePrefixSubMapEntrySet(mustBePrefixedBy, mustBePrefixedByInclusive,
+                mustBePrefixOf, mustBePrefixOfInclusive));
+      }
+
+      @Override
+      public Set<K> keySet() {
+        final Set<K> ks = keySet;
+        return (ks != null) ? ks : (keySet =
+            new DescendingTriePrefixSubMapKeySet(mustBePrefixedBy, mustBePrefixedByInclusive,
+                mustBePrefixOf, mustBePrefixOfInclusive));
+      }
+
+      @Override
+      public Collection<V> values() {
+        final Collection<V> vs = values;
+        return (vs != null) ? vs : (values =
+            new DescendingTriePrefixSubMapValues(mustBePrefixedBy, mustBePrefixedByInclusive,
+                mustBePrefixOf, mustBePrefixOfInclusive));
+      }
+    }
   }
 
 
@@ -1561,7 +1761,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       }
 
       @Override
-      public final Iterator<Map.Entry<K, V>> iterator() {
+      public Iterator<Map.Entry<K, V>> iterator() {
         return new EntryPrefixSubMapIterator(mustBePrefixedBy, mustBePrefixedByInclusive,
             mustBePrefixOf, mustBePrefixOfInclusive);
       }
@@ -1730,6 +1930,100 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
       @Override
       public final Node<K, V> next() {
         return nextNode();
+      }
+
+      @Override
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      }
+    }
+
+
+
+    /** Descending Iterator for returning prefix entries in ascending order from a sub map */
+    protected final class DescendingEntryPrefixSubMapIterator
+        extends AbstractPrefixIterator<K, V, Map.Entry<K, V>> {
+
+      protected DescendingEntryPrefixSubMapIterator(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive, true);
+      }
+
+      @Override
+      public final Map.Entry<K, V> next() {
+        return exportEntry(prevNode(), trie);
+      }
+
+      @Override
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      }
+    }
+
+    /** Descending Iterator for returning prefix keys in ascending order from a sub map */
+    protected final class DescendingKeyPrefixSubMapIterator
+        extends AbstractPrefixIterator<K, V, K> {
+
+      protected DescendingKeyPrefixSubMapIterator(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive, true);
+      }
+
+      @Override
+      public final K next() {
+        return exportEntry(prevNode(), trie).getKey();
+      }
+
+      @Override
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      }
+    }
+
+    /** Descending Iterator for returning only prefix values in ascending order from a sub map */
+    protected final class DescendingValuePrefixSubMapIterator
+        extends AbstractPrefixIterator<K, V, V> {
+
+      protected DescendingValuePrefixSubMapIterator(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive, true);
+      }
+
+      @Override
+      public final V next() {
+        return prevNode().value;
+      }
+
+      @Override
+      protected boolean subInRange(final Node<K, V> node) {
+        return super.subInRange(node)
+            && NavigableTrieSubMap.this.inRange(resolveKey(node, m), true);
+      }
+    }
+
+    /** Descending Iterator for returning only prefix nodes in ascending order from a sub map */
+    protected final class DescendingNodePrefixSubMapIterator
+        extends AbstractPrefixIterator<K, V, Node<K, V>> {
+
+      protected DescendingNodePrefixSubMapIterator(final K mustBePrefixedBy,
+          final boolean mustBePrefixedByInclusive, final K mustBePrefixOf,
+          final boolean mustBePrefixOfInclusive) {
+        super(m, mustBePrefixedBy, mustBePrefixedByInclusive, mustBePrefixOf,
+            mustBePrefixOfInclusive, true);
+      }
+
+      @Override
+      public final Node<K, V> next() {
+        return prevNode();
       }
 
       @Override

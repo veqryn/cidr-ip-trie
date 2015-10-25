@@ -1549,8 +1549,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       while (node != null) {
 
         // Exit early if all further conditions are false
-        if ((index + 1 == prefixDepth && prefixOf && !mustBePrefixOfInclusive)
-            || (index >= prefixDepth && prefixOf)) {
+        if ((prefixOf && !mustBePrefixOfInclusive && index + 1 == prefixDepth)
+            || (prefixOf && index >= prefixDepth)) {
           return null;
         }
 
@@ -2509,12 +2509,12 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         final V value = (V) s.readObject();
         this.put(key, value);
       }
-      assert(this.size == originalSize);
+      assert (this.size == originalSize);
     } else {
       // If not writing keys, Just read in the root node
       this.root = (Node<K, V>) s.readObject();
-      assert(this.root.value == null);
-      assert(this.root.parent == null);
+      assert (this.root.value == null);
+      assert (this.root.parent == null);
       this.size = originalSize;
       ++this.modCount;
     }
