@@ -268,6 +268,19 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
 
 
 
+  /**
+   * Returns a shallow copy of this {@link AbstractNavigableBinaryTrie} instance.
+   * (The keys and values themselves are not cloned.)
+   *
+   * @return a shallow copy of this trie/map
+   */
+  @Override
+  public AbstractNavigableBinaryTrie<K, V> clone() {
+    return new AbstractNavigableBinaryTrie<K, V>(this);
+  }
+
+
+
   @Override
   public final Comparator<? super K> comparator() {
     return codec.comparator();
@@ -1169,7 +1182,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
   }
 
   /** Iterator for returning only keys in descending order */
-  protected static final class DescendingKeyIterator<K, V> extends AbstractEntryIterator<K, V, K> {
+  protected static final class DescendingKeyIterator<K, V> extends AbstractNodeIterator<K, V, K> {
 
     protected DescendingKeyIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.lastNode());

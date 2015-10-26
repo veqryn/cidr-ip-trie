@@ -476,6 +476,89 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
 
 
+  /** TrieEntry is a wrapper for a Node that allows it to be exported via public methods */
+  protected static final class TrieEntry<K, V> implements Entry<K, V>, Serializable {
+
+    private static final long serialVersionUID = 7138329143949025153L;
+
+    private final AbstractBinaryTrie<K, V> trie; // the backing trie
+    private final Node<K, V> node;
+
+    /**
+     * Creates an entry wrapper representing a mapping of the Node's key to the Node's value.
+     * Wrapped so that getKey will return a resolved key, using the backing Trie.
+     *
+     * @param key the key represented by this entry
+     * @param value the value represented by this entry
+     */
+    protected TrieEntry(final Node<K, V> node, final AbstractBinaryTrie<K, V> trie) {
+      this.trie = trie;
+      this.node = node;
+    }
+
+    @Override
+    public K getKey() {
+      return resolveKey(node, trie);
+    }
+
+    @Override
+    public V getValue() {
+      return node.value;
+    }
+
+    @Override
+    public V setValue(final V value) {
+      return node.setValue(value);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public boolean equals(final Object o) {
+      if (!(o instanceof Map.Entry)) {
+        return false;
+      }
+      final Map.Entry<K, V> e = (Map.Entry<K, V>) o;
+      return eq(this.getKey(), e.getKey()) && eq(this.getValue(), e.getValue());
+    }
+
+    @Override
+    public int hashCode() {
+      final K key = this.getKey();
+      final V value = this.getValue();
+      return (key == null ? 0 : key.hashCode()) ^
+          (value == null ? 0 : value.hashCode());
+    }
+
+    /**
+     * @return a String representation of this map entry
+     */
+    @Override
+    public String toString() {
+      return this.getKey() + "=" + this.getValue();
+    }
+  }
+
+
+
+  /**
+   * Return a wrapped Node (so that keys are resolved lazily).
+   * Returns null if the node is null or the node's value is null (meaning it
+   * is an empty intermediate node).
+   *
+   * @param node the Node to export
+   * @param trie the Trie this Node is in
+   * @return Map.Entry
+   */
+  protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> node,
+      final AbstractBinaryTrie<K, V> trie) {
+    if (node == null || node.value == null) {
+      return null;
+    }
+    return new TrieEntry<K, V>(node, trie);
+  }
+
+
+
   // Utility methods:
 
   /**
@@ -488,26 +571,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    */
   protected static final boolean eq(final Object o1, final Object o2) {
     return (o1 == null ? o2 == null : (o1 == o2 || o1.equals(o2)));
-  }
-
-
-
-  /**
-   * Resolve the Node's key, then return the node as an immutable Map.Entry
-   * Returns null if the node is null or the node's value is null (meaning it
-   * is an empty intermediate node).
-   *
-   * @param node the Node to export
-   * @param trie the Trie this Node is in
-   * @return AbstractMap.SimpleImmutableEntry Map.Entry
-   */
-  protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> node,
-      final AbstractBinaryTrie<K, V> trie) {
-    if (node == null || node.value == null) {
-      return null;
-    }
-    // Resolve the Key if missing
-    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(node, trie), node.value);
   }
 
 
@@ -648,9 +711,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
           subNode.privateKey = key;
         }
         ++this.modCount;
-        final V oldValue = subNode.value;
-        subNode.value = value;
-        return oldValue;
+        return subNode.setValue(value);
       }
     }
   }
@@ -772,8 +833,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    */
   protected static <K, V> Node<K, V> getNode(final K key, final Node<K, V> startingNode,
       int startingIndex, final KeyCodec<K> codec) {
-    // While we could technically combine getNode and getNodes, the speed and
-    // simplicity of getNode outweighs forcing exact match get's to use getNodes
 
     if (key == null) {
       return null;
@@ -2110,7 +2169,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
   /** Iterator for returning exported Map.Entry views of Nodes in ascending order */
   protected static final class EntryIterator<K, V>
-      extends AbstractEntryIterator<K, V, Map.Entry<K, V>> {
+      extends AbstractNodeIterator<K, V, Map.Entry<K, V>> {
 
     protected EntryIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.firstNode());
@@ -2123,7 +2182,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   /** Iterator for returning only values in ascending order */
-  protected static final class ValueIterator<K, V> extends AbstractEntryIterator<K, V, V> {
+  protected static final class ValueIterator<K, V> extends AbstractNodeIterator<K, V, V> {
 
     protected ValueIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.firstNode());
@@ -2143,7 +2202,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
   }
 
   /** Iterator for returning only resolved keys in ascending order */
-  protected static final class KeyIterator<K, V> extends AbstractEntryIterator<K, V, K> {
+  protected static final class KeyIterator<K, V> extends AbstractNodeIterator<K, V, K> {
 
     protected KeyIterator(final AbstractBinaryTrie<K, V> map) {
       super(map, map.firstNode());
@@ -2151,20 +2210,20 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
 
     @Override
     public final K next() {
-      return exportEntry(nextNode(), m).getKey();
+      return resolveKey(nextNode(), m);
     }
   }
 
 
 
   /**
-   * Base Entry Iterator for extending
+   * Base Node Iterator for extending
    *
    * @param <K> Key
    * @param <V> Value
    * @param <T> Iterator object type
    */
-  protected abstract static class AbstractEntryIterator<K, V, T> implements Iterator<T> {
+  protected abstract static class AbstractNodeIterator<K, V, T> implements Iterator<T> {
 
     protected final AbstractBinaryTrie<K, V> m; // the backing map
 
@@ -2178,7 +2237,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * @param map the backing trie
      * @param first the first Node returned by nextNode or prevNode
      */
-    protected AbstractEntryIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
+    protected AbstractNodeIterator(final AbstractBinaryTrie<K, V> map, final Node<K, V> first) {
       this.m = map;
       expectedModCount = m.modCount;
       lastReturned = null;

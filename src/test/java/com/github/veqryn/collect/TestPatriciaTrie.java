@@ -5,8 +5,6 @@
  */
 package com.github.veqryn.collect;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
@@ -16,7 +14,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.collections4.BulkTest;
-import org.apache.commons.collections4.map.AbstractMapTest;
 import org.apache.commons.collections4.map.AbstractSortedMapTest;
 import org.junit.Assert;
 
@@ -70,81 +67,9 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
     return false;
   }
 
-  @Override
-  public boolean isSetValueSupported() {
-    return false;
-  }
-
 
 
   // Configure our sub-map views:
-
-  @Override
-  public BulkTest bulkTestHeadMap() {
-    return new TestTrieHeadMap(this);
-  }
-
-  protected class TestTrieHeadMap extends TestHeadMap<String, String> {
-    public TestTrieHeadMap(final AbstractMapTest<String, String> main) {
-      super(main);
-    }
-
-    @Override
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
-
-  @Override
-  public BulkTest bulkTestTailMap() {
-    return new TestTrieTailMap(this);
-  }
-
-  protected class TestTrieTailMap extends TestTailMap<String, String> {
-    public TestTrieTailMap(final AbstractMapTest<String, String> main) {
-      super(main);
-    }
-
-    @Override
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
-
-  @Override
-  public BulkTest bulkTestSubMap() {
-    return new TestTrieSubMap(this);
-  }
-
-  protected class TestTrieSubMap extends TestSubMap<String, String> {
-    public TestTrieSubMap(final AbstractMapTest<String, String> main) {
-      super(main);
-    }
-
-    @Override
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
-
-  @Override
-  public BulkTest bulkTestMapEntrySet() {
-    return new TestMapEntrySet();
-  }
-
-  protected class TestTrieEntrySet extends TestMapEntrySet {
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
 
   // TODO: Test Descending Map view
   // TODO: This should work, but I keep getting AbstractMethodError on makeObject
@@ -163,11 +88,6 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
   // }
   // this.subSortedNewValues.addAll(Arrays.asList(main.getNewSampleValues()));
   // Collections.reverse(this.subSortedNewValues);
-  // }
-  //
-  // @Override
-  // public boolean isSetValueSupported() {
-  // return false;
   // }
   //
   // @Override
@@ -197,38 +117,6 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
     return map.lastKey();
   }
 
-  public static String toBinary(final byte[] bytes) {
-    final StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
-    for (int i = 0; i < Byte.SIZE * bytes.length; i++) {
-      sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
-    }
-    return sb.toString();
-  }
-
-  public static void main(final String[] args) {
-
-    final String[] keys = new String[] {
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-        "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"
-    };
-
-    final PatriciaTrie<String> trie = new PatriciaTrie<String>();
-
-    for (final String key : keys) {
-      System.out.println(key);
-      System.out.println(Arrays.toString(key.getBytes(StandardCharsets.UTF_16BE)));
-      System.out.println(toBinary(key.getBytes(StandardCharsets.UTF_16BE)));
-      trie.put(key, toBinary(key.getBytes(StandardCharsets.UTF_16BE)));
-      System.out.println(AbstractBinaryTrie.resolveKey(trie.getNode(key), trie));
-      System.out.println(toBinary(AbstractBinaryTrie.resolveKey(trie.getNode(key), trie)
-          .getBytes(StandardCharsets.UTF_16BE)));
-      System.out.println();
-    }
-    System.out.println();
-    System.out.println(trie);
-    System.out.println();
-
-  }
 
   public void testPrefixedByMap() {
     final PatriciaTrie<String> trie = new PatriciaTrie<String>();
