@@ -53,4 +53,19 @@ public class TestingUtil {
     }
   }
 
+
+  /**
+   * Turn a byte array into 1's and 0's (in a String)
+   * 
+   * @param bytes byte[] array
+   * @return binary as a String
+   */
+  public static String toBinary(final byte[] bytes) {
+    final StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
+    for (int i = 0; i < Byte.SIZE * bytes.length; i++) {
+      sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
+    }
+    return sb.toString();
+  }
+
 }

@@ -5,19 +5,15 @@
  */
 package com.github.veqryn.collect;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.collections4.BulkTest;
-import org.apache.commons.collections4.map.AbstractMapTest;
 import org.apache.commons.collections4.map.AbstractSortedMapTest;
 import org.junit.Assert;
 
@@ -71,81 +67,9 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
     return false;
   }
 
-  @Override
-  public boolean isSetValueSupported() {
-    return false;
-  }
-
 
 
   // Configure our sub-map views:
-
-  @Override
-  public BulkTest bulkTestHeadMap() {
-    return new TestTrieHeadMap(this);
-  }
-
-  protected class TestTrieHeadMap extends TestHeadMap<String, String> {
-    public TestTrieHeadMap(final AbstractMapTest<String, String> main) {
-      super(main);
-    }
-
-    @Override
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
-
-  @Override
-  public BulkTest bulkTestTailMap() {
-    return new TestTrieTailMap(this);
-  }
-
-  protected class TestTrieTailMap extends TestTailMap<String, String> {
-    public TestTrieTailMap(final AbstractMapTest<String, String> main) {
-      super(main);
-    }
-
-    @Override
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
-
-  @Override
-  public BulkTest bulkTestSubMap() {
-    return new TestTrieSubMap(this);
-  }
-
-  protected class TestTrieSubMap extends TestSubMap<String, String> {
-    public TestTrieSubMap(final AbstractMapTest<String, String> main) {
-      super(main);
-    }
-
-    @Override
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
-
-  @Override
-  public BulkTest bulkTestMapEntrySet() {
-    return new TestMapEntrySet();
-  }
-
-  protected class TestTrieEntrySet extends TestMapEntrySet {
-    public boolean isSetValueSupported() {
-      return false;
-    }
-  }
-
-
 
   // TODO: Test Descending Map view
   // TODO: This should work, but I keep getting AbstractMethodError on makeObject
@@ -167,11 +91,6 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
   // }
   //
   // @Override
-  // public boolean isSetValueSupported() {
-  // return false;
-  // }
-  //
-  // @Override
   // public SortedMap<String, V> makeObject() {
   // return ((NavigableMap<String, V>) main.makeObject()).descendingMap();
   // }
@@ -190,57 +109,14 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
   // -----------------------------------------------------------------------
 
 
-  public static <K, V> K getFirstKey(final Map<K, V> map) {
-    final Iterator<Entry<K, V>> iter = map.entrySet().iterator();
-    if (iter.hasNext()) {
-      return iter.next().getKey();
-    }
-    throw new NoSuchElementException("no first key");
+  public static <K, V> K getFirstKey(final NavigableMap<K, V> map) {
+    return map.firstKey();
   }
 
-  public static <K, V> K getLastKey(final Map<K, V> map) {
-    K key = null;
-    for (final Entry<K, V> entry : map.entrySet()) {
-      key = entry.getKey();
-    }
-    if (key != null) {
-      return key;
-    }
-    throw new NoSuchElementException("no last key");
+  public static <K, V> K getLastKey(final NavigableMap<K, V> map) {
+    return map.lastKey();
   }
 
-  public static String toBinary(final byte[] bytes) {
-    final StringBuilder sb = new StringBuilder(bytes.length * Byte.SIZE);
-    for (int i = 0; i < Byte.SIZE * bytes.length; i++) {
-      sb.append((bytes[i / Byte.SIZE] << i % Byte.SIZE & 0x80) == 0 ? '0' : '1');
-    }
-    return sb.toString();
-  }
-
-  public static void main(final String[] args) {
-
-    final String[] keys = new String[] {
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-        "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"
-    };
-
-    final PatriciaTrie<String> trie = new PatriciaTrie<String>();
-
-    for (final String key : keys) {
-      System.out.println(key);
-      System.out.println(Arrays.toString(key.getBytes(StandardCharsets.UTF_16BE)));
-      System.out.println(toBinary(key.getBytes(StandardCharsets.UTF_16BE)));
-      trie.put(key, toBinary(key.getBytes(StandardCharsets.UTF_16BE)));
-      System.out.println(AbstractBinaryTrie.resolveKey(trie.getNode(key), trie));
-      System.out.println(toBinary(AbstractBinaryTrie.resolveKey(trie.getNode(key), trie)
-          .getBytes(StandardCharsets.UTF_16BE)));
-      System.out.println();
-    }
-    System.out.println();
-    System.out.println(trie);
-    System.out.println();
-
-  }
 
   public void testPrefixedByMap() {
     final PatriciaTrie<String> trie = new PatriciaTrie<String>();
@@ -256,7 +132,7 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
       trie.put(key, key);
     }
 
-    Map<String, String> map;
+    NavigableMap<String, String> map;
     Iterator<String> iterator;
     Iterator<Map.Entry<String, String>> entryIterator;
     Map.Entry<String, String> entry;
@@ -532,9 +408,9 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
   }
 
 
-  // Use this to write out new .obj files for compatibility tracking
+  // // Use this to write out new .obj files for compatibility tracking
   // public static void main(final String[] args) throws IOException {
-  // final TestPatriciaTrie<String> test = new TestPatriciaTrie<>("");
+  // final TestPatriciaTrie test = new TestPatriciaTrie("");
   // {
   // final Map<String, String> map = test.makeObject();
   // if (!(map instanceof Serializable)) {
