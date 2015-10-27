@@ -408,9 +408,9 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
   }
 
 
-  // Use this to write out new .obj files for compatibility tracking
+  // // Use this to write out new .obj files for compatibility tracking
   // public static void main(final String[] args) throws IOException {
-  // final TestPatriciaTrie<String> test = new TestPatriciaTrie<>("");
+  // final TestPatriciaTrie test = new TestPatriciaTrie("");
   // {
   // final Map<String, String> map = test.makeObject();
   // if (!(map instanceof Serializable)) {
