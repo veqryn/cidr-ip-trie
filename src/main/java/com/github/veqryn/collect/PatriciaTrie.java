@@ -110,9 +110,6 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
     @Override
     public final String recreateKey(final BitSet bits, final int numElements) {
-      if (bits.length() == 0) {
-        return "";
-      }
       return new String(toByteArray(bits, numElements), CHARSET);
     }
 
