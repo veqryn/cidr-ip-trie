@@ -536,7 +536,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
   @Override
   public Map.Entry<K, V> pollFirstEntry() {
     final Node<K, V> polled = firstNode();
-    final Map.Entry<K, V> result = exportEntry(polled, this);
+    final Map.Entry<K, V> result = exportImmutableEntry(polled, this);
     if (polled != null) {
       deleteNode(polled);
     }
@@ -558,7 +558,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
   @Override
   public Map.Entry<K, V> pollLastEntry() {
     final Node<K, V> polled = lastNode();
-    final Map.Entry<K, V> result = exportEntry(polled, this);
+    final Map.Entry<K, V> result = exportImmutableEntry(polled, this);
     if (polled != null) {
       deleteNode(polled);
     }
@@ -835,7 +835,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     @Override
     public Map.Entry<K, V> pollFirstEntry() {
       final Node<K, V> polled = firstNode();
-      final Map.Entry<K, V> result = exportEntry(polled, trie);
+      final Map.Entry<K, V> result = exportImmutableEntry(polled, trie);
       if (polled != null) {
         trie.deleteNode(polled);
       }
@@ -861,7 +861,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     @Override
     public Map.Entry<K, V> pollLastEntry() {
       final Node<K, V> polled = lastNode();
-      final Map.Entry<K, V> result = exportEntry(polled, trie);
+      final Map.Entry<K, V> result = exportImmutableEntry(polled, trie);
       if (polled != null) {
         trie.deleteNode(polled);
       }
@@ -2083,7 +2083,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     @Override
     public final Map.Entry<K, V> pollFirstEntry() {
       final Node<K, V> e = subLowest();
-      final Map.Entry<K, V> result = exportEntry(e, m);
+      final Map.Entry<K, V> result = exportImmutableEntry(e, m);
       if (e != null) {
         m.deleteNode(e);
       }
@@ -2104,7 +2104,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
     @Override
     public final Map.Entry<K, V> pollLastEntry() {
       final Node<K, V> e = subHighest();
-      final Map.Entry<K, V> result = exportEntry(e, m);
+      final Map.Entry<K, V> result = exportImmutableEntry(e, m);
       if (e != null) {
         m.deleteNode(e);
       }

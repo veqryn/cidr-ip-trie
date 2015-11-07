@@ -47,7 +47,7 @@ public abstract class AbstractKeyCodec<K> implements KeyCodec<K>, Serializable {
     @Override
     public int compare(final K o1, final K o2) {
       if (o1 == null || o2 == null) {
-        throw new IllegalArgumentException("Null keys not allowed");
+        throw new NullPointerException("Null keys not allowed");
       }
       if (o1 == o2 || o1.equals(o2)) {
         return 0;

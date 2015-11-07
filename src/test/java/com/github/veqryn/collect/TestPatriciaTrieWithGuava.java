@@ -1,3 +1,8 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.github.veqryn.collect;
 
 import java.lang.reflect.Method;
@@ -7,7 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 
-import com.google.common.collect.testing.MapTestSuiteBuilder;
+import com.google.common.collect.testing.NavigableMapTestSuiteBuilder;
 import com.google.common.collect.testing.TestStringSortedMapGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
@@ -17,6 +22,14 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 
+/**
+ * Tests for the PatriciaTrie class.
+ * Runs some 44000+ tests from the Google Guava (19) project,
+ * specifically tests NavigableMap's, SortedMap's, and Map's and their various views.
+ * Tests with String data.
+ *
+ * @author Mark Christopher Duncan
+ */
 public class TestPatriciaTrieWithGuava {
 
 
@@ -35,17 +48,15 @@ public class TestPatriciaTrieWithGuava {
   }
 
   public Test testsForPatriciaTrie() {
-    // return NavigableMapTestSuiteBuilder
-    return MapTestSuiteBuilder
+    return NavigableMapTestSuiteBuilder
         .using(new TestStringSortedMapGenerator() {
-          // .using(new TestStringMapGenerator() {
           @Override
           protected NavigableMap<String, String> create(
               final Entry<String, String>[] entries) {
             return populate(new PatriciaTrie<String>(), entries);
           }
         })
-        .named("HashMap")
+        .named("PatriciaTrie")
         .withFeatures(
             MapFeature.GENERAL_PURPOSE,
             MapFeature.ALLOWS_NULL_ENTRY_QUERIES,

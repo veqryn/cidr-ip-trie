@@ -547,7 +547,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
    *
    * @param node the Node to export
    * @param trie the Trie this Node is in
-   * @return Map.Entry
+   * @return TrieEntry Map.Entry
    */
   protected static final <K, V> Map.Entry<K, V> exportEntry(final Node<K, V> node,
       final AbstractBinaryTrie<K, V> trie) {
@@ -555,6 +555,24 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return null;
     }
     return new TrieEntry<K, V>(node, trie);
+  }
+
+  /**
+   * Resolve the Node's key, then return the node as an immutable Map.Entry
+   * Returns null if the node is null or the node's value is null (meaning it
+   * is an empty intermediate node).
+   * 
+   * @param node the Node to export
+   * @param trie the Trie this Node is in
+   * @return SimpleImmutableEntry Map.Entry
+   */
+  protected static final <K, V> Map.Entry<K, V> exportImmutableEntry(final Node<K, V> node,
+      final AbstractBinaryTrie<K, V> trie) {
+    if (node == null || node.value == null) {
+      return null;
+    }
+    // Resolve the Key
+    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(node, trie), node.value);
   }
 
 
