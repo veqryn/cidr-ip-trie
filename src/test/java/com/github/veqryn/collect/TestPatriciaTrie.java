@@ -30,11 +30,6 @@ import junit.framework.Test;
  */
 public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
 
-  // Test string order when using comparator:
-  // hello, tmp, blah, bar, baz, foo, nonnullkey, all, again,
-  // you, see, key, key2, gee, golly, gosh, goodbye, we'll
-
-
   // Set up our Test:
 
   public TestPatriciaTrie(final String testName) {
@@ -355,6 +350,8 @@ public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
     iterator = map.values().iterator();
     Assert.assertFalse(iterator.hasNext());
   }
+
+
 
   public void testPrefixedByMapRemoval() {
     final PatriciaTrie<String> trie = new PatriciaTrie<String>();

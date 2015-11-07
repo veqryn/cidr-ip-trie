@@ -43,14 +43,28 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
 	  <artifactId>commons-collections4</artifactId>
-	  <version>[4.0,)</version>
+	  <version>4.0</version>
 	  <scope>test</scope>
     </dependency>
 	
     <dependency>
       <groupId>org.apache.commons</groupId>
 	  <artifactId>commons-collections4-tests</artifactId>
-	  <version>[4.0,)</version>
+	  <version>4.0</version>
+	  <scope>test</scope>
+    </dependency>
+	
+    <dependency>
+      <groupId>com.google.guava</groupId>
+	  <artifactId>guava</artifactId>
+	  <version>19.0-rc2</version>
+	  <scope>test</scope>
+    </dependency>
+	
+    <dependency>
+      <groupId>com.google.guava</groupId>
+	  <artifactId>guava-testlib</artifactId>
+	  <version>19.0-rc2</version>
 	  <scope>test</scope>
     </dependency>
 
