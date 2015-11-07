@@ -28,16 +28,17 @@ import junit.framework.Test;
  *
  * @author Mark Christopher Duncan
  */
-public class TestPatriciaTrie extends AbstractSortedMapTest<String, String> {
+public class TestPatriciaTrieWithApacheCommonsCollections
+    extends AbstractSortedMapTest<String, String> {
 
   // Set up our Test:
 
-  public TestPatriciaTrie(final String testName) {
+  public TestPatriciaTrieWithApacheCommonsCollections(final String testName) {
     super(testName);
   }
 
   public static Test suite() {
-    return BulkTest.makeSuite(TestPatriciaTrie.class);
+    return BulkTest.makeSuite(TestPatriciaTrieWithApacheCommonsCollections.class);
   }
 
   @Override
