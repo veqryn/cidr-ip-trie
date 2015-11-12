@@ -19,17 +19,17 @@
     <developer>
       <name>Mark Christopher Duncan</name>
       <id>veqryn</id>
-	  <email>veqryn@hotmail.com</email>
+      <email>veqryn@hotmail.com</email>
     </developer>
   </developers>
   
   
   <repositories>
     <repository>
-	  <id>project.local</id>
-	  <name>project.local</name>
-	  <url>file://${basedir}/repo</url>
-	</repository>
+      <id>project.local</id>
+      <name>project.local</name>
+      <url>file://${basedir}/repo</url>
+    </repository>
   </repositories>
   
   <dependencies>
@@ -39,33 +39,33 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
-	
+    
     <dependency>
       <groupId>org.apache.commons</groupId>
-	  <artifactId>commons-collections4</artifactId>
-	  <version>4.0</version>
-	  <scope>test</scope>
+      <artifactId>commons-collections4</artifactId>
+      <version>4.0</version>
+      <scope>test</scope>
     </dependency>
-	
+    
     <dependency>
       <groupId>org.apache.commons</groupId>
-	  <artifactId>commons-collections4-tests</artifactId>
-	  <version>4.0</version>
-	  <scope>test</scope>
+      <artifactId>commons-collections4-tests</artifactId>
+      <version>4.0</version>
+      <scope>test</scope>
     </dependency>
-	
+    
     <dependency>
       <groupId>com.google.guava</groupId>
-	  <artifactId>guava</artifactId>
-	  <version>19.0-rc2</version>
-	  <scope>test</scope>
+      <artifactId>guava</artifactId>
+      <version>19.0-rc2</version>
+      <scope>test</scope>
     </dependency>
-	
+    
     <dependency>
       <groupId>com.google.guava</groupId>
-	  <artifactId>guava-testlib</artifactId>
-	  <version>19.0-rc2</version>
-	  <scope>test</scope>
+      <artifactId>guava-testlib</artifactId>
+      <version>19.0-rc2</version>
+      <scope>test</scope>
     </dependency>
 
     <!--
@@ -107,6 +107,11 @@
               <arg>-Xlint:unchecked</arg>
             </compilerArgs>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.eluder.coveralls</groupId>
+          <artifactId>coveralls-maven-plugin</artifactId>
+          <version>4.0.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
