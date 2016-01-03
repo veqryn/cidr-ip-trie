@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
-import java.util.SortedMap;
 
 import org.apache.commons.collections4.BulkTest;
 import org.apache.commons.collections4.map.AbstractMapTest;
@@ -90,14 +89,20 @@ public class TestPatriciaTrieWithApacheCommonsCollections
       Collections.reverse(this.subSortedNewValues);
     }
 
+    @SuppressWarnings("unchecked")
+    public TestDescendingMap() {
+      this((AbstractMapTest<K, V>) new TestPatriciaTrieWithApacheCommonsCollections(
+          "NavigableMap.DescendingMap"));
+    }
+
     @Override
-    public SortedMap<K, V> makeObject() {
+    public NavigableMap<K, V> makeObject() {
       // done this way so toKey is correctly set in the returned map
       return ((NavigableMap<K, V>) main.makeObject()).descendingMap();
     }
 
     @Override
-    public SortedMap<K, V> makeFullMap() {
+    public NavigableMap<K, V> makeFullMap() {
       return ((NavigableMap<K, V>) main.makeFullMap()).descendingMap();
     }
 
