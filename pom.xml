@@ -2,19 +2,19 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  
+
   <modelVersion>4.0.0</modelVersion>
-  
+
   <groupId>com.github.veqryn</groupId>
   <artifactId>cidr-ip-trie</artifactId>
   <name>CIDR IP Trie</name>
   <description>Comparable CIDR and IP types, and Trie collections for suffix, prefix, and longest prefix matching</description>
   <url>https://github.com/veqryn/cidr-ip-trie</url>
   <version>0.1</version>
-  
+
   <packaging>jar</packaging>
-  
-  
+
+
   <developers>
     <developer>
       <name>Mark Christopher Duncan</name>
@@ -22,21 +22,13 @@
       <email>veqryn@hotmail.com</email>
     </developer>
   </developers>
-  
-  
+
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-  
-  
-  <repositories>
-    <repository>
-      <id>project.local</id>
-      <name>project.local</name>
-      <url>file://${basedir}/repo</url>
-    </repository>
-  </repositories>
-  
+
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -44,28 +36,30 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
       <version>4.1</version>
       <scope>test</scope>
+      <type>jar</type>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.commons</groupId>
-      <artifactId>commons-collections4-tests</artifactId>
+      <artifactId>commons-collections4</artifactId>
       <version>4.1</version>
       <scope>test</scope>
+      <type>test-jar</type>
     </dependency>
-    
+
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>19.0</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava-testlib</artifactId>
@@ -73,35 +67,13 @@
       <scope>test</scope>
     </dependency>
 
-    <!--
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.10.19</version>
-      <scope>test</scope>
-    </dependency>
-	
-    <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-module-junit4</artifactId>
-      <version>1.6.4</version>
-      <scope>test</scope>
-     </dependency>
-	 
-     <dependency>
-      <groupId>org.powermock</groupId>
-      <artifactId>powermock-api-mockito</artifactId>
-      <version>1.6.4</version>
-      <scope>test</scope>
-     </dependency>
-     -->
-	 
   </dependencies>
-  
+
+
   <build>
     <pluginManagement>
       <plugins>
-	  
+
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
@@ -117,7 +89,7 @@
             </compilerArgs>
           </configuration>
         </plugin>
-		
+
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>cobertura-maven-plugin</artifactId>
@@ -129,15 +101,15 @@
             <aggregate>true</aggregate>
           </configuration>
         </plugin>
-		
+
         <plugin>
           <groupId>org.eluder.coveralls</groupId>
           <artifactId>coveralls-maven-plugin</artifactId>
           <version>4.0.0</version>
         </plugin>
-		
+
       </plugins>
     </pluginManagement>
   </build>
-  
+
 </project>
