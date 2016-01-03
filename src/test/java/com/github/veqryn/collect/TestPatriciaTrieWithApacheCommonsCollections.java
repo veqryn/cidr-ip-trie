@@ -5,15 +5,18 @@
  */
 package com.github.veqryn.collect;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.commons.collections4.BulkTest;
+import org.apache.commons.collections4.map.AbstractMapTest;
 import org.apache.commons.collections4.map.AbstractSortedMapTest;
 import org.junit.Assert;
 
@@ -47,13 +50,6 @@ public class TestPatriciaTrieWithApacheCommonsCollections
   }
 
   @Override
-  public SortedMap<String, String> makeConfirmedMap() {
-    // TODO: apparently the only thing apache does not test
-    // for is the order keys and values are returned in
-    return new TreeMap<String, String>(new PatriciaTrie<String>().comparator());
-  }
-
-  @Override
   public boolean isAllowNullKey() {
     return false;
   }
@@ -65,42 +61,56 @@ public class TestPatriciaTrieWithApacheCommonsCollections
 
 
 
-  // Configure our sub-map views:
+  // Configure our views:
 
-  // TODO: Test Descending Map view
-  // TODO: This should work, but I keep getting AbstractMethodError on makeObject
-  // public BulkTest bulkTestDescendingMap() {
-  // return new TestTrieDescendingMap<V>(this);
-  // }
-  //
-  // public static class TestTrieDescendingMap<V> extends TestViewMap<String, V> {
-  //
-  // public TestTrieDescendingMap(final AbstractMapTest<String, V> main) {
-  // super("PatriciaTrie.TrieDescendingMap", main);
-  // final Map<String, V> sm = makeFullMap();
-  // for (final Entry<String, V> entry : sm.entrySet()) {
-  // this.subSortedKeys.add(entry.getKey());
-  // this.subSortedValues.add(entry.getValue());
-  // }
-  // this.subSortedNewValues.addAll(Arrays.asList(main.getNewSampleValues()));
-  // Collections.reverse(this.subSortedNewValues);
-  // }
-  //
-  // @Override
-  // public SortedMap<String, V> makeObject() {
-  // return ((NavigableMap<String, V>) main.makeObject()).descendingMap();
-  // }
-  //
-  // @Override
-  // public SortedMap<String, V> makeFullMap() {
-  // return ((NavigableMap<String, V>) main.makeFullMap()).descendingMap();
-  // }
-  //
-  // @Override
-  // public String getCompatibilityVersion() {
-  // return main.getCompatibilityVersion() + ".TrieDescendingMapView";
-  // }
-  // }
+  public BulkTest bulkTestDescendingMap() {
+    return new TestDescendingMap<String, String>(this);
+  }
+
+  // TODO: I should be able to extend TestViewMap instead of TestSubMap,
+  // but I keep getting AbstractMethodError on makeObject for some reason...
+  public static class TestDescendingMap<K, V> extends TestSubMap<K, V> {
+
+    public TestDescendingMap(final AbstractMapTest<K, V> main) {
+      super(main);
+
+      this.setName("NavigableMap.DescendingMap");
+      this.subSortedKeys.clear();
+      this.subSortedValues.clear();
+      this.subSortedNewValues.clear();
+
+      final Map<K, V> sm = main.makeFullMap();
+      for (final Entry<K, V> entry : sm.entrySet()) {
+        this.subSortedKeys.add(entry.getKey());
+        this.subSortedValues.add(entry.getValue());
+      }
+      Collections.reverse(this.subSortedKeys);
+      Collections.reverse(this.subSortedValues);
+      this.subSortedNewValues.addAll(Arrays.asList(main.getNewSampleValues()));
+      Collections.reverse(this.subSortedNewValues);
+    }
+
+    @Override
+    public SortedMap<K, V> makeObject() {
+      // done this way so toKey is correctly set in the returned map
+      return ((NavigableMap<K, V>) main.makeObject()).descendingMap();
+    }
+
+    @Override
+    public SortedMap<K, V> makeFullMap() {
+      return ((NavigableMap<K, V>) main.makeFullMap()).descendingMap();
+    }
+
+    @Override
+    public void testSubMapOutOfRange() {
+      // Ignore test. Only here to override TestSubMap's test.
+    }
+
+    @Override
+    public String getCompatibilityVersion() {
+      return main.getCompatibilityVersion() + ".DescendingMapView";
+    }
+  }
 
   // -----------------------------------------------------------------------
 
@@ -394,6 +404,46 @@ public class TestPatriciaTrieWithApacheCommonsCollections
       Assert.fail("shouldn't have next (but was: " + iter.next() + ")");
     }
     Assert.assertFalse(iter.hasNext());
+  }
+
+  public void testPrefixMapSizes() {
+    // COLLECTIONS-525
+    final PatriciaTrie<String> aTree = new PatriciaTrie<String>();
+    aTree.put("点评", "测试");
+    aTree.put("书评", "测试");
+    assertTrue(aTree.prefixedByMap("点", true).containsKey("点评"));
+    assertEquals("测试", aTree.prefixedByMap("点", true).get("点评"));
+    assertFalse(aTree.prefixedByMap("点", true).isEmpty());
+    assertEquals(1, aTree.prefixedByMap("点", true).size());
+    assertEquals(1, aTree.prefixedByMap("点", true).keySet().size());
+    assertEquals(1, aTree.prefixedByMap("点", true).entrySet().size());
+    assertEquals(1, aTree.prefixedByMap("点评", true).values().size());
+
+    aTree.clear();
+    aTree.put("点评", "联盟");
+    aTree.put("点版", "定向");
+    assertEquals(2, aTree.prefixedByMap("点", true).keySet().size());
+    assertEquals(2, aTree.prefixedByMap("点", true).values().size());
+  }
+
+  public void testPrefixMapSizes2() {
+    final char u8000 = Character.toChars(32768)[0]; // U+8000 (1000000000000000)
+    final char char_b = 'b'; // 1100010
+
+    final PatriciaTrie<String> trie = new PatriciaTrie<String>();
+    final String prefixString = "" + char_b;
+    final String longerString = prefixString + u8000;
+
+    assertEquals(1, prefixString.length());
+    assertEquals(2, longerString.length());
+
+    assertTrue(longerString.startsWith(prefixString));
+
+    trie.put(prefixString, "prefixString");
+    trie.put(longerString, "longerString");
+
+    assertEquals(2, trie.prefixedByMap(prefixString, true).size());
+    assertTrue(trie.prefixedByMap(prefixString, true).containsKey(longerString));
   }
 
 
