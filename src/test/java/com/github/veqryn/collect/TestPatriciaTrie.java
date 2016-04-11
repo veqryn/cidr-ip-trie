@@ -21,35 +21,35 @@ import com.github.veqryn.util.TestingUtil;
  */
 public class TestPatriciaTrie {
 
-//  @Test
-//  public void testIndividualUnicodeCharacters() {
-//
-//    final PatriciaTrie<String> trie = new PatriciaTrie<>();
-//    for (final String unicodeCharacter : new TestingUtil.UnicodeGenerator()) {
-//      assertEquals(0, trie.size());
-//      trie.put(unicodeCharacter, unicodeCharacter);
-//      assertEquals(1, trie.size());
-//      final Iterator<Entry<String, String>> iter = trie.entrySet().iterator();
-//      final Entry<String, String> entry = iter.next();
-//      assertEquals(unicodeCharacter, entry.getValue());
-//      assertEquals(unicodeCharacter, entry.getKey());
-//      assertEquals(entry.getValue(), entry.getKey());
-//      iter.remove();
-//    }
-//  }
+  @Test
+  public void testIndividualUnicodeCharacters() {
 
-//  @Test
-//  public void testMultipleUnicodeCharacters() {
-//
-//    final PatriciaTrie<String> trie = new PatriciaTrie<>();
-//    for (final String unicodeCharacter1 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 512)) {
-//      for (final String unicodeCharacter2 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 512)) {
-//        assertEquals(0, trie.size());
-//        final String unicodeCharacters = unicodeCharacter1 + unicodeCharacter2;
-//        trie.put(unicodeCharacters, unicodeCharacters);
-//        assertEquals(unicodeCharacters, trie.pollFirstEntry().getKey());
-//      }
-//    }
-//  }
+    final PatriciaTrie<String> trie = new PatriciaTrie<>();
+    for (final String unicodeCharacter : new TestingUtil.UnicodeGenerator()) {
+      assertEquals(0, trie.size());
+      trie.put(unicodeCharacter, unicodeCharacter);
+      assertEquals(1, trie.size());
+      final Iterator<Entry<String, String>> iter = trie.entrySet().iterator();
+      final Entry<String, String> entry = iter.next();
+      assertEquals(unicodeCharacter, entry.getValue());
+      assertEquals(unicodeCharacter, entry.getKey());
+      assertEquals(entry.getValue(), entry.getKey());
+      iter.remove();
+    }
+  }
+
+  @Test
+  public void testMultipleUnicodeCharacters() {
+
+    final PatriciaTrie<String> trie = new PatriciaTrie<>();
+    for (final String unicodeCharacter1 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 512)) {
+      for (final String unicodeCharacter2 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 512)) {
+        assertEquals(0, trie.size());
+        final String unicodeCharacters = unicodeCharacter1 + unicodeCharacter2;
+        trie.put(unicodeCharacters, unicodeCharacters);
+        assertEquals(unicodeCharacters, trie.pollFirstEntry().getKey());
+      }
+    }
+  }
 
 }
