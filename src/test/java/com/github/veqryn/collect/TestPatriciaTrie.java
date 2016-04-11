@@ -21,22 +21,22 @@ import com.github.veqryn.util.TestingUtil;
  */
 public class TestPatriciaTrie {
 
-  @Test
-  public void testIndividualUnicodeCharacters() {
-
-    final PatriciaTrie<String> trie = new PatriciaTrie<>();
-    for (final String unicodeCharacter : new TestingUtil.UnicodeGenerator()) {
-      assertEquals(0, trie.size());
-      trie.put(unicodeCharacter, unicodeCharacter);
-      assertEquals(1, trie.size());
-      final Iterator<Entry<String, String>> iter = trie.entrySet().iterator();
-      final Entry<String, String> entry = iter.next();
-      assertEquals(unicodeCharacter, entry.getValue());
-      assertEquals(unicodeCharacter, entry.getKey());
-      assertEquals(entry.getValue(), entry.getKey());
-      iter.remove();
-    }
-  }
+//  @Test
+//  public void testIndividualUnicodeCharacters() {
+//
+//    final PatriciaTrie<String> trie = new PatriciaTrie<>();
+//    for (final String unicodeCharacter : new TestingUtil.UnicodeGenerator()) {
+//      assertEquals(0, trie.size());
+//      trie.put(unicodeCharacter, unicodeCharacter);
+//      assertEquals(1, trie.size());
+//      final Iterator<Entry<String, String>> iter = trie.entrySet().iterator();
+//      final Entry<String, String> entry = iter.next();
+//      assertEquals(unicodeCharacter, entry.getValue());
+//      assertEquals(unicodeCharacter, entry.getKey());
+//      assertEquals(entry.getValue(), entry.getKey());
+//      iter.remove();
+//    }
+//  }
 
 //  @Test
 //  public void testMultipleUnicodeCharacters() {
