@@ -13,7 +13,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.junit.Test;
@@ -32,7 +34,7 @@ public class TestCidr4Trie {
 
   static {
     boolean assertsEnabled = false;
-    assert(assertsEnabled = true); // Intentional side effect!!!
+    assert (assertsEnabled = true); // Intentional side effect!!!
     if (!assertsEnabled) {
       throw new RuntimeException("Asserts must be enabled (use '-ea')!!!");
     }
@@ -44,51 +46,72 @@ public class TestCidr4Trie {
 
 
   @Test
+  public void testEquality() {
+
+    final NavigableMap<Cidr4, String> testMap = getTestCidrs();
+    final Set<Cidr4> set = new TreeSet<>();
+    final Cidr4Trie<String> trie1 = new Cidr4Trie<>();
+    final Cidr4Trie<String> trie2 = new Cidr4Trie<>();
+
+    assertEquals(trie1, trie2);
+
+    // Insert multiple times
+    for (int i = 0; i < 10; ++i) {
+
+      trie1.putAll(testMap);
+
+      for (final Entry<Cidr4, String> entry : testMap.entrySet()) {
+        set.add(entry.getKey());
+        trie2.put(entry.getKey(), entry.getValue());
+      }
+    }
+
+    assertEquals(testMap.size(), set.size());
+    assertEquals(testMap.size(), trie1.size());
+    assertEquals(testMap.size(), trie2.size());
+    assertEquals(testMap.keySet(), set);
+    assertEquals(testMap, trie1);
+    assertEquals(testMap, trie2);
+    assertEquals(trie1, trie2);
+    assertEquals(testMap.hashCode(), trie1.hashCode());
+    assertEquals(testMap.hashCode(), trie2.hashCode());
+  }
+
+
+  @Test
   public void testClone() {
 
-    final Cidr4 s1 = new Cidr4(0, 1); // zeroes
-    final Cidr4 s3 = new Cidr4(0, 3); // zeroes
+    final NavigableMap<Cidr4, String> testMap = getTestCidrs();
 
-    final Cidr4 t1 = new Cidr4(-1, 1); // ones
-    final Cidr4 t3 = new Cidr4(-1, 3); // ones
+    final Cidr4Trie<String> trie1 = new Cidr4Trie<>(testMap);
 
-    final Cidr4Trie<String> trie = new Cidr4Trie<>();
-    final KeyCodec<Cidr4> codec = trie.codec;
+    final AbstractBinaryTrie<Cidr4, String> trie2 = trie1.clone();
 
-    trie.put(s1, "depth 1 s: " + s1);
-    trie.put(s3, "depth 3 s: " + s3);
+    assertEquals(trie1.codec, trie2.codec);
+    assertEquals(trie1.size(), trie2.size());
 
-    trie.put(t1, "depth 1 t: " + t1);
-    trie.put(t3, "depth 3 t: " + t3);
-
-    final AbstractBinaryTrie<Cidr4, String> trie2 = trie.clone();
-    final KeyCodec<Cidr4> codec2 = trie2.codec;
-    {
-      assertEquals(codec, codec2);
-      assertEquals(trie.size(), trie2.size());
-
-      final Iterator<Entry<Cidr4, String>> iter = trie.entrySet().iterator();
-      final Iterator<Entry<Cidr4, String>> iter2 = trie.entrySet().iterator();
-      for (int i = 0; i < trie.size(); ++i) {
-        assertEquals(iter.next(), iter2.next());
-      }
-      assertEquals(trie, trie2);
+    final Iterator<Entry<Cidr4, String>> iter1 = trie1.entrySet().iterator();
+    final Iterator<Entry<Cidr4, String>> iter2 = trie2.entrySet().iterator();
+    while (iter1.hasNext()) {
+      assertEquals(iter1.next(), iter2.next());
     }
-    trie.put(t3, "not equal");
-    {
-      assertEquals(trie.size(), trie2.size());
-      assertNotEquals(trie, trie2);
-    }
-    trie.put(t3, "depth 3 t: " + t3);
-    {
-      assertEquals(trie.size(), trie2.size());
-      assertEquals(trie, trie2);
-    }
-    trie2.remove(t3);
-    {
-      assertEquals(trie.size(), trie2.size() + 1);
-      assertNotEquals(trie, trie2);
-    }
+    assertEquals(trie1, trie2);
+    assertEquals(trie1.hashCode(), trie2.hashCode());
+
+    final String cidrString = (String) TestUtil.cidrs[25][9];
+    final Cidr4 cidr = new Cidr4(cidrString);
+
+    trie1.put(cidr, "not equal");
+    assertEquals(trie1.size(), trie2.size());
+    assertNotEquals(trie1, trie2);
+
+    trie1.put(cidr, cidrString);
+    assertEquals(trie1.size(), trie2.size());
+    assertEquals(trie1, trie2);
+
+    trie2.remove(cidr);
+    assertEquals(trie1.size(), trie2.size() + 1);
+    assertNotEquals(trie1, trie2);
   }
 
   @Test
@@ -118,14 +141,53 @@ public class TestCidr4Trie {
       assertEquals(cidrsInOrder[i], AbstractBinaryTrie.resolveKey(node, trie).getCidrSignature());
       node = AbstractBinaryTrie.predecessor(node);
     }
-
   }
 
+
+
+  @Test
   @SuppressWarnings("unchecked")
+  public void testSerialization() throws ClassNotFoundException, IOException {
+
+    final Cidr4Trie<String> trie1 = new Cidr4Trie<>(getTestCidrs());
+    final Cidr4Trie<String> trie2 = new Cidr4Trie<>(trie1);
+
+    assertEquals(trie1, trie2);
+
+    final byte[] bytes1 = TestingUtil.pickle(trie1);
+    final byte[] bytes2 = TestingUtil.pickle(trie2);
+
+    final Cidr4Trie<String> other1 = TestingUtil.unpickle(bytes1, Cidr4Trie.class);
+    final Cidr4Trie<String> other2 = TestingUtil.unpickle(bytes2, Cidr4Trie.class);
+    assertEquals(trie1, other1);
+    assertEquals(trie2, other2);
+    assertEquals(other1, other2);
+    assertEquals(trie1.hashCode(), other1.hashCode());
+    assertEquals(trie2.hashCode(), other2.hashCode());
+
+    other1.cacheKeys = true;
+    other1.writeKeys = true;
+    other2.cacheKeys = true;
+    other2.writeKeys = true;
+    final byte[] bytesWriteKeys1 = TestingUtil.pickle(other1);
+    final byte[] bytesWriteKeys2 = TestingUtil.pickle(other2);
+
+    final Cidr4Trie<String> otherWriteKeys1 =
+        TestingUtil.unpickle(bytesWriteKeys1, Cidr4Trie.class);
+    final Cidr4Trie<String> otherWriteKeys2 =
+        TestingUtil.unpickle(bytesWriteKeys2, Cidr4Trie.class);
+    assertEquals(trie1, otherWriteKeys1);
+    assertEquals(trie2, otherWriteKeys2);
+    assertEquals(otherWriteKeys1, otherWriteKeys2);
+    assertEquals(trie1.hashCode(), otherWriteKeys1.hashCode());
+    assertEquals(trie2.hashCode(), otherWriteKeys2.hashCode());
+  }
+
+
   @Test
   public void testWhatever() throws ClassNotFoundException, IOException {
 
-    Cidr4Trie<String> trie = new Cidr4Trie<>(false);
+    final Cidr4Trie<String> trie = new Cidr4Trie<>(false);
 
     for (final Object[] cidr : TestUtil.cidrs) {
       // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
@@ -172,55 +234,6 @@ public class TestCidr4Trie {
     for (final Entry<Cidr4, String> value : reversed.entrySet()) {
       System.out.println(value);
     }
-    System.out.println();
-    byte[] bytes = TestingUtil.pickle(trie);
-    // Files.write(Paths.get("key.txt"), bytes);
-    final Cidr4Trie<String> other = TestingUtil.unpickle(bytes, Cidr4Trie.class);
-    assertEquals(trie, other);
-    assertEquals(trie.hashCode(), other.hashCode());
-
-    other.cacheKeys = true;
-    other.writeKeys = true;
-    bytes = TestingUtil.pickle(other);
-    trie = TestingUtil.unpickle(bytes, Cidr4Trie.class);
-    assertEquals(trie, other);
-    assertEquals(trie.hashCode(), other.hashCode());
-  }
-
-  @Test
-  public void testEquality() {
-
-    final Cidr4 s1 = new Cidr4(0, 1); // zeroes
-    final Cidr4 s3 = new Cidr4(0, 3); // zeroes
-
-    final Cidr4 t1 = new Cidr4(-1, 1); // ones
-    final Cidr4 t3 = new Cidr4(-1, 3); // ones
-
-    final Set<Cidr4> set = new TreeSet<>();
-    final Cidr4Trie<String> trie = new Cidr4Trie<>();
-
-    for (int i = 0; i < 1; ++i) {
-
-      set.add(s1);
-      set.add(s3);
-      set.add(t1);
-      set.add(t3);
-
-      trie.put(s1, "depth 1 s: " + s1);
-      trie.put(s3, "depth 3 s: " + s3);
-
-      trie.put(t1, "depth 1 t: " + t1);
-      trie.put(t3, "depth 3 t: " + t3);
-    }
-
-    assertEquals(4, set.size());
-    assertEquals(4, trie.size());
-
-    final Iterator<Cidr4> iter = trie.keySet().iterator();
-    for (final Cidr4 cidr : set) {
-      assertEquals(cidr, iter.next());
-    }
-
   }
 
 
@@ -349,4 +362,15 @@ public class TestCidr4Trie {
 
   }
 
+
+  /**
+   * @return a NavigableMap containing our testing CIDR's
+   */
+  private NavigableMap<Cidr4, String> getTestCidrs() {
+    final NavigableMap<Cidr4, String> map = new TreeMap<>();
+    for (final Object[] cidr : TestUtil.cidrs) {
+      map.put(new Cidr4((String) cidr[9]), (String) cidr[9]);
+    }
+    return map;
+  }
 }

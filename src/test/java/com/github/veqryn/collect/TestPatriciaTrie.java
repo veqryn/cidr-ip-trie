@@ -21,10 +21,6 @@ import com.github.veqryn.util.TestingUtil;
  */
 public class TestPatriciaTrie {
 
-  // protected String[] testCharacters = new String[] {
-  // "\u0000", "\u0001", "\u0040", "\u00FE", "\u00FF", "\u0100",
-  // "\u0101", "\u09FF", "\u0A00", "\u0A00", "\u98FF", "\uFFFF"};
-
   @Test
   public void testIndividualUnicodeCharacters() {
 
