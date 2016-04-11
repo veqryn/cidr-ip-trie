@@ -42,8 +42,8 @@ public class TestPatriciaTrie {
   public void testMultipleUnicodeCharacters() {
 
     final PatriciaTrie<String> trie = new PatriciaTrie<>();
-    for (final String unicodeCharacter1 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 512)) {
-      for (final String unicodeCharacter2 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 512)) {
+    for (final String unicodeCharacter1 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 1024)) {
+      for (final String unicodeCharacter2 : new TestingUtil.UnicodeGenerator(0, 0x10FFFF, 1024)) {
         assertEquals(0, trie.size());
         final String unicodeCharacters = unicodeCharacter1 + unicodeCharacter2;
         trie.put(unicodeCharacters, unicodeCharacters);
