@@ -4,9 +4,6 @@ jdk:
   - oraclejdk7
   - oraclejdk8
   - openjdk7
-  
+
 script:
-  - mvn clean validate compile test-compile test package integration-test verify cobertura:cobertura
-  
-after_success:
-  - mvn coveralls:report -DrepoToken=$repoToken
+  - mvn clean test
