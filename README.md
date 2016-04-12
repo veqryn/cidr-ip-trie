@@ -1,5 +1,6 @@
 # cidr-ip-trie
 Comparable CIDR and IP types, and a Trie collection for suffix, prefix, and longest prefix matching.
+
 [![Build Status](https://travis-ci.org/veqryn/cidr-ip-trie.svg?branch=master)](https://travis-ci.org/veqryn/cidr-ip-trie)
 [![Coverage Status](https://coveralls.io/repos/veqryn/cidr-ip-trie/badge.svg?branch=master&service=github)](https://coveralls.io/github/veqryn/cidr-ip-trie?branch=master)
 ___
