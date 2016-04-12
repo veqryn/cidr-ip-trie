@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.github.veqryn</groupId>
   <artifactId>cidr-ip-trie</artifactId>
   <name>CIDR IP Trie</name>
-  <description>Comparable CIDR and IP types, and Trie collections for suffix, prefix, and longest prefix matching</description>
+  <description>Comparable CIDR and IP types, and a Trie collection for suffix, prefix, and longest prefix matching</description>
   <url>https://github.com/veqryn/cidr-ip-trie</url>
   <version>1.0.1</version>
 
@@ -17,18 +17,18 @@
 
   <developers>
     <developer>
-      <name>Mark Christopher Duncan</name>
+      <name>Chris Duncan</name>
       <id>veqryn</id>
       <email>veqryn@hotmail.com</email>
     </developer>
   </developers>
-  
+
   <scm>
     <connection>scm:git:git@github.com:veqryn/cidr-ip-trie.git</connection>
     <developerConnection>scm:git:git@github.com:veqryn/cidr-ip-trie.git</developerConnection>
     <url>git@github.com:veqryn/cidr-ip-trie.git</url>
   </scm>
-  
+
   <licenses>
     <license>
       <name>Mozilla Public License, Version 2.0</name>
@@ -102,15 +102,15 @@
             </compilerArgs>
           </configuration>
         </plugin>
-		
-		
+
+
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.19.1</version>
-		  <configuration>
-		    <argLine>-Xms384m -Xmx768m</argLine>
-		  </configuration>
+          <configuration>
+            <argLine>-Xms384m -Xmx768m</argLine>
+          </configuration>
         </plugin>
 
         <plugin>
