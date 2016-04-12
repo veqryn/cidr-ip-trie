@@ -46,6 +46,8 @@ public class TestCidr4Trie {
     }
   }
 
+  // TODO: tests on Navigable Interface
+
 
   @Test
   public void testSimple() {
