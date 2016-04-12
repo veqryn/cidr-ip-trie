@@ -11,6 +11,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -44,38 +46,6 @@ public class TestPatriciaTrie {
       "antewest",
       "awe"};
 
-  @Test
-  public void testWords() {
-
-    final Trie<String, String> trie1 = new PatriciaTrie<String>();
-    final Trie<String, String> trie2 = new PatriciaTrie<String>().prefixedByMap("a", true);
-
-    final Map<String, String> wordMap = new HashMap<>();
-
-    for (final String word : testWords) {
-      trie1.put(word, word);
-      trie2.put(word, word);
-      wordMap.put(word, word);
-    }
-
-    final Trie<String, String> trie3 = new PatriciaTrie<String>(trie1);
-    final Trie<String, String> trie4 = new PatriciaTrie<String>(trie2);
-    final Trie<String, String> trie5 = new PatriciaTrie<String>(wordMap);
-
-    tryThisTrie(trie1);
-    tryThisTrie(trie2);
-    tryThisTrie(trie3);
-    tryThisTrie(trie4);
-    tryThisTrie(trie5);
-
-    assertEquals("antecededs", wordMap.remove("antecededs"));
-
-    assertEquals(wordMap, trie1);
-    assertEquals(trie1, trie2);
-    assertEquals(trie2, trie3);
-    assertEquals(trie3, trie4);
-    assertEquals(trie4, trie5);
-  }
 
   public void tryThisTrie(final Trie<String, String> trie) {
 
@@ -123,9 +93,69 @@ public class TestPatriciaTrie {
 
     assertTrue(prefixedByValues.remove("antecededs"));
     assertFalse(prefixedByValues.remove("antecedents"));
+    assertFalse(prefixedByValues.isEmpty());
 
     assertArrayEquals(new Object[] {"anteceded", "antecededsic", "antecedent"},
         prefixedByValues.toArray());
+  }
+
+
+  @Test
+  public void testWords() {
+
+    final PatriciaTrie<String> trie1 = new PatriciaTrie<String>();
+    final Trie<String, String> trie2 = new PatriciaTrie<String>().prefixedByMap("a", true);
+
+    final Map<String, String> wordMap = new HashMap<>();
+
+    for (final String word : testWords) {
+      trie1.put(word, word);
+      trie2.put(word, word);
+      wordMap.put(word, word);
+    }
+
+    final Trie<String, String> trie3 = new PatriciaTrie<String>(trie1);
+    final Trie<String, String> trie4 = new PatriciaTrie<String>(trie2);
+    final Trie<String, String> trie5 = new PatriciaTrie<String>(wordMap);
+
+    tryThisTrie(trie1);
+    tryThisTrie(trie2);
+    tryThisTrie(trie3);
+    tryThisTrie(trie4);
+    tryThisTrie(trie5);
+
+    assertEquals("antecededs", wordMap.remove("antecededs"));
+
+    assertEquals(wordMap, trie1);
+    assertEquals(trie1, trie2);
+    assertEquals(trie2, trie3);
+    assertEquals(trie3, trie4);
+    assertEquals(trie4, trie5);
+
+    // Test Entry Set
+    assertEquals(wordMap.entrySet(), trie1.entrySet());
+    assertEquals(trie1.entrySet(), trie2.entrySet());
+    assertEquals(trie2.entrySet(), trie3.entrySet());
+    assertEquals(trie3.entrySet(), trie4.entrySet());
+    assertEquals(trie4.entrySet(), trie5.entrySet());
+
+    // Entry set of prefix map
+    assertFalse(trie2.entrySet().isEmpty());
+
+    final SimpleEntry<String, String> antecedeEntry =
+        new AbstractMap.SimpleEntry<String, String>("antecede", "antecede");
+    assertTrue(trie2.entrySet().contains(antecedeEntry));
+    assertTrue(trie2.entrySet().remove(antecedeEntry));
+    assertFalse(trie2.entrySet().contains(antecedeEntry));
+    assertFalse(trie2.entrySet().remove(antecedeEntry));
+
+    assertTrue(trie2.keySet().contains("ant"));
+    assertTrue(trie2.keySet().remove("ant"));
+    assertFalse(trie2.keySet().contains("ant"));
+    assertFalse(trie2.keySet().remove("ant"));
+
+    trie2.entrySet().clear();
+    assertTrue(trie2.entrySet().isEmpty());
   }
 
   @Test

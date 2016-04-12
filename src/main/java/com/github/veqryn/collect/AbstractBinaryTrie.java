@@ -424,24 +424,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     return new TrieEntry<K, V>(node, trie);
   }
 
-  /**
-   * Resolve the Node's key, then return the node as an immutable Map.Entry
-   * Returns null if the node is null or the node's value is null (meaning it
-   * is an empty intermediate node).
-   *
-   * @param node the Node to export
-   * @param trie the Trie this Node is in
-   * @return SimpleImmutableEntry Map.Entry
-   */
-  protected static final <K, V> Map.Entry<K, V> exportImmutableEntry(final Node<K, V> node,
-      final AbstractBinaryTrie<K, V> trie) {
-    if (node == null || node.value == null) {
-      return null;
-    }
-    // Resolve the Key
-    return new AbstractMap.SimpleImmutableEntry<>(resolveKey(node, trie), node.value);
-  }
-
 
 
   // Utility Methods:
@@ -1215,42 +1197,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
       return null;
     }
 
-    /**
-     * @param node Node to find the previous predecessor node of
-     * @return the predecessor prefix node, or null if none
-     */
-    protected Node<K, V> getPrevPrefixNode(Node<K, V> node) {
-      // Prefix-Of = all nodes that are direct parents of the mustBePrefixOf Key's node
-      // Prefix-By = all children nodes of the mustBePrefixedBy Key's node
-
-      while (node != null) {
-
-        // Exit early if all further conditions are false
-        if (index <= minDepth) {
-          return null;
-        }
-
-        if (--index > prefixDepth) {
-          // Traverse all nodes under the Key
-          node = predecessor(node);
-        } else {
-          // Else follow our parent up
-          node = node.parent;
-        }
-
-        if (node == null || node.parent == null) {
-          return null;
-        }
-
-        // If node has a value, and conditions match, return the node
-        if (node.value != null && subInRange(node)) {
-          return node;
-        }
-      }
-
-      return null;
-    }
-
 
     /**
      * Hook template method for sub-maps to add their own restrictions.
@@ -1281,22 +1227,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         throw new ConcurrentModificationException();
       }
       next = getNextPrefixNode(e);
-      lastReturned = e;
-      return e;
-    }
-
-    /**
-     * @return the previous Node in descending order
-     */
-    protected final Node<K, V> prevNode() {
-      final Node<K, V> e = next;
-      if (e == null) {
-        throw new NoSuchElementException();
-      }
-      if (trie.modCount != expectedModCount) {
-        throw new ConcurrentModificationException();
-      }
-      next = getPrevPrefixNode(e);
       lastReturned = e;
       return e;
     }
@@ -1968,22 +1898,6 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
         throw new ConcurrentModificationException();
       }
       next = successor(e);
-      lastReturned = e;
-      return e;
-    }
-
-    /**
-     * @return the predecessor Node (descending order) or null
-     */
-    protected final Node<K, V> prevNode() {
-      final Node<K, V> e = next;
-      if (e == null) {
-        throw new NoSuchElementException();
-      }
-      if (m.modCount != expectedModCount) {
-        throw new ConcurrentModificationException();
-      }
-      next = predecessor(e);
       lastReturned = e;
       return e;
     }
