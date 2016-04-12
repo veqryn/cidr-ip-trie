@@ -406,7 +406,8 @@ public class TestPatriciaTrieWithApacheCommonsCollections
 
   // // Use this to write out new .obj files for compatibility tracking
   // public static void main(final String[] args) throws IOException {
-  // final TestPatriciaTrie test = new TestPatriciaTrie("");
+  // final TestPatriciaTrieWithApacheCommonsCollections test =
+  // new TestPatriciaTrieWithApacheCommonsCollections("");
   // {
   // final Map<String, String> map = test.makeObject();
   // if (!(map instanceof Serializable)) {

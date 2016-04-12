@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Implementation of a PATRICIA Trie (Practical Algorithm To Retrieve
  * Information Coded In Alphanumeric).
- * Can handle international characters.
+ * Can handle international/unicode/utf characters.
  *
  * <p>
  * A PATRICIA Trie is a {@link Trie} specifically for storing String data.
@@ -25,7 +25,7 @@ import java.util.Map;
  * This Trie implementation extends {@link AbstractBinaryTrie},
  * an uncompressed binary bitwise implementation of a Trie for use with short
  * binary data such as IP addresses and CIDR ranges, and therefore this
- * implementation may take up more memory space than a trie implementation
+ * implementation will take up more memory space than a trie implementation
  * devoted to use only with String data, such as a compressed Ternary Trie.
  * This PATRICIA Trie implementation mostly exists for use in case a more
  * specific implementation can not be found, and as a proof of concept that
@@ -48,7 +48,7 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
    * Create an empty {@link PatriciaTrie}.
    */
   public PatriciaTrie() {
-    super(new PatriciaCodec(), false, true);
+    super(new PatriciaCodec());
   }
 
   /**
@@ -59,7 +59,7 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
    *        into the newly created trie
    */
   public PatriciaTrie(final Map<String, V> otherMap) {
-    super(new PatriciaCodec(), otherMap, false, true);
+    super(new PatriciaCodec(), otherMap);
   }
 
   /**

@@ -66,75 +66,20 @@ public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V> {
 
   /**
    * Create an empty {@link Cidr4Trie}.
-   *
-   * <p>
-   * Keys will not be cached (equivalent to {@code Cidr4Trie(false)})
    */
   public Cidr4Trie() {
-    super(new Cidr4Codec(), false, true);
-  }
-
-  /**
-   * Create an empty {@link Cidr4Trie}.
-   *
-   * <p>
-   * If {@code cacheKeys} is set to true, keys will be permanently kept after
-   * being inserted with the {@link #put} operation, and will maintain their
-   * == identity with the original keys. If set to false, keys will be
-   * discarded, allowing for a much smaller memory footprint, at the cost
-   * of increased cpu time should the keys need to be recreated (which would
-   * only occur if the methods {@link #keySet}, {@link #entrySet},
-   * {@link #equals} and {@link #hashCode} methods were called, because they
-   * either give up the full key for outside use, hash or compare full keys).
-   * After being recreated, the keys will be cached so that subsequent lookups
-   * do not need to recreate the key. The recreated keys will be equal
-   * to the original key, but will not be the same reference pointer.
-   *
-   * @param cacheKeys true if the CIDR keys should be cached, false if the
-   *        keys should be recreated and cached as needed.
-   */
-  public Cidr4Trie(final boolean cacheKeys) {
-    super(new Cidr4Codec(), cacheKeys, true);
+    super(new Cidr4Codec());
   }
 
   /**
    * Create a {@link Cidr4Trie}.
    * The trie will be filled with the CIDRs and values in the provided map.
-   *
-   * <p>
-   * Keys will not be cached (equivalent to {@code Cidr4Trie(otherMap, false)})
    *
    * @param otherMap Map of CIDRs and values, which will be {@link #putAll}
    *        into the newly created trie
    */
   public Cidr4Trie(final Map<Cidr4, V> otherMap) {
-    super(new Cidr4Codec(), otherMap, false, true);
-  }
-
-  /**
-   * Create a {@link Cidr4Trie}.
-   * The trie will be filled with the CIDRs and values in the provided map.
-   *
-   * <p>
-   * If {@code cacheKeys} is set to true, keys will be permanently kept after
-   * being inserted with the {@link #put} operation, and will maintain their
-   * == identity with the original keys. If set to false, keys will be
-   * discarded, allowing for a much smaller memory footprint, at the cost
-   * of increased cpu time should the keys need to be recreated (which would
-   * only occur if the methods {@link #keySet}, {@link #entrySet},
-   * {@link #equals} and {@link #hashCode} methods were called, because they
-   * either give up the full key for outside use, hash or compare full keys).
-   * After being recreated, the keys will be cached so that subsequent lookups
-   * do not need to recreate the key. The recreated keys will be equal
-   * to the original key, but will not be the same reference pointer.
-   *
-   * @param otherMap Map of CIDRs and values, which will be {@link #putAll}
-   *        into the newly created trie
-   * @param cacheKeys true if the CIDR keys should be cached, false if the
-   *        keys should be recreated and cached as needed.
-   */
-  public Cidr4Trie(final Map<Cidr4, V> otherMap, final boolean cacheKeys) {
-    super(new Cidr4Codec(), otherMap, cacheKeys, true);
+    super(new Cidr4Codec(), otherMap);
   }
 
   /**

@@ -61,8 +61,8 @@ public class TestPatriciaTrieWithGuava {
             MapFeature.ALLOWS_NULL_ENTRY_QUERIES,
             MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
             CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
-            // CollectionFeature.KNOWN_ORDER, // Assumes Insertion Order if you don't implement
-            // SortedMap
+            // Assumes Insertion Order if you don't implement SortedMap
+            // CollectionFeature.KNOWN_ORDER,
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
         .suppressing(suppressForPatriciaTrie())
