@@ -10,7 +10,7 @@
   <name>CIDR IP Trie</name>
   <description>Comparable CIDR and IP types, and Trie collections for suffix, prefix, and longest prefix matching</description>
   <url>https://github.com/veqryn/cidr-ip-trie</url>
-  <version>0.1</version>
+  <version>1.0.1</version>
 
   <packaging>jar</packaging>
 
@@ -22,6 +22,19 @@
       <email>veqryn@hotmail.com</email>
     </developer>
   </developers>
+  
+  <scm>
+    <connection>scm:git:git@github.com:veqryn/cidr-ip-trie.git</connection>
+    <developerConnection>scm:git:git@github.com:veqryn/cidr-ip-trie.git</developerConnection>
+    <url>git@github.com:veqryn/cidr-ip-trie.git</url>
+  </scm>
+  
+  <licenses>
+    <license>
+      <name>Mozilla Public License, Version 2.0</name>
+      <url>http://mozilla.org/MPL/2.0/</url>
+    </license>
+  </licenses>
 
 
   <properties>

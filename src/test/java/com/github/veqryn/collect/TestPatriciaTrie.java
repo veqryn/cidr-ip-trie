@@ -139,8 +139,9 @@ public class TestPatriciaTrie {
     assertEquals(trie3.entrySet(), trie4.entrySet());
     assertEquals(trie4.entrySet(), trie5.entrySet());
 
-    // Entry set of prefix map
+    // Entry set and key set of prefix map
     assertFalse(trie2.entrySet().isEmpty());
+    assertFalse(trie2.keySet().isEmpty());
 
     final SimpleEntry<String, String> antecedeEntry =
         new AbstractMap.SimpleEntry<String, String>("antecede", "antecede");
@@ -156,6 +157,7 @@ public class TestPatriciaTrie {
 
     trie2.entrySet().clear();
     assertTrue(trie2.entrySet().isEmpty());
+    assertTrue(trie2.keySet().isEmpty());
   }
 
   @Test
