@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 /**
  * Utility class containing methods for operating on Cidrs
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 final class Cidrs {
 

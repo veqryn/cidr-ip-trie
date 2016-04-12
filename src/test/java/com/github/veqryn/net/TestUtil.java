@@ -8,7 +8,7 @@ package com.github.veqryn.net;
 /**
  * Data and utility methods for tests.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestUtil {
 

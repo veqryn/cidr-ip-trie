@@ -35,7 +35,7 @@ import java.util.Map;
  * Guava test suites for String Maps
  * (we can not use this test on the Cidr Trie).
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <V> Value
  */

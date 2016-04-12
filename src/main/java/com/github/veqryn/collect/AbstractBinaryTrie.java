@@ -44,7 +44,7 @@ import java.util.Set;
  * Keys and Values are returned in an order according to the order of the
  * elements in the key, and the number of elements in the key.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  * @param <V> Value

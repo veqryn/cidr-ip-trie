@@ -27,7 +27,7 @@ import junit.framework.TestSuite;
  * specifically tests Map's and their various views.
  * Tests with String data.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestPatriciaTrieWithGuava {
 

@@ -18,7 +18,7 @@ import org.junit.Test;
 /**
  * Tests for the Cidr4 class
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestCidr4FromIp {
 

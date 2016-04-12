@@ -26,7 +26,7 @@ import com.github.veqryn.util.TestingUtil;
 /**
  * Tests for the Ip4 class
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestIp4 {
   private static List<Ip4> fromString;

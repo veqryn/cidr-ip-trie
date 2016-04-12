@@ -15,7 +15,7 @@ import org.junit.Test;
 /**
  * Tests for the Ips utility class
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestIps {
 

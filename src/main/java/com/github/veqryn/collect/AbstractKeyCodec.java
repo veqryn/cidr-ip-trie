@@ -18,7 +18,7 @@ import java.util.Comparator;
  * Includes a predefined comparator that is based solely on the
  * abstract <code>length</code> and <code>isLeft</code> methods.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  */

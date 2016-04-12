@@ -26,7 +26,7 @@ import java.util.SortedMap;
  * and to return a comparator for use with {@link NavigableMap} methods
  * (not yet implemented).
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  */

@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Utility class containing methods for operating on IPs
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 final class Ips {
 

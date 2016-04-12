@@ -23,7 +23,7 @@ import junit.framework.Test;
  * specifically tests Map's and their various views.
  * Tests with String data.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestPatriciaTrieWithApacheCommonsCollections
     extends AbstractMapTest<String, String> {

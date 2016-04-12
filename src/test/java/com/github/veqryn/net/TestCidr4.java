@@ -31,7 +31,7 @@ import com.github.veqryn.util.TestingUtil;
 /**
  * Tests for the Ips utility class
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestCidr4 {
 

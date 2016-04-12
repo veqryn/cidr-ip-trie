@@ -62,7 +62,7 @@ import java.util.Set;
  * usage can be reduced by not keeping keys instances around.
  *
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  * @param <V> Value
