@@ -5,18 +5,13 @@
  */
 package com.github.veqryn.collect;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 
 import org.apache.commons.collections4.BulkTest;
 import org.apache.commons.collections4.map.AbstractMapTest;
-import org.apache.commons.collections4.map.AbstractSortedMapTest;
 import org.junit.Assert;
 
 import junit.framework.Test;
@@ -24,14 +19,14 @@ import junit.framework.Test;
 
 /**
  * Tests for the PatriciaTrie class.
- * Runs some 500+ tests from the Apache Commons Collections (4) project,
- * specifically tests SortedMap's and Map's and their various views.
+ * Runs some 136 tests from the Apache Commons Collections (4) project,
+ * specifically tests Map's and their various views.
  * Tests with String data.
  *
  * @author Mark Christopher Duncan
  */
 public class TestPatriciaTrieWithApacheCommonsCollections
-    extends AbstractSortedMapTest<String, String> {
+    extends AbstractMapTest<String, String> {
 
   // Set up our Test:
 
@@ -44,7 +39,7 @@ public class TestPatriciaTrieWithApacheCommonsCollections
   }
 
   @Override
-  public NavigableMap<String, String> makeObject() {
+  public Map<String, String> makeObject() {
     return new PatriciaTrie<String>();
   }
 
@@ -56,76 +51,6 @@ public class TestPatriciaTrieWithApacheCommonsCollections
   @Override
   public boolean isAllowNullValue() {
     return false;
-  }
-
-
-
-  // Configure our views:
-
-  public BulkTest bulkTestDescendingMap() {
-    return new TestDescendingMap<String, String>(this);
-  }
-
-  // TODO: I should be able to extend TestViewMap instead of TestSubMap,
-  // but I keep getting AbstractMethodError on makeObject for some reason...
-  public static class TestDescendingMap<K, V> extends TestSubMap<K, V> {
-
-    public TestDescendingMap(final AbstractMapTest<K, V> main) {
-      super(main);
-
-      this.setName("NavigableMap.DescendingMap");
-      this.subSortedKeys.clear();
-      this.subSortedValues.clear();
-      this.subSortedNewValues.clear();
-
-      final Map<K, V> sm = main.makeFullMap();
-      for (final Entry<K, V> entry : sm.entrySet()) {
-        this.subSortedKeys.add(entry.getKey());
-        this.subSortedValues.add(entry.getValue());
-      }
-      Collections.reverse(this.subSortedKeys);
-      Collections.reverse(this.subSortedValues);
-      this.subSortedNewValues.addAll(Arrays.asList(main.getNewSampleValues()));
-      Collections.reverse(this.subSortedNewValues);
-    }
-
-    @SuppressWarnings("unchecked")
-    public TestDescendingMap() {
-      this((AbstractMapTest<K, V>) new TestPatriciaTrieWithApacheCommonsCollections(
-          "NavigableMap.DescendingMap"));
-    }
-
-    @Override
-    public NavigableMap<K, V> makeObject() {
-      // done this way so toKey is correctly set in the returned map
-      return ((NavigableMap<K, V>) main.makeObject()).descendingMap();
-    }
-
-    @Override
-    public NavigableMap<K, V> makeFullMap() {
-      return ((NavigableMap<K, V>) main.makeFullMap()).descendingMap();
-    }
-
-    @Override
-    public void testSubMapOutOfRange() {
-      // Ignore test. Only here to override TestSubMap's test.
-    }
-
-    @Override
-    public String getCompatibilityVersion() {
-      return main.getCompatibilityVersion() + ".DescendingMapView";
-    }
-  }
-
-  // -----------------------------------------------------------------------
-
-
-  public static <K, V> K getFirstKey(final NavigableMap<K, V> map) {
-    return map.firstKey();
-  }
-
-  public static <K, V> K getLastKey(final NavigableMap<K, V> map) {
-    return map.lastKey();
   }
 
 
@@ -143,7 +68,7 @@ public class TestPatriciaTrieWithApacheCommonsCollections
       trie.put(key, key);
     }
 
-    NavigableMap<String, String> map;
+    Map<String, String> map;
     Iterator<String> iterator;
     Iterator<Map.Entry<String, String>> entryIterator;
     Map.Entry<String, String> entry;
@@ -365,6 +290,24 @@ public class TestPatriciaTrieWithApacheCommonsCollections
     }
     iterator = map.values().iterator();
     Assert.assertFalse(iterator.hasNext());
+  }
+
+
+  private static <K, V> K getFirstKey(final Map<K, V> map) {
+    // Temporary implementation until we support SortedMap
+    return map.keySet().iterator().next();
+  }
+
+  private static <K, V> K getLastKey(final Map<K, V> map) {
+    // Temporary implementation until we support SortedMap
+    K key = null;
+    for (final K k : map.keySet()) {
+      key = k;
+    }
+    if (key != null) {
+      return key;
+    }
+    throw new NoSuchElementException("Empty Map");
   }
 
 

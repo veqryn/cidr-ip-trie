@@ -22,7 +22,7 @@ import java.util.Map;
  * or prefixed by any other given String.
  *
  * <p>
- * This Trie implementation extends {@link AbstractNavigableBinaryTrie},
+ * This Trie implementation extends {@link AbstractBinaryTrie},
  * an uncompressed binary bitwise implementation of a Trie for use with short
  * binary data such as IP addresses and CIDR ranges, and therefore this
  * implementation may take up more memory space than a trie implementation
@@ -31,14 +31,15 @@ import java.util.Map;
  * specific implementation can not be found, and as a proof of concept that
  * the {@link AbstractBinaryTrie} this is based on is abstract and extensible
  * enough for use with any form of data. Also exists so that the Trie classes
- * can be tested using Apache Commons Collections 4 test suite for String
- * Maps and SortedMaps (we can not use this test on the Cidr Trie).
+ * can be tested using Apache Commons Collections 4 test suites and the Google
+ * Guava test suites for String Maps
+ * (we can not use this test on the Cidr Trie).
  *
  * @author Mark Christopher Duncan
  *
  * @param <V> Value
  */
-public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V> {
+public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
 
   private static final long serialVersionUID = -6067883352977753038L;
 
@@ -76,10 +77,9 @@ public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V
 
   /**
    * Implementation of {@link KeyCodec} for use with String data.
-   * Specifically for use with {@link AbstractBinaryTrie} and
-   * {@link AbstractNavigableBinaryTrie}, because it decodes strings by
-   * each bit, instead of each character, as the backing trie is binary
-   * in nature.
+   * Specifically for use with {@link AbstractBinaryTrie},
+   * because it decodes strings by each bit, instead of each
+   * character, as the backing trie is binary in nature.
    * Can handle international characters.
    */
   public static final class PatriciaCodec extends AbstractKeyCodec<String>

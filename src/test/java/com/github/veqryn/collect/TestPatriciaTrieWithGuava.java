@@ -10,10 +10,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 
-import com.google.common.collect.testing.NavigableMapTestSuiteBuilder;
-import com.google.common.collect.testing.TestStringSortedMapGenerator;
+import com.google.common.collect.testing.MapTestSuiteBuilder;
+import com.google.common.collect.testing.TestStringMapGenerator;
 import com.google.common.collect.testing.features.CollectionFeature;
 import com.google.common.collect.testing.features.CollectionSize;
 import com.google.common.collect.testing.features.MapFeature;
@@ -24,8 +23,8 @@ import junit.framework.TestSuite;
 
 /**
  * Tests for the PatriciaTrie class.
- * Runs some 44000+ tests from the Google Guava (19) project,
- * specifically tests NavigableMap's, SortedMap's, and Map's and their various views.
+ * Runs some 1355 tests from the Google Guava (19) project,
+ * specifically tests Map's and their various views.
  * Tests with String data.
  *
  * @author Mark Christopher Duncan
@@ -48,10 +47,10 @@ public class TestPatriciaTrieWithGuava {
   }
 
   public Test testsForPatriciaTrie() {
-    return NavigableMapTestSuiteBuilder
-        .using(new TestStringSortedMapGenerator() {
+    return MapTestSuiteBuilder
+        .using(new TestStringMapGenerator() {
           @Override
-          protected NavigableMap<String, String> create(
+          protected Map<String, String> create(
               final Entry<String, String>[] entries) {
             return populate(new PatriciaTrie<String>(), entries);
           }
@@ -62,7 +61,8 @@ public class TestPatriciaTrieWithGuava {
             MapFeature.ALLOWS_NULL_ENTRY_QUERIES,
             MapFeature.FAILS_FAST_ON_CONCURRENT_MODIFICATION,
             CollectionFeature.SUPPORTS_ITERATOR_REMOVE,
-            CollectionFeature.KNOWN_ORDER,
+            // CollectionFeature.KNOWN_ORDER, // Assumes Insertion Order if you don't implement
+            // SortedMap
             CollectionFeature.SERIALIZABLE,
             CollectionSize.ANY)
         .suppressing(suppressForPatriciaTrie())

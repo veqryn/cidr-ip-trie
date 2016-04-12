@@ -25,7 +25,7 @@ public class TestPatriciaTrie {
   @Test
   public void testWords() {
 
-    final NavigableTrie<String, String> trie = new PatriciaTrie<String>();
+    final Trie<String, String> trie = new PatriciaTrie<String>();
 
     final String[] testWords = new String[] {
         "and",
@@ -107,7 +107,9 @@ public class TestPatriciaTrie {
         assertEquals(0, trie.size());
         final String unicodeCharacters = unicodeCharacter1 + unicodeCharacter2;
         trie.put(unicodeCharacters, unicodeCharacters);
-        assertEquals(unicodeCharacters, trie.pollFirstEntry().getKey());
+        final String firstKey = trie.keySet().iterator().next();
+        assertEquals(firstKey, trie.remove(firstKey));
+        assertEquals(unicodeCharacters, firstKey);
       }
     }
   }
