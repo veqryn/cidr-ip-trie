@@ -6,12 +6,16 @@
 package com.github.veqryn.collect;
 
 import static com.github.veqryn.net.TestUtil.cidrsInOrder;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -24,6 +28,7 @@ import com.github.veqryn.collect.AbstractBinaryTrie.Node;
 import com.github.veqryn.net.Cidr4;
 import com.github.veqryn.net.TestUtil;
 import com.github.veqryn.util.TestingUtil;
+
 
 /**
  * Tests for the CidrTrie class
@@ -40,9 +45,336 @@ public class TestCidr4Trie {
     }
   }
 
-  // TODO: all of these tests will be refactored and simplified,
-  // after the AbstractBinaryTree class has itself been refactored.
-  // This is just enough to get me through the refactoring phase.
+
+  @Test
+  public void testSimple() {
+
+    final List<Cidr4> testList = new ArrayList<>();
+    final Cidr4Trie<Cidr4> trie = new Cidr4Trie<>();
+
+    final Cidr4 cidr80_28 = new Cidr4("192.168.1.80/28");
+    final Cidr4 cidr96_28 = new Cidr4("192.168.1.96/28");
+    final Cidr4 cidr98_31 = new Cidr4("192.168.1.98/31");
+    final Cidr4 cidr100_30 = new Cidr4("192.168.1.100/30");
+    final Cidr4 cidr101_32 = new Cidr4("192.168.1.101/32");
+    final Cidr4 cidr102_32 = new Cidr4("192.168.1.102/32");
+
+    // expected order
+    testList.add(cidr80_28);
+    testList.add(cidr96_28);
+    testList.add(cidr98_31);
+    testList.add(cidr100_30);
+    testList.add(cidr101_32);
+    testList.add(cidr102_32);
+
+    // Put out of order
+    trie.put(cidr96_28, cidr96_28);
+    trie.put(cidr101_32, cidr101_32);
+    trie.put(cidr98_31, cidr98_31);
+    trie.put(cidr102_32, cidr102_32);
+    trie.put(cidr101_32, cidr101_32); // Duplicate on purpose
+    trie.put(cidr80_28, cidr80_28);
+    trie.put(cidr100_30, cidr100_30);
+
+    // Basic stuff
+    assertFalse(trie.isEmpty());
+    assertEquals(6, trie.size());
+
+    assertEquals(cidr98_31, trie.get(cidr98_31));
+
+    assertTrue(trie.containsKey(cidr98_31));
+    assertFalse(trie.containsKey(new Cidr4("192.168.1.100/31")));
+
+    assertTrue(trie.containsValue(cidr98_31));
+    assertFalse(trie.containsValue(new Cidr4("192.168.1.100/31")));
+
+    // Views
+    final Iterator<Entry<Cidr4, Cidr4>> entryIter = trie.entrySet().iterator();
+    for (final Cidr4 cidr : testList) {
+      final Entry<Cidr4, Cidr4> nextEntry = entryIter.next();
+      assertEquals(cidr, nextEntry.getKey());
+      assertEquals(cidr, nextEntry.getValue());
+    }
+    assertFalse(entryIter.hasNext());
+
+    final Iterator<Cidr4> keyIter = trie.keySet().iterator();
+    for (final Cidr4 cidr : testList) {
+      final Cidr4 nextKey = keyIter.next();
+      assertEquals(cidr, nextKey);
+    }
+    assertFalse(keyIter.hasNext());
+
+    final Iterator<Cidr4> valIter = trie.values().iterator();
+    for (final Cidr4 cidr : testList) {
+      final Cidr4 nextVal = valIter.next();
+      assertEquals(cidr, nextVal);
+    }
+    assertFalse(valIter.hasNext());
+
+    // Prefix Of
+    assertEquals(cidr102_32, trie.longestPrefixOfValue(cidr102_32, true));
+    assertEquals(cidr100_30, trie.longestPrefixOfValue(cidr100_30, true));
+    assertEquals(cidr100_30, trie.longestPrefixOfValue(cidr102_32, false));
+    assertEquals(cidr100_30, trie.longestPrefixOfValue(new Cidr4("192.168.1.103/32"), true));
+
+    assertEquals(cidr96_28, trie.shortestPrefixOfValue(cidr102_32, true));
+
+    assertArrayEquals(new Cidr4[] {cidr96_28, cidr100_30, cidr102_32},
+        trie.prefixOfValues(cidr102_32, true).toArray());
+
+    // Prefix By
+    assertArrayEquals(new Cidr4[] {cidr100_30, cidr101_32, cidr102_32},
+        trie.prefixedByValues(cidr100_30, true).toArray());
+
+    // View edit
+    final Trie<Cidr4, Cidr4> prefixView = trie.prefixOfMap(cidr102_32, true);
+    // can not be removed, because it is not inside the view (even though it is in the map)
+    assertEquals(null, prefixView.remove(cidr80_28));
+    assertEquals(6, trie.size());
+    assertEquals(cidr80_28, trie.get(cidr80_28));
+    // can be removed
+    assertEquals(cidr96_28, prefixView.remove(cidr96_28));
+    assertEquals(5, trie.size());
+
+    // A view of a view is ok
+    assertEquals(trie.prefixOfMap(cidr100_30, true), prefixView.prefixOfMap(cidr100_30, true));
+
+    // Bounded on both sides
+    assertArrayEquals(new Cidr4[] {cidr100_30, cidr102_32},
+        prefixView.prefixedByValues(cidr100_30, true).toArray());
+
+    // Clear
+    trie.clear();
+    assertTrue(trie.isEmpty());
+    assertEquals(0, trie.size());
+  }
+
+
+  @Test
+  public void testPrefixOf() {
+
+    final Cidr4Trie<String> trie = new Cidr4Trie<>(getTestCidrs());
+
+    // Longest Prefix Of (inclusive)
+    assertEquals("128.0.0.0/32", trie.longestPrefixOfValue(new Cidr4("128.0.0.0/32"), true));
+    assertEquals("128.0.0.0/29", trie.longestPrefixOfValue(new Cidr4("128.0.0.2/32"), true));
+    assertEquals("128.0.0.4/32", trie.longestPrefixOfValue(new Cidr4("128.0.0.4/32"), true));
+    assertEquals("128.0.0.4/30", trie.longestPrefixOfValue(new Cidr4("128.0.0.6/32"), true));
+    assertEquals("0.0.0.0/31", trie.longestPrefixOfValue(new Cidr4("0.0.0.1/32"), true));
+    assertEquals("128.0.0.4/31", trie.longestPrefixOfValue(new Cidr4("128.0.0.4/31"), true));
+    assertEquals("128.0.0.0/28", trie.longestPrefixOfValue(new Cidr4("128.0.0.8/30"), true));
+
+    // Longest Prefix Of (exclusive)
+    assertEquals("128.0.0.0/29", trie.longestPrefixOfValue(new Cidr4("128.0.0.0/32"), false));
+    assertEquals("128.0.0.4/31", trie.longestPrefixOfValue(new Cidr4("128.0.0.4/32"), false));
+    assertEquals("128.0.0.4/31", trie.longestPrefixOfValue(new Cidr4("128.0.0.5/32"), false));
+    assertEquals("128.0.0.4/30", trie.longestPrefixOfValue(new Cidr4("128.0.0.6/32"), false));
+
+    // Shortest Prefix Of (inclusive)
+    assertEquals("128.0.0.0/1", trie.shortestPrefixOfValue(new Cidr4("128.0.0.0/1"), true));
+    assertEquals("128.0.0.0/1", trie.shortestPrefixOfValue(new Cidr4("128.0.0.0/32"), true));
+    assertEquals("128.0.0.0/1", trie.shortestPrefixOfValue(new Cidr4("255.255.255.255/32"), true));
+    assertEquals("0.0.0.0/1", trie.shortestPrefixOfValue(new Cidr4("0.0.0.0/32"), true));
+    assertEquals("0.0.0.0/1", trie.shortestPrefixOfValue(new Cidr4("127.255.255.255/32"), true));
+
+    // Shortest Prefix Of (exclusive)
+    assertEquals(null, trie.shortestPrefixOfValue(new Cidr4("128.0.0.0/1"), false));
+    assertEquals("128.0.0.0/1", trie.shortestPrefixOfValue(new Cidr4("128.0.0.0/32"), false));
+
+
+    // Prefix Of Values (inclusive)
+    assertArrayEquals(new String[] {"128.0.0.0/1"},
+        trie.prefixOfValues(new Cidr4("128.0.0.0/1"), true).toArray(new String[] {}));
+
+    String[] prefixOfArray1 = new String[] {
+        "128.0.0.0/1",
+        "128.0.0.0/8",
+        "128.0.0.0/16",
+        "128.0.0.0/24",
+        "128.0.0.0/28",
+        "128.0.0.0/29",
+        "128.0.0.4/30",
+        "128.0.0.4/31",
+        "128.0.0.4/32"};
+    assertArrayEquals(prefixOfArray1,
+        trie.prefixOfValues(new Cidr4("128.0.0.4/32"), true).toArray(new String[] {}));
+
+
+    String[] prefixOfArray2 = new String[] {
+        "128.0.0.0/1",
+        "128.0.0.0/8",
+        "128.0.0.0/16",
+        "128.0.0.0/24",
+        "128.0.0.0/28"};
+    assertArrayEquals(prefixOfArray2,
+        trie.prefixOfValues(new Cidr4("128.0.0.8/30"), true).toArray(new String[] {}));
+
+    String[] prefixOfArray3 = new String[] {
+        "0.0.0.0/1",
+        "0.0.0.0/8",
+        "0.0.0.0/16",
+        "0.0.0.0/24",
+        "0.0.0.0/30",
+        "0.0.0.2/32"};
+    assertArrayEquals(prefixOfArray3,
+        trie.prefixOfValues(new Cidr4("0.0.0.2/32"), true).toArray(new String[] {}));
+
+    // Prefix Of Map (inclusive)
+    NavigableMap<Cidr4, String> prefixOfMap1 = new TreeMap<>();
+    for (final String cidr : prefixOfArray1) {
+      prefixOfMap1.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixOfMap1, trie.prefixOfMap(new Cidr4("128.0.0.4/32"), true));
+
+    NavigableMap<Cidr4, String> prefixOfMap2 = new TreeMap<>();
+    for (final String cidr : prefixOfArray2) {
+      prefixOfMap2.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixOfMap2, trie.prefixOfMap(new Cidr4("128.0.0.8/30"), true));
+
+    NavigableMap<Cidr4, String> prefixOfMap3 = new TreeMap<>();
+    for (final String cidr : prefixOfArray3) {
+      prefixOfMap3.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixOfMap3, trie.prefixOfMap(new Cidr4("0.0.0.2/32"), true));
+
+    // Prefix Of Values (exclusive)
+    assertArrayEquals(new String[] {},
+        trie.prefixOfValues(new Cidr4("128.0.0.0/1"), false).toArray(new String[] {}));
+
+    prefixOfArray1 = new String[] {
+        "128.0.0.0/1",
+        "128.0.0.0/8",
+        "128.0.0.0/16",
+        "128.0.0.0/24",
+        "128.0.0.0/28",
+        "128.0.0.0/29",
+        "128.0.0.4/30",
+        "128.0.0.4/31"};
+    assertArrayEquals(prefixOfArray1,
+        trie.prefixOfValues(new Cidr4("128.0.0.4/32"), false).toArray(new String[] {}));
+
+
+    prefixOfArray2 = new String[] {
+        "128.0.0.0/1",
+        "128.0.0.0/8",
+        "128.0.0.0/16",
+        "128.0.0.0/24",
+        "128.0.0.0/28"};
+    assertArrayEquals(prefixOfArray2,
+        trie.prefixOfValues(new Cidr4("128.0.0.8/30"), false).toArray(new String[] {}));
+
+    prefixOfArray3 = new String[] {
+        "0.0.0.0/1",
+        "0.0.0.0/8",
+        "0.0.0.0/16",
+        "0.0.0.0/24",
+        "0.0.0.0/30"};
+    assertArrayEquals(prefixOfArray3,
+        trie.prefixOfValues(new Cidr4("0.0.0.2/32"), false).toArray(new String[] {}));
+
+    // Prefix Of Map (exclusive)
+    prefixOfMap1 = new TreeMap<>();
+    for (final String cidr : prefixOfArray1) {
+      prefixOfMap1.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixOfMap1, trie.prefixOfMap(new Cidr4("128.0.0.4/32"), false));
+
+    prefixOfMap2 = new TreeMap<>();
+    for (final String cidr : prefixOfArray2) {
+      prefixOfMap2.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixOfMap2, trie.prefixOfMap(new Cidr4("128.0.0.8/30"), false));
+
+    prefixOfMap3 = new TreeMap<>();
+    for (final String cidr : prefixOfArray3) {
+      prefixOfMap3.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixOfMap3, trie.prefixOfMap(new Cidr4("0.0.0.2/32"), false));
+  }
+
+
+  @Test
+  public void testPrefixedBy() {
+
+    final Cidr4Trie<String> trie = new Cidr4Trie<>(getTestCidrs());
+
+    // Prefix Of Values (inclusive)
+    assertArrayEquals(new String[] {"128.0.0.4/32"},
+        trie.prefixedByValues(new Cidr4("128.0.0.4/32"), true).toArray(new String[] {}));
+
+    String[] prefixedByArray1 = new String[] {
+        "128.0.0.0/24",
+        "128.0.0.0/28",
+        "128.0.0.0/29",
+        "128.0.0.0/32",
+        "128.0.0.3/32",
+        "128.0.0.4/30",
+        "128.0.0.4/31",
+        "128.0.0.4/32",
+        "128.0.0.5/32"};
+    assertArrayEquals(prefixedByArray1,
+        trie.prefixedByValues(new Cidr4("128.0.0.0/24"), true).toArray(new String[] {}));
+
+    String[] prefixedByArray2 = new String[] {
+        "128.0.0.4/30",
+        "128.0.0.4/31",
+        "128.0.0.4/32",
+        "128.0.0.5/32"};
+    assertArrayEquals(prefixedByArray2,
+        trie.prefixedByValues(new Cidr4("128.0.0.4/30"), true).toArray(new String[] {}));
+
+
+    // Prefix Of Map (inclusive)
+    NavigableMap<Cidr4, String> prefixedByMap1 = new TreeMap<>();
+    for (final String cidr : prefixedByArray1) {
+      prefixedByMap1.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixedByMap1, trie.prefixedByMap(new Cidr4("128.0.0.0/24"), true));
+
+    NavigableMap<Cidr4, String> prefixedByMap2 = new TreeMap<>();
+    for (final String cidr : prefixedByArray2) {
+      prefixedByMap2.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixedByMap2, trie.prefixedByMap(new Cidr4("128.0.0.4/30"), true));
+
+    // Prefix Of Values (exclusive)
+    assertArrayEquals(new String[] {},
+        trie.prefixedByValues(new Cidr4("128.0.0.4/32"), false).toArray(new String[] {}));
+
+    prefixedByArray1 = new String[] {
+        "128.0.0.0/28",
+        "128.0.0.0/29",
+        "128.0.0.0/32",
+        "128.0.0.3/32",
+        "128.0.0.4/30",
+        "128.0.0.4/31",
+        "128.0.0.4/32",
+        "128.0.0.5/32"};
+    assertArrayEquals(prefixedByArray1,
+        trie.prefixedByValues(new Cidr4("128.0.0.0/24"), false).toArray(new String[] {}));
+
+    prefixedByArray2 = new String[] {
+        "128.0.0.4/31",
+        "128.0.0.4/32",
+        "128.0.0.5/32"};
+    assertArrayEquals(prefixedByArray2,
+        trie.prefixedByValues(new Cidr4("128.0.0.4/30"), false).toArray(new String[] {}));
+
+
+    // Prefix Of Map (inclusive)
+    prefixedByMap1 = new TreeMap<>();
+    for (final String cidr : prefixedByArray1) {
+      prefixedByMap1.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixedByMap1, trie.prefixedByMap(new Cidr4("128.0.0.0/24"), false));
+
+    prefixedByMap2 = new TreeMap<>();
+    for (final String cidr : prefixedByArray2) {
+      prefixedByMap2.put(new Cidr4(cidr), cidr);
+    }
+    assertEquals(prefixedByMap2, trie.prefixedByMap(new Cidr4("128.0.0.4/30"), false));
+  }
 
 
   @Test
@@ -75,6 +407,76 @@ public class TestCidr4Trie {
     assertEquals(trie1, trie2);
     assertEquals(testMap.hashCode(), trie1.hashCode());
     assertEquals(testMap.hashCode(), trie2.hashCode());
+  }
+
+
+  @Test
+  public void testOrder() {
+
+    final Cidr4Trie<String> trie = new Cidr4Trie<>();
+
+    for (final Object[] cidr : TestUtil.cidrs) {
+      // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
+      if (cidr[9].equals("0.0.0.0/0")
+          || cidr[9].equals("0.0.0.0/1")
+          || cidr[9].equals("128.0.0.0/1")) {
+        continue;
+      }
+      trie.put(new Cidr4((String) cidr[9]), (String) cidr[9]);
+    }
+
+    assertEquals(TestUtil.cidrsInOrder.length, trie.size());
+
+    int i = 0;
+    for (final Entry<Cidr4, String> entry : trie.entrySet()) {
+      assertEquals(cidrsInOrder[i++], entry.getKey().getCidrSignature());
+    }
+
+    Node<Cidr4, String> node = trie.lastNode();
+    for (i = cidrsInOrder.length - 1; i >= 0; --i) {
+      assertEquals(cidrsInOrder[i], AbstractBinaryTrie.resolveKey(node, trie).getCidrSignature());
+      node = AbstractBinaryTrie.predecessor(node);
+    }
+  }
+
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testSerialization() throws ClassNotFoundException, IOException {
+
+    final Cidr4Trie<String> trie1 = new Cidr4Trie<>(getTestCidrs());
+    final Cidr4Trie<String> trie2 = new Cidr4Trie<>(trie1);
+
+    assertEquals(trie1, trie2);
+    assertEquals(trie1.hashCode(), trie2.hashCode());
+
+    final byte[] bytes1 = TestingUtil.pickle(trie1);
+    final byte[] bytes2 = TestingUtil.pickle(trie2);
+
+    final Cidr4Trie<String> other1 = TestingUtil.unpickle(bytes1, Cidr4Trie.class);
+    final Cidr4Trie<String> other2 = TestingUtil.unpickle(bytes2, Cidr4Trie.class);
+    assertEquals(trie1, other1);
+    assertEquals(trie2, other2);
+    assertEquals(other1, other2);
+    assertEquals(trie1.hashCode(), other1.hashCode());
+    assertEquals(trie2.hashCode(), other2.hashCode());
+
+    other1.cacheKeys = true;
+    other1.writeKeys = true;
+    other2.cacheKeys = true;
+    other2.writeKeys = true;
+    final byte[] bytesWriteKeys1 = TestingUtil.pickle(other1);
+    final byte[] bytesWriteKeys2 = TestingUtil.pickle(other2);
+
+    final Cidr4Trie<String> otherWriteKeys1 =
+        TestingUtil.unpickle(bytesWriteKeys1, Cidr4Trie.class);
+    final Cidr4Trie<String> otherWriteKeys2 =
+        TestingUtil.unpickle(bytesWriteKeys2, Cidr4Trie.class);
+    assertEquals(trie1, otherWriteKeys1);
+    assertEquals(trie2, otherWriteKeys2);
+    assertEquals(otherWriteKeys1, otherWriteKeys2);
+    assertEquals(trie1.hashCode(), otherWriteKeys1.hashCode());
+    assertEquals(trie2.hashCode(), otherWriteKeys2.hashCode());
   }
 
 
@@ -112,254 +514,6 @@ public class TestCidr4Trie {
     trie2.remove(cidr);
     assertEquals(trie1.size(), trie2.size() + 1);
     assertNotEquals(trie1, trie2);
-  }
-
-  @Test
-  public void testOrder() {
-
-    final Cidr4Trie<String> trie = new Cidr4Trie<>();
-
-    for (final Object[] cidr : TestUtil.cidrs) {
-      // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
-      if (cidr[9].equals("0.0.0.0/0")
-          || cidr[9].equals("0.0.0.0/1")
-          || cidr[9].equals("128.0.0.0/1")) {
-        continue;
-      }
-      trie.put(new Cidr4((String) cidr[9]), (String) cidr[9]);
-    }
-
-    assertEquals(TestUtil.cidrsInOrder.length, trie.size());
-
-    int i = 0;
-    for (final Entry<Cidr4, String> entry : trie.entrySet()) {
-      assertEquals(cidrsInOrder[i++], entry.getKey().getCidrSignature());
-    }
-
-    Node<Cidr4, String> node = trie.lastNode();
-    for (i = cidrsInOrder.length - 1; i >= 0; --i) {
-      assertEquals(cidrsInOrder[i], AbstractBinaryTrie.resolveKey(node, trie).getCidrSignature());
-      node = AbstractBinaryTrie.predecessor(node);
-    }
-  }
-
-
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testSerialization() throws ClassNotFoundException, IOException {
-
-    final Cidr4Trie<String> trie1 = new Cidr4Trie<>(getTestCidrs());
-    final Cidr4Trie<String> trie2 = new Cidr4Trie<>(trie1);
-
-    assertEquals(trie1, trie2);
-
-    final byte[] bytes1 = TestingUtil.pickle(trie1);
-    final byte[] bytes2 = TestingUtil.pickle(trie2);
-
-    final Cidr4Trie<String> other1 = TestingUtil.unpickle(bytes1, Cidr4Trie.class);
-    final Cidr4Trie<String> other2 = TestingUtil.unpickle(bytes2, Cidr4Trie.class);
-    assertEquals(trie1, other1);
-    assertEquals(trie2, other2);
-    assertEquals(other1, other2);
-    assertEquals(trie1.hashCode(), other1.hashCode());
-    assertEquals(trie2.hashCode(), other2.hashCode());
-
-    other1.cacheKeys = true;
-    other1.writeKeys = true;
-    other2.cacheKeys = true;
-    other2.writeKeys = true;
-    final byte[] bytesWriteKeys1 = TestingUtil.pickle(other1);
-    final byte[] bytesWriteKeys2 = TestingUtil.pickle(other2);
-
-    final Cidr4Trie<String> otherWriteKeys1 =
-        TestingUtil.unpickle(bytesWriteKeys1, Cidr4Trie.class);
-    final Cidr4Trie<String> otherWriteKeys2 =
-        TestingUtil.unpickle(bytesWriteKeys2, Cidr4Trie.class);
-    assertEquals(trie1, otherWriteKeys1);
-    assertEquals(trie2, otherWriteKeys2);
-    assertEquals(otherWriteKeys1, otherWriteKeys2);
-    assertEquals(trie1.hashCode(), otherWriteKeys1.hashCode());
-    assertEquals(trie2.hashCode(), otherWriteKeys2.hashCode());
-  }
-
-
-  @Test
-  public void testWhatever() throws ClassNotFoundException, IOException {
-
-    final Cidr4Trie<String> trie = new Cidr4Trie<>(false);
-
-    for (final Object[] cidr : TestUtil.cidrs) {
-      // avoid duplicates, so remove 0.0.0.0/0 and 0.0.0.0/1 and 128.0.0.0/1
-      if (cidr[9].equals("0.0.0.0/0")
-          || cidr[9].equals("0.0.0.0/1")
-          || cidr[9].equals("128.0.0.0/1")) {
-        continue;
-      }
-      trie.put(new Cidr4((String) cidr[9]), (String) cidr[9]);
-    }
-    System.out.println(trie.size());
-
-    final Set<Entry<Cidr4, String>> entries = trie.entrySet();
-    System.out.println(entries.size());
-    System.out.println();
-    final Collection<String> values = trie.values();
-    System.out.println(trie.longestPrefixOfValue(new Cidr4("128.0.0.0/10"), true));
-    System.out.println();
-    for (final String value : values) {
-      System.out.println(value);
-    }
-    System.out.println();
-    for (final String value : trie.prefixOfValues(new Cidr4("128.0.0.4/32"), true)) {
-      System.out.println(value);
-    }
-    System.out.println();
-    for (final String value : trie.prefixedByValues(new Cidr4("128.0.0.0/24"), true)) {
-      System.out.println(value);
-    }
-    System.out.println();
-
-    final NavigableTrie<Cidr4, String> reversed = trie.descendingMap();
-    System.out.println(reversed.size());
-    final Set<Entry<Cidr4, String>> reversedEntries = reversed.entrySet();
-    System.out.println(reversedEntries.size());
-    System.out.println();
-    final Collection<String> reversedValues = reversed.values();
-    System.out.println(reversed.longestPrefixOfValue(new Cidr4("128.0.0.0/10"), true));
-    System.out.println();
-    for (final String value : reversedValues) {
-      System.out.println(value);
-    }
-    System.out.println();
-    for (final Entry<Cidr4, String> value : reversed.entrySet()) {
-      System.out.println(value);
-    }
-  }
-
-
-  @Test
-  public void testMapInterface() {
-
-    final Cidr4 s1 = new Cidr4(0, 1); // zeroes
-    final Cidr4 s3 = new Cidr4(0, 3); // zeroes
-
-    final Cidr4 t1 = new Cidr4(-1, 1); // ones
-    final Cidr4 t3 = new Cidr4(-1, 3); // ones
-
-    final Cidr4Trie<String> trie = new Cidr4Trie<>();
-
-    trie.put(s1, "depth 1 s: " + s1);
-    trie.put(s3, "depth 3 s: " + s3);
-
-    trie.put(t1, "depth 1 t: " + t1);
-    trie.put(t3, "depth 3 t: " + t3);
-
-    assertEquals(4, trie.size());
-
-    assertEquals("{0.0.0.0/1=depth 1 s: 0.0.0.0/1, 0.0.0.0/3=depth 3 s: 0.0.0.0/3, "
-        + "128.0.0.0/1=depth 1 t: 128.0.0.0/1, 224.0.0.0/3=depth 3 t: 224.0.0.0/3}",
-        trie + "");
-
-    assertEquals(
-        "[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3, depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
-        trie.values() + "");
-
-    assertEquals("[0.0.0.0/1, 0.0.0.0/3, 128.0.0.0/1, 224.0.0.0/3]", trie.keySet() + "");
-    assertEquals("[0.0.0.0/1=depth 1 s: 0.0.0.0/1, 0.0.0.0/3=depth 3 s: 0.0.0.0/3, "
-        + "128.0.0.0/1=depth 1 t: 128.0.0.0/1, 224.0.0.0/3=depth 3 t: 224.0.0.0/3]",
-        trie.entrySet() + "");
-
-    assertEquals("depth 1 s: 0.0.0.0/1", trie.get(s1));
-    assertEquals("depth 3 s: 0.0.0.0/3", trie.get(s3));
-    assertEquals("depth 1 t: 128.0.0.0/1", trie.get(t1));
-    assertEquals("depth 3 t: 224.0.0.0/3", trie.get(t3));
-
-    // assertEquals("[depth 1 s: 0.0.0.0/1]", trie.getAll(s1) + "");
-    assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3]",
-        trie.prefixOfValues(s3, true) + "");
-    // assertEquals("[depth 1 t: 128.0.0.0/1]", trie.getAll(t1) + "");
-    assertEquals("[depth 1 t: 128.0.0.0/1, depth 3 t: 224.0.0.0/3]",
-        trie.prefixOfValues(t3, true) + "");
-
-    assertEquals("null=null", trie.root + "");
-
-
-    assertEquals("0.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.left, trie) + "");
-
-    // assertEquals("0.0.0.0/2", Cidr4Trie.resolveKey(trie.root.left.left, trie) + "");
-
-    assertEquals("0.0.0.0/3", AbstractBinaryTrie.resolveKey(trie.root.left.left.left, trie) + "");
-
-    assertEquals("128.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.right, trie) + "");
-
-    // assertEquals("192.0.0.0/2", Cidr4Trie.resolveKey(trie.root.right.right, trie) + "");
-
-    assertEquals("224.0.0.0/3",
-        AbstractBinaryTrie.resolveKey(trie.root.right.right.right, trie) + "");
-
-
-    assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.value + "");
-
-    assertEquals(null, trie.root.left.left.value);
-
-    assertEquals("depth 3 s: 0.0.0.0/3", trie.root.left.left.left.value + "");
-
-    assertEquals("depth 1 t: 128.0.0.0/1", trie.root.right.value + "");
-
-    assertEquals(null, trie.root.right.right.value);
-
-    assertEquals("depth 3 t: 224.0.0.0/3", trie.root.right.right.right.value + "");
-
-
-    assertEquals("depth 3 t: 224.0.0.0/3", trie.remove(t3));
-
-    assertEquals(3, trie.size());
-
-    assertEquals("{0.0.0.0/1=depth 1 s: 0.0.0.0/1, 0.0.0.0/3=depth 3 s: 0.0.0.0/3, "
-        + "128.0.0.0/1=depth 1 t: 128.0.0.0/1}", trie + "");
-
-    assertEquals("[depth 1 s: 0.0.0.0/1, depth 3 s: 0.0.0.0/3, depth 1 t: 128.0.0.0/1]",
-        trie.values() + "");
-
-    assertEquals("[0.0.0.0/1, 0.0.0.0/3, 128.0.0.0/1]", trie.keySet() + "");
-
-    assertEquals(
-        "[0.0.0.0/1=depth 1 s: 0.0.0.0/1, 0.0.0.0/3=depth 3 s: 0.0.0.0/3, 128.0.0.0/1=depth 1 t: 128.0.0.0/1]",
-        trie.entrySet() + "");
-
-
-    assertEquals("null=null", trie.root + "");
-
-
-    assertEquals("0.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.left, trie) + "");
-
-    // assertEquals("0.0.0.0/2", Cidr4Trie.resolveKey(trie.root.left.left, trie) + "");
-
-    assertEquals("0.0.0.0/3", AbstractBinaryTrie.resolveKey(trie.root.left.left.left, trie) + "");
-
-    assertEquals("128.0.0.0/1", AbstractBinaryTrie.resolveKey(trie.root.right, trie) + "");
-
-    assertEquals(null, trie.root.right.right);
-
-
-    assertEquals("depth 1 s: 0.0.0.0/1", trie.root.left.value + "");
-
-    assertEquals(null, trie.root.left.left.value);
-
-    assertEquals("depth 3 s: 0.0.0.0/3", trie.root.left.left.left.value + "");
-
-    assertEquals("depth 1 t: 128.0.0.0/1", trie.root.right.value + "");
-
-    assertEquals(null, trie.root.right.right);
-
-
-    trie.clear();
-
-
-    assertEquals(0, trie.size());
-
-    assertEquals("{}", trie + "");
-
   }
 
 
