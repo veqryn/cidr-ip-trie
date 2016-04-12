@@ -58,24 +58,23 @@ public class TestPatriciaTrie {
       wordMap.put(word, word);
     }
 
-    final Trie<String, String> trie3 = trie1.prefixedByMap("a", false);
-    final Trie<String, String> trie4 = new PatriciaTrie<String>(trie1);
-    final Trie<String, String> trie5 = new PatriciaTrie<String>(trie2);
-    final Trie<String, String> trie6 = new PatriciaTrie<String>(wordMap);
+    final Trie<String, String> trie3 = new PatriciaTrie<String>(trie1);
+    final Trie<String, String> trie4 = new PatriciaTrie<String>(trie2);
+    final Trie<String, String> trie5 = new PatriciaTrie<String>(wordMap);
 
     tryThisTrie(trie1);
     tryThisTrie(trie2);
     tryThisTrie(trie3);
     tryThisTrie(trie4);
     tryThisTrie(trie5);
-    tryThisTrie(trie6);
+
+    assertEquals("antecededs", wordMap.remove("antecededs"));
 
     assertEquals(wordMap, trie1);
     assertEquals(trie1, trie2);
     assertEquals(trie2, trie3);
     assertEquals(trie3, trie4);
     assertEquals(trie4, trie5);
-    assertEquals(trie5, trie6);
   }
 
   public void tryThisTrie(final Trie<String, String> trie) {
