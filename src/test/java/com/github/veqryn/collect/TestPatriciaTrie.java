@@ -7,9 +7,18 @@ package com.github.veqryn.collect;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -22,27 +31,54 @@ import com.github.veqryn.util.TestingUtil;
  */
 public class TestPatriciaTrie {
 
+  final String[] testWords = new String[] {
+      "and",
+      "ant",
+      "antacid",
+      "ante",
+      "antecede",
+      "anteceded",
+      "antecededs",
+      "antecededsic",
+      "antecedent",
+      "antewest",
+      "awe"};
+
   @Test
   public void testWords() {
 
-    final Trie<String, String> trie = new PatriciaTrie<String>();
+    final Trie<String, String> trie1 = new PatriciaTrie<String>();
+    final Trie<String, String> trie2 = new PatriciaTrie<String>().prefixedByMap("a", true);
 
-    final String[] testWords = new String[] {
-        "and",
-        "ant",
-        "antacid",
-        "ante",
-        "antecede",
-        "anteceded",
-        "antecededs",
-        "antecededsic",
-        "antecedent",
-        "antewest",
-        "awe"};
+    final Map<String, String> wordMap = new HashMap<>();
 
     for (final String word : testWords) {
-      trie.put(word, word);
+      trie1.put(word, word);
+      trie2.put(word, word);
+      wordMap.put(word, word);
     }
+
+    final Trie<String, String> trie3 = trie1.prefixedByMap("a", false);
+    final Trie<String, String> trie4 = new PatriciaTrie<String>(trie1);
+    final Trie<String, String> trie5 = new PatriciaTrie<String>(trie2);
+    final Trie<String, String> trie6 = new PatriciaTrie<String>(wordMap);
+
+    tryThisTrie(trie1);
+    tryThisTrie(trie2);
+    tryThisTrie(trie3);
+    tryThisTrie(trie4);
+    tryThisTrie(trie5);
+    tryThisTrie(trie6);
+
+    assertEquals(wordMap, trie1);
+    assertEquals(trie1, trie2);
+    assertEquals(trie2, trie3);
+    assertEquals(trie3, trie4);
+    assertEquals(trie4, trie5);
+    assertEquals(trie5, trie6);
+  }
+
+  public void tryThisTrie(final Trie<String, String> trie) {
 
     assertEquals(testWords.length, trie.size());
 
@@ -79,6 +115,18 @@ public class TestPatriciaTrie {
 
     assertArrayEquals(new Object[] {"anteceded", "antecededs", "antecededsic", "antecedent"},
         trie.prefixedByMap("antecede", false).keySet().toArray());
+
+    // Try removing from a View:
+    final Collection<String> prefixedByValues = trie.prefixedByValues("antecede", false);
+
+    assertArrayEquals(new Object[] {"anteceded", "antecededs", "antecededsic", "antecedent"},
+        prefixedByValues.toArray());
+
+    assertTrue(prefixedByValues.remove("antecededs"));
+    assertFalse(prefixedByValues.remove("antecedents"));
+
+    assertArrayEquals(new Object[] {"anteceded", "antecededsic", "antecedent"},
+        prefixedByValues.toArray());
   }
 
   @Test
@@ -113,4 +161,29 @@ public class TestPatriciaTrie {
       }
     }
   }
+
+  @Test
+  public void testComparator() {
+
+    final Comparator<? super String> comparator = new PatriciaTrie<>().getCodec().comparator();
+    assertNotNull(comparator);
+
+    final SortedSet<String> expected = new TreeSet<>();
+    final SortedSet<String> actual = new TreeSet<>(comparator);
+
+    for (final String word : testWords) {
+      expected.add(word);
+      actual.add(word);
+    }
+
+    assertEquals(expected.size(), actual.size());
+
+    final Iterator<String> expIter = expected.iterator();
+    final Iterator<String> actIter = actual.iterator();
+    while (expIter.hasNext()) {
+      assertEquals(expIter.next(), actIter.next());
+    }
+  }
 }
+
+
