@@ -5,6 +5,7 @@
  */
 package com.github.veqryn.collect;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Iterator;
@@ -20,6 +21,65 @@ import com.github.veqryn.util.TestingUtil;
  * @author Mark Christopher Duncan
  */
 public class TestPatriciaTrie {
+
+  @Test
+  public void testWords() {
+
+    final NavigableTrie<String, String> trie = new PatriciaTrie<String>();
+
+    final String[] testWords = new String[] {
+        "and",
+        "ant",
+        "antacid",
+        "ante",
+        "antecede",
+        "anteceded",
+        "antecededs",
+        "antecededsic",
+        "antecedent",
+        "antewest",
+        "awe"};
+
+    for (final String word : testWords) {
+      trie.put(word, word);
+    }
+
+    assertEquals(testWords.length, trie.size());
+
+    assertEquals("ant", trie.shortestPrefixOfValue("antecede", true));
+
+    assertEquals("ant", trie.shortestPrefixOfValue("antecede", false));
+
+    assertEquals("antecede", trie.longestPrefixOfValue("antecede", true));
+
+    assertEquals("ante", trie.longestPrefixOfValue("antecede", false));
+
+    assertArrayEquals(new Object[] {"ant", "ante", "antecede"},
+        trie.prefixOfValues("antecede", true).toArray());
+
+    assertArrayEquals(new Object[] {"ant", "ante"},
+        trie.prefixOfValues("antecede", false).toArray());
+
+    assertArrayEquals(new Object[] {"ant", "ante", "antecede"},
+        trie.prefixOfMap("antecede", true).keySet().toArray());
+
+    assertArrayEquals(new Object[] {"ant", "ante"},
+        trie.prefixOfMap("antecede", false).keySet().toArray());
+
+    assertArrayEquals(
+        new Object[] {"antecede", "anteceded", "antecededs", "antecededsic", "antecedent"},
+        trie.prefixedByValues("antecede", true).toArray());
+
+    assertArrayEquals(new Object[] {"anteceded", "antecededs", "antecededsic", "antecedent"},
+        trie.prefixedByValues("antecede", false).toArray());
+
+    assertArrayEquals(
+        new Object[] {"antecede", "anteceded", "antecededs", "antecededsic", "antecedent"},
+        trie.prefixedByMap("antecede", true).keySet().toArray());
+
+    assertArrayEquals(new Object[] {"anteceded", "antecededs", "antecededsic", "antecedent"},
+        trie.prefixedByMap("antecede", false).keySet().toArray());
+  }
 
   @Test
   public void testIndividualUnicodeCharacters() {
@@ -51,5 +111,4 @@ public class TestPatriciaTrie {
       }
     }
   }
-
 }

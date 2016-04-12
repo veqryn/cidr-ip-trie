@@ -10,6 +10,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -449,6 +450,7 @@ public class TestCidr4Trie {
 
     assertEquals(trie1, trie2);
     assertEquals(trie1.hashCode(), trie2.hashCode());
+    assertSame(trie1.getCodec(), trie2.getCodec());
 
     final byte[] bytes1 = TestingUtil.pickle(trie1);
     final byte[] bytes2 = TestingUtil.pickle(trie2);
