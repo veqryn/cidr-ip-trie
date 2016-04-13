@@ -34,7 +34,7 @@ import com.github.veqryn.util.TestingUtil;
 /**
  * Tests for the CidrTrie class
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestCidr4Trie {
 
@@ -464,23 +464,6 @@ public class TestCidr4Trie {
     assertEquals(other1, other2);
     assertEquals(trie1.hashCode(), other1.hashCode());
     assertEquals(trie2.hashCode(), other2.hashCode());
-
-    other1.cacheKeys = true;
-    other1.writeKeys = true;
-    other2.cacheKeys = true;
-    other2.writeKeys = true;
-    final byte[] bytesWriteKeys1 = TestingUtil.pickle(other1);
-    final byte[] bytesWriteKeys2 = TestingUtil.pickle(other2);
-
-    final Cidr4Trie<String> otherWriteKeys1 =
-        TestingUtil.unpickle(bytesWriteKeys1, Cidr4Trie.class);
-    final Cidr4Trie<String> otherWriteKeys2 =
-        TestingUtil.unpickle(bytesWriteKeys2, Cidr4Trie.class);
-    assertEquals(trie1, otherWriteKeys1);
-    assertEquals(trie2, otherWriteKeys2);
-    assertEquals(otherWriteKeys1, otherWriteKeys2);
-    assertEquals(trie1.hashCode(), otherWriteKeys1.hashCode());
-    assertEquals(trie2.hashCode(), otherWriteKeys2.hashCode());
   }
 
 

@@ -57,12 +57,12 @@ import java.util.Set;
  *
  * <p>
  * For these reasons, it is recommended that the concrete implementation of
- * NavigableTrie be configured to keep or cache the key instances, if methods
+ * Trie be configured to keep or cache the key instances, if methods
  * that return, compare, or hash the keys, will be used. Otherwise memory
  * usage can be reduced by not keeping keys instances around.
  *
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  * @param <V> Value

@@ -19,7 +19,31 @@ import java.net.UnknownHostException;
  * which implements hashCode, equals, Comparable, and Serializable.
  * Some methods and method signatures influenced by org.apache.commons.net.util.SubnetUtils
  *
- * @author Mark Christopher Duncan
+ * <pre>
+ * // Example usage:
+ * // Various ways to construct:
+ * Ip4 myIP1 = new Ip4(192, 168, 1, 104);
+ * Ip4 myIP2 = new Ip4("192.168.1.103");
+ * Ip4 myIP3 = new Ip4(-1062731415); // Java doesn't have unsigned integer types
+ * Ip4 myIP4 = new Ip4(myIP1);
+ *
+ * System.out.println(myIP1.equals(myIP2)); // false
+ *
+ * // [192.168.1.103, 192.168.1.104, 192.168.1.105]
+ * System.out.println(new TreeSet&lt;Ip4&gt;(Arrays.asList(myIP1, myIP2, myIP3, myIP4)));
+ *
+ * System.out.println(myIP1.getAddress()); // "192.168.1.104"
+ *
+ * System.out.println(myIP1.getBinaryInteger()); // -1062731416
+ *
+ * Cidr4 orFewerMaskBits = myIP1.getLowestContainingCidr(28); // 192.168.1.96/28
+ *
+ * Cidr4 slash32Cidr = myIP1.getCidr(); // 192.168.1.104/32
+ *
+ * InetAddress inetAddress = myIP1.getInetAddress();
+ * </pre>
+ *
+ * @author Chris Duncan
  */
 public final class Ip4 implements Comparable<Ip4>, Serializable {
 
@@ -80,7 +104,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        and Integer.MAX_VALUE = 255.255.255.255<br>
    *        true if using a binary integer,
    *        where Integer.MIN_VALUE = 128.0.0.0
    *        and 0 = 0.0.0.0
@@ -132,7 +156,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * @param maskBits the maximum number of bits in the netmask (e.g. 32 - 1)
    * @return A new Cidr representing the lowest cidr that has
    *         no more than this many maskBits and contains our cidr range
-   *         e.g. 192.168.10.10/31 => mask 24 => 192.168.0.0/24
+   *         e.g. 192.168.10.10/31 -&gt; mask 24 -&gt; 192.168.0.0/24
    */
   public final Cidr4 getLowestContainingCidr(final int maskBits) {
     return getLowestContainingCidrForRange(this.address, this.address, maskBits, false);
@@ -142,7 +166,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * This method uses InetAddress.getByAddress, and so does not block.
    *
    * @return java.net.InetAddress representing this IPv4 address
-   * @throws UnknownHostException
+   * @throws UnknownHostException if not host found
    */
   public final InetAddress getInetAddress() throws UnknownHostException {
     final int[] ints = toArray(address, false);

@@ -14,8 +14,7 @@ import java.util.SortedMap;
 /**
  * KeyCodec interface, for encoding, decoding, and analyzing keys in a
  * {@link Trie}.
- * Specifically for use with {@link AbstractBinaryTrie} and
- * {@link AbstractNavigableBinaryTrie}.
+ * Specifically for use with {@link AbstractBinaryTrie}.
  *
  * <p>
  * Includes methods to define a key by determining the key's length,
@@ -24,9 +23,10 @@ import java.util.SortedMap;
  *
  * <p>
  * Also includes methods to recreate a key based on positional information,
- * and to return a comparator for use with {@link NavigableMap} methods.
+ * and to return a comparator for use with {@link NavigableMap} methods
+ * (not yet implemented).
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  */
@@ -35,7 +35,7 @@ public interface KeyCodec<K> extends Serializable {
   /**
    * Returns the number of elements in the key.
    *
-   * @param key
+   * @param key the key
    * @return number of elements in this key object
    */
   int length(K key);
@@ -44,7 +44,7 @@ public interface KeyCodec<K> extends Serializable {
    * Returns true if the element at the given index should be in left node,
    * and false if the element should be in the right node.
    *
-   * @param key
+   * @param key the key
    * @param index (0 based)
    * @return true if the element at this index should be in the left node,
    *         false if the element at this index should be in the right node
@@ -99,12 +99,14 @@ public interface KeyCodec<K> extends Serializable {
    *
    * <p>
    * This method is not necessary for {@link Trie} methods, and is only called
-   * by methods that are part of the {@link NavigableTrie} interface (including
-   * any {@link SortedMap} and {@link NavigableMap} methods). Therefore a Trie
-   * that only implements the Trie interface (by extending only
-   * {@link AbstractBinaryTrie}) would not need to implement this method,
+   * by methods that are part of the (future, not yet implemented)
+   * NavigableTrie interface
+   * (including any {@link SortedMap} and {@link NavigableMap} methods).
+   * Therefore a Trie that only implements the Trie interface (by extending
+   * only {@link AbstractBinaryTrie}) would not need to implement this method,
    * while a Trie that implements the NavigableTrie interface by extending
-   * {@link AbstractNavigableBinaryTrie}) would need to implement this method.
+   * (future, not yet added) AbstractNavigableBinaryTrie) would need to
+   * implement this method.
    *
    * @return Comparator consistent with the KeyCodec interface methods
    */

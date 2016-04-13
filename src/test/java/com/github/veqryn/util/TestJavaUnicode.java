@@ -18,7 +18,7 @@ import org.junit.Test;
 /**
  * Tests our assumptions about how Java handles Unicode.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestJavaUnicode {
 

@@ -16,7 +16,7 @@ import java.util.Iterator;
 /**
  * Utility methods for tests.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  */
 public class TestingUtil {
 

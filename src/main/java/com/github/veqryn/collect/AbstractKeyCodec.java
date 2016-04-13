@@ -12,14 +12,13 @@ import java.util.Comparator;
 /**
  * AbstractKeyCodec implements {@link KeyCodec} interface,
  * for encoding, decoding, and analyzing keys in a {@link Trie}
- * (specifically for use with {@link AbstractBinaryTrie} and
- * {@link AbstractNavigableBinaryTrie}).
+ * (specifically for use with {@link AbstractBinaryTrie}).
  *
  * <p>
  * Includes a predefined comparator that is based solely on the
  * abstract <code>length</code> and <code>isLeft</code> methods.
  *
- * @author Mark Christopher Duncan
+ * @author Chris Duncan
  *
  * @param <K> Key
  */

@@ -27,7 +27,45 @@ import java.util.regex.Matcher;
  * Light weight immutable CIDR IPv4 type, which implements hashCode, equals, and Comparable.
  * Some methods and method signatures influenced by org.apache.commons.net.util.SubnetUtils
  *
- * @author Mark Christopher Duncan
+ * <pre>
+ * // Example usage:
+ * // Various ways to construct:
+ * Cidr4 myCIDR1 = new Cidr4("192.168.1.96/29");
+ * // 192.168.1.98/32 (true = append /32 if missing)
+ * Cidr4 myCIDR2 = new Cidr4("192.168.1.98", true);
+ * Cidr4 myCIDR3 = new Cidr4("192.168.1.0", "255.255.255.0"); // 192.168.1.0/24
+ * Cidr4 myCIDR4 = new Cidr4(192, 168, 1, 104, 30); // 192.168.1.104/30
+ * Cidr4 myCIDR5 = new Cidr4(-1062731414, 31); // 192.168.1.106/31
+ * Cidr4 myCIDR6 = new Cidr4(myCIDR1); // 192.168.1.96/29
+ * Cidr4 myCIDR7 = new Cidr4(myIP1); // 192.168.1.104/32
+ * Cidr4 myCIDR8 = new Cidr4(myIP2, myIP3); // 192.168.1.96/28
+ *
+ * System.out.println(myCIDR1.equals(myCIDR6)); // true
+ *
+ * // [192.168.1.0/24, 192.168.1.96/29, 192.168.1.98/32,
+ * // 192.168.1.104/30, 192.168.1.104/32, 192.168.1.106/31]
+ * SortedSet&lt;Cidr4&gt; sorted = new TreeSet&lt;Cidr4&gt;(
+ *     Arrays.asList(myCIDR1, myCIDR2, myCIDR3, myCIDR4, myCIDR5, myCIDR6, myCIDR7));
+ *
+ * // 192.168.1.96/29 creates a range of "[192.168.1.96--192.168.1.103]"
+ * System.out.println(myCIDR1.getAddressRange());
+ *
+ * // true = include network and broadcast address
+ * System.out.println(myCIDR1.getAddressCount(true)); // 8
+ *
+ * System.out.println(myCIDR1.getLowAddress(true)); // 192.168.1.96
+ *
+ * Ip4 highIP = myCIDR1.getHighIp(true); // 192.168.1.103
+ *
+ * System.out.println(myCIDR1.getNetmask()); // 255.255.255.248
+ *
+ * Ip4[] allIPs = myCIDR5.getAllIps(true); // [192.168.1.106, 192.168.1.107]
+ *
+ * System.out.println(myCIDR1.isInRange(myIP2, true)); // true
+ * System.out.println(myCIDR1.isInRange(myCIDR7, true)); // true
+ * </pre>
+ *
+ * @author Chris Duncan
  */
 public final class Cidr4 implements Comparable<Cidr4>, Serializable {
 
@@ -112,7 +150,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        and Integer.MAX_VALUE = 255.255.255.255<br>
    *        true if using a binary integer,
    *        where Integer.MIN_VALUE = 128.0.0.0
    *        and 0 = 0.0.0.0
@@ -169,7 +207,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        and Integer.MAX_VALUE = 255.255.255.255<br>
    *        true if using a binary integer,
    *        where Integer.MIN_VALUE = 128.0.0.0
    *        and 0 = 0.0.0.0
@@ -289,7 +327,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param maskBits the maximum number of bits in the netmask (e.g. 32 - 1)
    * @return A new Cidr representing the lowest cidr that has
    *         no more than this many maskBits and contains our cidr range
-   *         e.g. 192.168.10.10/31 => mask 24 => 192.168.0.0/24
+   *         e.g. 192.168.10.10/31 -&gt; mask 24 -&gt; 192.168.0.0/24
    */
   public final Cidr4 getLowestContainingCidr(final int maskBits) {
     return getLowestContainingCidrForRange(this.low, this.high, maskBits, false);
