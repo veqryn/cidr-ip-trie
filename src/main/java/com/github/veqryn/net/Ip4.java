@@ -30,7 +30,7 @@ import java.net.UnknownHostException;
  * System.out.println(myIP1.equals(myIP2)); // false
  *
  * // [192.168.1.103, 192.168.1.104, 192.168.1.105]
- * System.out.println(new TreeSet<Ip4>(Arrays.asList(myIP1, myIP2, myIP3, myIP4)));
+ * System.out.println(new TreeSet&lt;Ip4&gt;(Arrays.asList(myIP1, myIP2, myIP3, myIP4)));
  *
  * System.out.println(myIP1.getAddress()); // "192.168.1.104"
  *
@@ -104,7 +104,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        and Integer.MAX_VALUE = 255.255.255.255<br>
    *        true if using a binary integer,
    *        where Integer.MIN_VALUE = 128.0.0.0
    *        and 0 = 0.0.0.0
@@ -156,7 +156,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * @param maskBits the maximum number of bits in the netmask (e.g. 32 - 1)
    * @return A new Cidr representing the lowest cidr that has
    *         no more than this many maskBits and contains our cidr range
-   *         e.g. 192.168.10.10/31 => mask 24 => 192.168.0.0/24
+   *         e.g. 192.168.10.10/31 -&gt; mask 24 -&gt; 192.168.0.0/24
    */
   public final Cidr4 getLowestContainingCidr(final int maskBits) {
     return getLowestContainingCidrForRange(this.address, this.address, maskBits, false);
@@ -166,7 +166,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * This method uses InetAddress.getByAddress, and so does not block.
    *
    * @return java.net.InetAddress representing this IPv4 address
-   * @throws UnknownHostException
+   * @throws UnknownHostException if not host found
    */
   public final InetAddress getInetAddress() throws UnknownHostException {
     final int[] ints = toArray(address, false);

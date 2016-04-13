@@ -30,14 +30,14 @@ import com.github.veqryn.net.Cidr4;
  * contained keys for 192.168.20.16/28 and 192.168.0.0/16, both are prefixes
  * that contain our IP, but the most specific one is 192.168.20.16/28 because
  * it is the longest. This can be accomplished with
- * {@link Trie#valueLongestPrefixOf}, while a list of all prefixes can be
+ * {@link Trie#longestPrefixOfValue}, while a list of all prefixes can be
  * found with {@link Trie#prefixOfValues}. For more information, see:
  * <a href="http://en.wikipedia.org/wiki/Longest_prefix_match">wikipedia entry
  * on maximum prefix length match</a>.
  *
  * <p>
  * Additionally, {@link Trie#prefixedByValues} can be used to find all of the
- * CIDR's & IP that are prefixed by a given CIDR. For example, if given
+ * CIDR's and IP that are prefixed by a given CIDR. For example, if given
  * 192.168.0.0/16 then 192.168.20.16/28 and 192.168.20.19/32 could be returned.
  *
  * <p>
@@ -56,10 +56,10 @@ import com.github.veqryn.net.Cidr4;
  *
  * <pre>
  * // Example usage:
- * // Trie<key, value> is the generic interface, while Cidr4Trie is the
+ * // Trie&lt;key, value&gt; is the generic interface, while Cidr4Trie is the
  * // concrete type that uses Cidr4 as a key, and anything as the value
- * Trie<Cidr4, String> trie = new Cidr4Trie<String>();
- * Trie<Cidr4, String> trie2 = new Cidr4Trie<String>(trie);
+ * Trie&lt;Cidr4, String&gt; trie = new Cidr4Trie&lt;String&gt;();
+ * Trie&lt;Cidr4, String&gt; trie2 = new Cidr4Trie&lt;String&gt;(trie);
  *
  * trie.put(myCIDR1, myCIDR1.getAddressRange());
  * trie.put(myCIDR2, myCIDR2.getAddressRange());
@@ -83,18 +83,18 @@ import com.github.veqryn.net.Cidr4;
  * String narrowestValue = trie.longestPrefixOfValue(myIP3.getCidr(), true);
  *
  * // [[192.168.1.0--192.168.1.255], [192.168.1.104--192.168.1.107]]
- * Collection<String> ofValueView = trie.prefixOfValues(myCIDR4, true);
+ * Collection&lt;String&gt; ofValueView = trie.prefixOfValues(myCIDR4, true);
  *
  * // {192.168.1.0/24=[192.168.1.0--192.168.1.255], 192.168.1.104/30=[192.168.1.104--192.168.1.107]}
- * Trie<Cidr4, String> ofTrieView = trie.prefixOfMap(myCIDR4, true);
+ * Trie&lt;Cidr4, String&gt; ofTrieView = trie.prefixOfMap(myCIDR4, true);
  *
  * // [[192.168.1.104--192.168.1.107], [192.168.1.104--192.168.1.104],
  * // [192.168.1.106--192.168.1.107]]
- * Collection<String> byValueView = trie.prefixedByValues(myCIDR4, true);
+ * Collection&lt;String&gt; byValueView = trie.prefixedByValues(myCIDR4, true);
  *
  * // {192.168.1.104/32=[192.168.1.104--192.168.1.104],
  * // 192.168.1.106/31=[192.168.1.106--192.168.1.107]}
- * Trie<Cidr4, String> byTrieView = trie.prefixedByMap(myCIDR4, false);
+ * Trie&lt;Cidr4, String&gt; byTrieView = trie.prefixedByMap(myCIDR4, false);
  * </pre>
  *
  * @author Chris Duncan

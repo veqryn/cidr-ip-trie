@@ -133,7 +133,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     private transient K privateKey = null;
 
     /**
-     * @return the value (V) or null if this node does not have a value
+     * the value (V) or null if this node does not have a value
      */
     protected V value = null;
 
@@ -182,6 +182,7 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     /**
      * Replaces the value currently associated with the key with the given value.
      *
+     * @param value the new value
      * @return the value associated with the key before this method was called
      */
     protected final V setValue(final V value) {
@@ -266,9 +267,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
     protected final int levelsDeep;
 
     /**
-     *
-     * @param bits
-     * @param levelsDeep
+     * @param bits the BitSet
+     * @param levelsDeep the number of nodes deep
      */
     protected CodecElements(final BitSet bits, final int levelsDeep) {
       this.bits = bits;
@@ -355,8 +355,8 @@ public class AbstractBinaryTrie<K, V> implements Trie<K, V>, Serializable, Clone
      * Creates an entry wrapper representing a mapping of the Node's key to the Node's value.
      * Wrapped so that getKey will return a resolved key, using the backing Trie.
      *
-     * @param key the key represented by this entry
-     * @param value the value represented by this entry
+     * @param node the node to be wrapped in this Entry
+     * @param trie the parent trie
      */
     protected TrieEntry(final Node<K, V> node, final AbstractBinaryTrie<K, V> trie) {
       this.trie = trie;

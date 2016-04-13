@@ -44,7 +44,7 @@ import java.util.regex.Matcher;
  *
  * // [192.168.1.0/24, 192.168.1.96/29, 192.168.1.98/32,
  * // 192.168.1.104/30, 192.168.1.104/32, 192.168.1.106/31]
- * SortedSet<Cidr4> sorted = new TreeSet<Cidr4>(
+ * SortedSet&lt;Cidr4&gt; sorted = new TreeSet&lt;Cidr4&gt;(
  *     Arrays.asList(myCIDR1, myCIDR2, myCIDR3, myCIDR4, myCIDR5, myCIDR6, myCIDR7));
  *
  * // 192.168.1.96/29 creates a range of "[192.168.1.96--192.168.1.103]"
@@ -150,7 +150,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        and Integer.MAX_VALUE = 255.255.255.255<br>
    *        true if using a binary integer,
    *        where Integer.MIN_VALUE = 128.0.0.0
    *        and 0 = 0.0.0.0
@@ -207,7 +207,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param binary false if using a sortable packed integer,
    *        where Integer.MIN_VALUE = 0.0.0.0
    *        and 0 = 128.0.0.0
-   *        and Integer.MAX_VALUE = 255.255.255.255</br>
+   *        and Integer.MAX_VALUE = 255.255.255.255<br>
    *        true if using a binary integer,
    *        where Integer.MIN_VALUE = 128.0.0.0
    *        and 0 = 0.0.0.0
@@ -327,7 +327,7 @@ public final class Cidr4 implements Comparable<Cidr4>, Serializable {
    * @param maskBits the maximum number of bits in the netmask (e.g. 32 - 1)
    * @return A new Cidr representing the lowest cidr that has
    *         no more than this many maskBits and contains our cidr range
-   *         e.g. 192.168.10.10/31 => mask 24 => 192.168.0.0/24
+   *         e.g. 192.168.10.10/31 -&gt; mask 24 -&gt; 192.168.0.0/24
    */
   public final Cidr4 getLowestContainingCidr(final int maskBits) {
     return getLowestContainingCidrForRange(this.low, this.high, maskBits, false);

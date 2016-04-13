@@ -42,7 +42,15 @@ The most recent release is version 1.0.1, released April 12, 2016.
 
 
 ## How to install with Maven
-coming soon...
+Add the following dependency block to your pom.xml file:
+
+```xml
+<dependency>
+  <groupId>com.github.veqryn</groupId>
+  <artifactId>cidr-ip-trie</artifactId>
+  <version>1.0.1</version>
+</dependency>
+```
 
 
 ## Requirements
