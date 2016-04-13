@@ -27,7 +27,8 @@ the CIDR for IPv4 uses 64 bits, same as two ints, less than half what SubnetUtil
 The CIDR Trie type provides lookups that range from 10-50x faster than using a TreeMap, and 100-500x
 faster than using sorted list (but at a cost of using around 20-30% more memory than a TreeMap). The
 Trie scales much better, getting faster and using less memory in comparison with a TreeMap the more
-CIDR's are added to it (tested with one hundred million unique CIDR's).
+CIDR's are added to it (tested with one hundred million unique CIDR's). For added flexibility, the
+Trie interface also extends the Map interface.
 
 
 ## Releases
@@ -130,6 +131,7 @@ System.out.println(myCIDR1.isInRange(myCIDR7, true)); // true
 Trie<Cidr4, String> trie = new Cidr4Trie<String>();
 Trie<Cidr4, String> trie2 = new Cidr4Trie<String>(trie);
 
+// Trie all Map interface methods
 trie.put(myCIDR1, myCIDR1.getAddressRange());
 trie.put(myCIDR2, myCIDR2.getAddressRange());
 trie.put(myCIDR3, myCIDR3.getAddressRange());

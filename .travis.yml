@@ -5,8 +5,11 @@ jdk:
   - oraclejdk8
   - openjdk7
 
+install:
+  - mvn install -DskipTests=true -Dgpg.skip=true
+
 script:
-  - mvn clean validate compile test-compile test package integration-test verify cobertura:cobertura
+  - mvn clean validate compile test-compile test package integration-test verify cobertura:cobertura -Dgpg.skip=true
 
 after_success:
   - mvn coveralls:report -DrepoToken=$repoToken
