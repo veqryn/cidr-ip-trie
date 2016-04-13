@@ -22,7 +22,7 @@ import java.util.Map;
  * or prefixed by any other given String.
  *
  * <p>
- * This Trie implementation extends {@link AbstractBinaryTrie},
+ * This Trie implementation extends {@link AbstractNavigableBinaryTrie},
  * an uncompressed binary bitwise implementation of a Trie for use with short
  * binary data such as IP addresses and CIDR ranges, and therefore this
  * implementation will take up more memory space than a trie implementation
@@ -39,7 +39,7 @@ import java.util.Map;
  *
  * @param <V> Value
  */
-public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
+public final class PatriciaTrie<V> extends AbstractNavigableBinaryTrie<String, V> {
 
   private static final long serialVersionUID = -6067883352977753038L;
 
@@ -48,7 +48,7 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
    * Create an empty {@link PatriciaTrie}.
    */
   public PatriciaTrie() {
-    super(new PatriciaCodec());
+    super(new PatriciaCodec(), false, true);
   }
 
   /**
@@ -59,7 +59,7 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
    *        into the newly created trie
    */
   public PatriciaTrie(final Map<String, V> otherMap) {
-    super(new PatriciaCodec(), otherMap);
+    super(new PatriciaCodec(), otherMap, false, true);
   }
 
   /**
@@ -77,9 +77,10 @@ public final class PatriciaTrie<V> extends AbstractBinaryTrie<String, V> {
 
   /**
    * Implementation of {@link KeyCodec} for use with String data.
-   * Specifically for use with {@link AbstractBinaryTrie},
-   * because it decodes strings by each bit, instead of each
-   * character, as the backing trie is binary in nature.
+   * Specifically for use with {@link AbstractBinaryTrie} and
+   * {@link AbstractNavigableBinaryTrie}, because it decodes strings by
+   * each bit, instead of each character, as the backing trie is binary
+   * in nature.
    * Can handle international characters.
    */
   public static final class PatriciaCodec extends AbstractKeyCodec<String>

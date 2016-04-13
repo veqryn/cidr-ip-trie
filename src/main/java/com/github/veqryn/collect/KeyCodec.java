@@ -14,7 +14,8 @@ import java.util.SortedMap;
 /**
  * KeyCodec interface, for encoding, decoding, and analyzing keys in a
  * {@link Trie}.
- * Specifically for use with {@link AbstractBinaryTrie}.
+ * Specifically for use with {@link AbstractBinaryTrie} and
+ * {@link AbstractNavigableBinaryTrie}.
  *
  * <p>
  * Includes methods to define a key by determining the key's length,
@@ -23,8 +24,7 @@ import java.util.SortedMap;
  *
  * <p>
  * Also includes methods to recreate a key based on positional information,
- * and to return a comparator for use with {@link NavigableMap} methods
- * (not yet implemented).
+ * and to return a comparator for use with {@link NavigableMap} methods.
  *
  * @author Chris Duncan
  *
@@ -99,14 +99,12 @@ public interface KeyCodec<K> extends Serializable {
    *
    * <p>
    * This method is not necessary for {@link Trie} methods, and is only called
-   * by methods that are part of the (future, not yet implemented)
-   * NavigableTrie interface
-   * (including any {@link SortedMap} and {@link NavigableMap} methods).
-   * Therefore a Trie that only implements the Trie interface (by extending
-   * only {@link AbstractBinaryTrie}) would not need to implement this method,
+   * by methods that are part of the {@link NavigableTrie} interface (including
+   * any {@link SortedMap} and {@link NavigableMap} methods). Therefore a Trie
+   * that only implements the Trie interface (by extending only
+   * {@link AbstractBinaryTrie}) would not need to implement this method,
    * while a Trie that implements the NavigableTrie interface by extending
-   * (future, not yet added) AbstractNavigableBinaryTrie) would need to
-   * implement this method.
+   * {@link AbstractNavigableBinaryTrie}) would need to implement this method.
    *
    * @return Comparator consistent with the KeyCodec interface methods
    */

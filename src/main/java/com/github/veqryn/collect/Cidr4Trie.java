@@ -41,13 +41,14 @@ import com.github.veqryn.net.Cidr4;
  * 192.168.0.0/16 then 192.168.20.16/28 and 192.168.20.19/32 could be returned.
  *
  * <p>
- * This Trie implementation extends {@link AbstractBinaryTrie},
+ * This Trie implementation extends {@link AbstractNavigableBinaryTrie},
  * an uncompressed binary bitwise implementation of a Trie for use with short
  * binary data such as IP addresses and CIDR ranges, and therefore is
  * purpose-built for extremely fast lookups, offering O(A(K)) lookup time
  * for get and prefix matching methods, while using up similar memory as
  * a TreeMap when fully loaded.
- * It also implements the {@link Trie} and {@link java.util.Map} interfaces.
+ * It also implements the {@link Trie}, {@link NavigableTrie},
+ * {@link java.util.Map}, and {@link java.util.NavigableMap} interfaces.
  *
  * <p>
  * This implementation returns values in the order of their CIDR keys
@@ -101,7 +102,7 @@ import com.github.veqryn.net.Cidr4;
  *
  * @param <V> Value
  */
-public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V> {
+public final class Cidr4Trie<V> extends AbstractNavigableBinaryTrie<Cidr4, V> {
 
   private static final long serialVersionUID = -8113898642923790939L;
 
@@ -109,20 +110,77 @@ public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V> {
 
   /**
    * Create an empty {@link Cidr4Trie}.
+   *
+   * <p>
+   * Keys will not be cached (equivalent to {@code Cidr4Trie(false)})
    */
   public Cidr4Trie() {
-    super(new Cidr4Codec());
+    super(new Cidr4Codec(), false, true);
+  }
+
+  /**
+   * Create an empty {@link Cidr4Trie}.
+   *
+   * <p>
+   * If {@code cacheKeys} is set to true, keys will be permanently kept after
+   * being inserted with the {@link #put} operation, and will maintain their
+   * == identity with the original keys. If set to false, keys will be
+   * discarded, allowing for a much smaller memory footprint, at the cost
+   * of increased cpu time should the keys need to be recreated (which would
+   * only occur if the methods {@link #keySet}, {@link #entrySet},
+   * {@link #equals}, {@link #hashCode}, and similar {@link java.util.SortedMap}
+   * or {@link java.util.NavigableMap} methods were called, because they either
+   * give up the full key for outside use, or hash or compare full keys).
+   * After being recreated, the keys will be cached so that subsequent lookups
+   * do not need to recreate the key. The recreated keys will be equal
+   * to the original key, but will not be the same reference pointer.
+   *
+   * @param cacheKeys true if the CIDR keys should be cached, false if the
+   *        keys should be recreated and cached as needed.
+   */
+  public Cidr4Trie(final boolean cacheKeys) {
+    super(new Cidr4Codec(), cacheKeys, true);
   }
 
   /**
    * Create a {@link Cidr4Trie}.
    * The trie will be filled with the CIDRs and values in the provided map.
    *
+   * <p>
+   * Keys will not be cached (equivalent to {@code Cidr4Trie(otherMap, false)})
+   *
    * @param otherMap Map of CIDRs and values, which will be {@link #putAll}
    *        into the newly created trie
    */
   public Cidr4Trie(final Map<Cidr4, V> otherMap) {
-    super(new Cidr4Codec(), otherMap);
+    super(new Cidr4Codec(), otherMap, false, true);
+  }
+
+  /**
+   * Create a {@link Cidr4Trie}.
+   * The trie will be filled with the CIDRs and values in the provided map.
+   *
+   * <p>
+   * If {@code cacheKeys} is set to true, keys will be permanently kept after
+   * being inserted with the {@link #put} operation, and will maintain their
+   * == identity with the original keys. If set to false, keys will be
+   * discarded, allowing for a much smaller memory footprint, at the cost
+   * of increased cpu time should the keys need to be recreated (which would
+   * only occur if the methods {@link #keySet}, {@link #entrySet},
+   * {@link #equals}, {@link #hashCode}, and similar {@link java.util.SortedMap}
+   * or {@link java.util.NavigableMap} methods were called, because they either
+   * give up the full key for outside use, or hash or compare full keys).
+   * After being recreated, the keys will be cached so that subsequent lookups
+   * do not need to recreate the key. The recreated keys will be equal
+   * to the original key, but will not be the same reference pointer.
+   *
+   * @param otherMap Map of CIDRs and values, which will be {@link #putAll}
+   *        into the newly created trie
+   * @param cacheKeys true if the CIDR keys should be cached, false if the
+   *        keys should be recreated and cached as needed.
+   */
+  public Cidr4Trie(final Map<Cidr4, V> otherMap, final boolean cacheKeys) {
+    super(new Cidr4Codec(), otherMap, cacheKeys, true);
   }
 
   /**
@@ -140,9 +198,10 @@ public final class Cidr4Trie<V> extends AbstractBinaryTrie<Cidr4, V> {
 
   /**
    * Implementation of {@link KeyCodec} for use with Cidr IPv4 ranges.
-   * Specifically for use with {@link AbstractBinaryTrie}, because each bit,
-   * starting from the left, determines which node it is (left or right), and
-   * the number of leading bits (bits in our netmask) is the length.
+   * Specifically for use with {@link AbstractBinaryTrie} and
+   * {@link AbstractNavigableBinaryTrie}, because each bit, starting from
+   * the left, determines which node it is (left or right), and the
+   * number of leading bits (bits in our netmask) is the length.
    */
   public static final class Cidr4Codec implements KeyCodec<Cidr4>, Serializable {
 

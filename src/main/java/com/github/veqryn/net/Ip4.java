@@ -166,7 +166,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    * This method uses InetAddress.getByAddress, and so does not block.
    *
    * @return java.net.InetAddress representing this IPv4 address
-   * @throws UnknownHostException if not host found
+   * @throws UnknownHostException if host not found
    */
   public final InetAddress getInetAddress() throws UnknownHostException {
     final int[] ints = toArray(address, false);
