@@ -103,8 +103,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
    * instead the node structure (and each node's value) will be written out.
    * Because each Node has 3 reference pointers to up to 3 other Nodes,
    * (pointers are usually 32 bits) writing out the nodes like this ends up
-   * saving space when the size of keys > size of 3 pointers, but costs extra
-   * space if size of key < 3 pointers. Even if the size of keys is smaller,
+   * saving space when the size of keys &gt; size of 3 pointers, but costs extra
+   * space if size of key &lt; 3 pointers. Even if the size of keys is smaller,
    * writing the root nodes would be faster than recreating keys if the keys
    * are not being kept/cached.
    *
@@ -112,19 +112,19 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
    * To summarize, there are really 3 options:
    *
    * <p>
-   * 1. cacheKeys = false & writeKeys = false: Less memory used at runtime,
+   * 1. cacheKeys=false and writeKeys=false: Less memory used at runtime,
    * but slower to use keySet, entrySet, equals and hashCode. Fast speed of
    * serialization, but size of serialized trie will most likely be larger,
    * but this all depends on the key class.
    *
    * <p>
-   * 2. cacheKeys = false & writeKeys = true: Less memory used at runtime,
+   * 2. cacheKeys=false and writeKeys=true: Less memory used at runtime,
    * but slower to use keySet, entrySet, equals and hashCode. Slightly slower
    * speed of serialization, but size of serialized trie will most likely be
    * smaller, but this all depends on the key class.
    *
    * <p>
-   * 3. cacheKeys = true & writeKeys = true: More memory used at runtime,
+   * 3. cacheKeys=true and writeKeys=true: More memory used at runtime,
    * but faster to use keySet, entrySet, equals and hashCode. Fast speed of
    * serialization, and size of serialized trie will most likely be smaller,
    * but this all depends on the key class.
@@ -178,8 +178,8 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
    * instead the node structure (and each node's value) will be written out.
    * Because each Node has 3 reference pointers to up to 3 other Nodes,
    * (pointers are usually 32 bits) writing out the nodes like this ends up
-   * saving space when the size of keys > size of 3 pointers, but costs extra
-   * space if size of key < 3 pointers. Even if the size of keys is smaller,
+   * saving space when the size of keys &gt; size of 3 pointers, but costs extra
+   * space if size of key &lt; 3 pointers. Even if the size of keys is smaller,
    * writing the root nodes would be faster than recreating keys if the keys
    * are not being kept/cached.
    *
@@ -187,19 +187,19 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
    * To summarize, there are really 3 options:
    *
    * <p>
-   * 1. cacheKeys = false & writeKeys = false: Less memory used at runtime,
+   * 1. cacheKeys=false and writeKeys=false: Less memory used at runtime,
    * but slower to use keySet, entrySet, equals and hashCode. Fast speed of
    * serialization, but size of serialized trie will most likely be larger,
    * but this all depends on the key class.
    *
    * <p>
-   * 2. cacheKeys = false & writeKeys = true: Less memory used at runtime,
+   * 2. cacheKeys=false and writeKeys=true: Less memory used at runtime,
    * but slower to use keySet, entrySet, equals and hashCode. Slightly slower
    * speed of serialization, but size of serialized trie will most likely be
    * smaller, but this all depends on the key class.
    *
    * <p>
-   * 3. cacheKeys = true & writeKeys = true: More memory used at runtime,
+   * 3. cacheKeys=true and writeKeys=true: More memory used at runtime,
    * but faster to use keySet, entrySet, equals and hashCode. Fast speed of
    * serialization, and size of serialized trie will most likely be smaller,
    * but this all depends on the key class.
@@ -1430,7 +1430,7 @@ public class AbstractNavigableBinaryTrie<K, V> extends AbstractBinaryTrie<K, V>
      * Otherwise, if loInclusive is true, lo is the inclusive bound,
      * else lo is the exclusive bound. Similarly for the upper bound.
      *
-     * @param map the backing map
+     * @param m the backing map
      * @param fromStart
      * @param lo
      * @param loInclusive
