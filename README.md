@@ -22,7 +22,7 @@ specifically for CIDR's that allowed finding collections of overlapping CIDRS th
 or prefixed by a given IP/CIDR.
 
 This library provides the features above, along with many useful utility functions for operating on
-IP's and CIDR's, all while using mimimal memory (the IPv4 type uses 32 bits, same as an int, and
+IP's and CIDR's, all while using minimal memory (the IPv4 type uses 32 bits, same as an int, and
 the CIDR for IPv4 uses 64 bits, same as two ints, less than half what SubnetUtils uses).
 The CIDR Trie type provides lookups that range from 10-50x faster than using a TreeMap, and 100-500x
 faster than using sorted list (but at a cost of using around 20-30% more memory than a TreeMap). The
@@ -131,7 +131,7 @@ System.out.println(myCIDR1.isInRange(myCIDR7, true)); // true
 Trie<Cidr4, String> trie = new Cidr4Trie<String>();
 Trie<Cidr4, String> trie2 = new Cidr4Trie<String>(trie);
 
-// Trie all Map interface methods
+// Trie has all Map interface methods
 trie.put(myCIDR1, myCIDR1.getAddressRange());
 trie.put(myCIDR2, myCIDR2.getAddressRange());
 trie.put(myCIDR3, myCIDR3.getAddressRange());
