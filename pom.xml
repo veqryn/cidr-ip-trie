@@ -13,7 +13,7 @@
   <url>https://github.com/veqryn/cidr-ip-trie</url>
   <version>1.0.1</version>
 
-  <packaging>jar</packaging>
+  <packaging>bundle</packaging>
 
 
   <developers>
@@ -194,6 +194,21 @@
           <serverId>ossrh</serverId>
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
           <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>3.0.1</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Bundle-Version>${project.version}</Bundle-Version>
+            <Export-Package>*</Export-Package>
+            <_noee>true</_noee>
+          </instructions>
         </configuration>
       </plugin>
 
