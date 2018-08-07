@@ -123,7 +123,7 @@ public final class Ip4 implements Comparable<Ip4>, Serializable {
    *         and 0 = 128.0.0.0
    *         and Integer.MAX_VALUE = 255.255.255.255
    */
-  protected final int getSortableInteger() {
+  public final int getSortableInteger() {
     return address;
   }
 
